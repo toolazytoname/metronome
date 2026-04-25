@@ -70,7 +70,11 @@
             <button class="bpm-btn" id="bpm-plus">+</button>
         </div>
         <div class="slider-wrap">
-            <input type="range" min="40" max="208" value="120" id="bpm-slider">
+            <div class="slider-row">
+                <button class="bpm-btn sm" id="bpm-minus2">−</button>
+                <input type="range" min="40" max="208" value="120" id="bpm-slider">
+                <button class="bpm-btn sm" id="bpm-plus2">+</button>
+            </div>
         </div>
         <div class="control">
             <button class="play-btn" id="play-btn">▶</button>
@@ -125,6 +129,8 @@ document.getElementById("settings-toggle").onclick=function(){this.classList.tog
 document.getElementById("play-btn").onclick=function(){s.r?stop():start();};
 document.getElementById("bpm-minus").onclick=function(){setBpm(s.bpm-1);};
 document.getElementById("bpm-plus").onclick=function(){setBpm(s.bpm+1);};
+document.getElementById("bpm-minus2").onclick=function(){setBpm(s.bpm-1);};
+document.getElementById("bpm-plus2").onclick=function(){setBpm(s.bpm+1);};
 document.getElementById("bpm-slider").oninput=function(e){setBpm(parseInt(e.target.value));};
 document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);};});
 document.querySelectorAll(".time-btn").forEach(function(el){el.onclick=function(){setTS(el.dataset.sig);};});
