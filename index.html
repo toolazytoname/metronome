@@ -22,8 +22,8 @@
         .bpm-display{text-align:center}
         .bpm-val{font-size:58px;font-weight:900;color:#74b9ff}
         .bpm-unit{font-size:13px;color:#a29bfe;font-weight:700}
-                .slider-wrap{padding:5px 25px 15px;background:#fff}
-        .bpm-section{display:flex;justify-content:center;align-items:center;gap:20px;padding:15px 25px;background:#fff}
+                .slider-wrap{padding:0 20px 15px;background:#fff}
+        .bpm-section{display:flex;justify-content:center;align-items:center;padding:10px 25px 5px;background:#fff}
         input[type=range]{-webkit-appearance:none;width:100%;height:10px;border-radius:5px;background:linear-gradient(90deg,#a8edea,#ffeaa7,#ff9a9e)}
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #ff9a9e;cursor:pointer}
         .control{padding:10px 25px 25px;display:flex;justify-content:center;background:#fff}
@@ -62,18 +62,16 @@
         <div class="beats-section" id="beats-container"></div>
 
         <div class="bpm-section">
-            <button class="bpm-btn" id="bpm-minus">−</button>
             <div class="bpm-display">
                 <div class="bpm-val" id="bpm-display">120</div>
                 <div class="bpm-unit">BPM</div>
             </div>
-            <button class="bpm-btn" id="bpm-plus">+</button>
         </div>
         <div class="slider-wrap">
             <div class="slider-row">
-                <button class="bpm-btn sm" id="bpm-minus2">−</button>
+                <button class="bpm-btn sm" id="bpm-minus">−</button>
                 <input type="range" min="40" max="208" value="120" id="bpm-slider">
-                <button class="bpm-btn sm" id="bpm-plus2">+</button>
+                <button class="bpm-btn sm" id="bpm-plus">+</button>
             </div>
         </div>
         <div class="control">
@@ -129,8 +127,6 @@ document.getElementById("settings-toggle").onclick=function(){this.classList.tog
 document.getElementById("play-btn").onclick=function(){s.r?stop():start();};
 document.getElementById("bpm-minus").onclick=function(){setBpm(s.bpm-1);};
 document.getElementById("bpm-plus").onclick=function(){setBpm(s.bpm+1);};
-document.getElementById("bpm-minus2").onclick=function(){setBpm(s.bpm-1);};
-document.getElementById("bpm-plus2").onclick=function(){setBpm(s.bpm+1);};
 document.getElementById("bpm-slider").oninput=function(e){setBpm(parseInt(e.target.value));};
 document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);};});
 document.querySelectorAll(".time-btn").forEach(function(el){el.onclick=function(){setTS(el.dataset.sig);};});
