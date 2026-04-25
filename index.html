@@ -22,7 +22,8 @@
         .bpm-display{text-align:center}
         .bpm-val{font-size:58px;font-weight:900;color:#74b9ff}
         .bpm-unit{font-size:13px;color:#a29bfe;font-weight:700}
-        .slider-row{display:flex;align-items:center;gap:15px;padding:0 20px 15px;background:#fff}
+                .slider-wrap{padding:5px 25px 15px;background:#fff}
+        .bpm-section{display:flex;justify-content:center;align-items:center;gap:20px;padding:15px 25px;background:#fff}
         input[type=range]{-webkit-appearance:none;width:100%;height:10px;border-radius:5px;background:linear-gradient(90deg,#a8edea,#ffeaa7,#ff9a9e)}
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #ff9a9e;cursor:pointer}
         .control{padding:10px 25px 25px;display:flex;justify-content:center;background:#fff}
@@ -57,17 +58,19 @@
         <div class="header">
             <div class="bunny">🐰</div>
             <h1>小兔头节拍器</h1>
+        </div>
+        <div class="beats-section" id="beats-container"></div>
+
+        <div class="bpm-section">
+            <button class="bpm-btn" id="bpm-minus">−</button>
             <div class="bpm-display">
                 <div class="bpm-val" id="bpm-display">120</div>
                 <div class="bpm-unit">BPM</div>
             </div>
-        </div>
-        <div class="beats-section" id="beats-container"></div>
-
-        <div class="slider-row">
-            <button class="bpm-btn" id="bpm-minus">−</button>
-            <input type="range" min="40" max="208" value="120" id="bpm-slider">
             <button class="bpm-btn" id="bpm-plus">+</button>
+        </div>
+        <div class="slider-wrap">
+            <input type="range" min="40" max="208" value="120" id="bpm-slider">
         </div>
         <div class="control">
             <button class="play-btn" id="play-btn">▶</button>
