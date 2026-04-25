@@ -3,1023 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎵 小兔头节拍器 - 不同音效模式</title>
-    <meta name="description" content="一个美观现代的在线节拍器，支持不同音效模式：传统重音、均匀节拍、童音数字">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>小兔头节拍器 🐰</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Poppins', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        button, .sound-mode-card, .beat-circle, .bpm-btn {
-            cursor: pointer;
-        }
-        
-        html {
-            height: 100%;
-        }
-        
-        body {
-            min-height: 100vh;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-x: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-attachment: fixed;
-            pointer-events: auto;
-        }
-        
-        .metronome-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 40px;
-            box-shadow: 
-                0 32px 100px rgba(0, 0, 0, 0.25),
-                0 12px 32px rgba(0, 0, 0, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-        }
-        
-        .beat-circle {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 
-                0 10px 30px rgba(102, 126, 234, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .beat-circle:hover {
-            transform: translateY(-3px);
-            box-shadow: 
-                0 16px 40px rgba(102, 126, 234, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        .beat-circle.active {
-            animation: beatPulse 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scale(1.18);
-            box-shadow: 
-                0 24px 60px rgba(102, 126, 234, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        .beat-circle.strong {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            box-shadow: 
-                0 14px 36px rgba(245, 87, 108, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-            width: 80px;
-            height: 80px;
-            font-size: 32px;
-        }
-        
-        .beat-circle.uniform {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 
-                0 10px 30px rgba(79, 172, 254, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        .beat-circle.voice {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            box-shadow: 
-                0 10px 30px rgba(67, 233, 123, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-        
-        @keyframes beatPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1.18); }
-        }
-        
-        .main-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 600;
-            box-shadow: 
-                0 10px 28px rgba(0, 0, 0, 0.18),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .main-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 
-                0 18px 40px rgba(0, 0, 0, 0.25),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .main-btn:active {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 8px 20px rgba(0, 0, 0, 0.18),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .sound-mode-card {
-            border-radius: 24px;
-            padding: 20px;
-            background: linear-gradient(to right, #f8faff, #f0f4ff);
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .sound-mode-card.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: transparent;
-            color: white;
-            transform: scale(1.03);
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
-        }
-        
-        .sound-mode-card:hover:not(.active) {
-            border-color: #667eea;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        }
-        
-        .bpm-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 14px;
-            border-radius: 7px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            outline: none;
-            flex: 1;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .bpm-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            box-shadow: 
-                0 8px 20px rgba(102, 126, 234, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            border: 4px solid #667eea;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .bpm-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-            box-shadow: 
-                0 10px 26px rgba(102, 126, 234, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-        
-        .time-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 600;
-            border: 3px solid transparent;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-            border-radius: 16px;
-        }
-        
-        .time-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.15);
-        }
-        
-        .time-btn.active {
-            transform: scale(1.05);
-            box-shadow: 
-                0 10px 26px rgba(102, 126, 234, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            border-color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .time-btn:not(.active) {
-            background: white;
-            border-color: #e2e8f0;
-            color: #4a5568;
-        }
-        
-        .section-card {
-            border-radius: 24px;
-            padding: 24px;
-            background: linear-gradient(to right, #fbfbff, #f5f3ff);
-            box-shadow: 
-                0 4px 16px rgba(0, 0, 0, 0.05),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            margin-bottom: 24px;
-        }
-        
-        .bpm-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.25);
-            transition: all 0.2s ease;
-            color: #667eea;
-            font-weight: bold;
-            font-size: 24px;
-        }
-        
-        .bpm-btn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
-        }
-        
-        .bpm-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .custom-input {
-            border: 3px solid #e2e8f0;
-            border-radius: 14px;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-            background: white;
-        }
-        
-        .custom-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 
-                0 0 0 4px rgba(102, 126, 234, 0.1),
-                inset 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        
-        .status-panel {
-            padding: 16px 28px;
-            border-radius: 20px;
-            background: linear-gradient(to right, #f8fafc, #f1f5f9);
-            border: 1px solid #e2e8f0;
-        }
-        
-        .gradient-title {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        @media (max-width: 640px) {
-            .beat-circle {
-                width: 56px;
-                height: 56px;
-                font-size: 22px;
-            }
-            
-            .beat-circle.strong {
-                width: 64px;
-                height: 64px;
-                font-size: 26px;
-            }
-            
-            .metronome-container {
-                border-radius: 28px;
-                margin: 16px;
-            }
-            
-            .section-card {
-                border-radius: 20px;
-                padding: 18px;
-            }
-        }
-        
-        .mode-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.8);
-        }
-        
-        .sound-mode-card.active .mode-icon {
-            background: rgba(255, 255, 255, 0.25);
-        }
-        
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{min-height:100vh;background:linear-gradient(180deg,#ffecd2 0%,#fcb69f 100%);display:flex;align-items:center;justify-content:center;padding:15px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+        .container{background:#fff;border-radius:30px;box-shadow:0 15px 50px rgba(252,182,159,0.4);width:100%;max-width:420px;overflow:hidden}
+        .header{padding:20px;text-align:center;background:#fff}
+        .bunny{font-size:60px}
+        h1{font-size:24px;font-weight:800;color:#ff9a9e;margin-top:5px}
+        .beats-section{padding:15px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;min-height:90px;align-items:center;background:#fff}
+        .beat{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;transition:transform .1s}
+        .beat.uniform{background:#a8edea;box-shadow:0 4px 12px rgba(168,237,234,0.5)}
+        .beat.strong{background:#ff6b6b;width:64px;height:64px;font-size:24px;box-shadow:0 5px 18px rgba(255,107,107,0.5)}
+        .beat.traditional{background:#a8edea;box-shadow:0 4px 12px rgba(168,237,234,0.5)}
+        .beat.voice{background:#ffd93d;box-shadow:0 4px 12px rgba(255,217,61,0.5)}
+        .beat.pop{transform:scale(1.3)}
+        .bpm-section{padding:12px 20px;display:flex;justify-content:center;align-items:center;gap:20px;background:#fff}
+        .bpm-btn{width:50px;height:50px;border-radius:50%;border:none;font-size:28px;font-weight:700;cursor:pointer;background:#ffeaa7;color:#e17055;box-shadow:0 4px 12px rgba(255,217,61,0.4)}
+        .bpm-display{text-align:center}
+        .bpm-val{font-size:56px;font-weight:900;color:#74b9ff}
+        .bpm-unit{font-size:14px;color:#a29bfe;font-weight:700}
+        .slider-wrap{padding:5px 20px 12px;background:#fff}
+        input[type=range]{-webkit-appearance:none;width:100%;height:10px;border-radius:5px;background:linear-gradient(90deg,#a8edea,#ffeaa7,#ff9a9e)}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #ff9a9e;cursor:pointer}
+        .control{padding:12px 20px 20px;display:flex;justify-content:center;background:#fff}
+        .play-btn{width:75px;height:75px;border-radius:50%;border:none;font-size:32px;cursor:pointer;background:#55efc4;color:#fff;box-shadow:0 8px 25px rgba(0,184,148,0.4)}
+        .play-btn.running{background:#ff6b6b;box-shadow:0 8px 25px rgba(255,107,107,0.4)}
+        .settings{border-top:1px solid #f0f0f0}
+        .toggle{width:100%;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;background:#fff5f5;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#ff9a9e}
+        .toggle-arrow{font-size:12px}
+        .toggle.open .toggle-arrow{transform:rotate(180deg)}
+        .panel{max-height:0;overflow:hidden;transition:max-height .3s}
+        .panel.open{max-height:450px}
+        .panel-inner{padding:15px 20px 20px}
+        .section-title{font-size:11px;font-weight:700;color:#b2bec3;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+        .mode-row{display:flex;gap:8px;margin-bottom:15px}
+        .mode-btn{flex:1;padding:10px 6px;border-radius:12px;background:#f8f9fa;border:2px solid transparent;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#666}
+        .mode-btn.active{background:linear-gradient(135deg,#a8edea,#7dd3d0);color:#fff}
+        .mode-icon{font-size:24px;margin-bottom:4px}
+        .time-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
+        .time-btn{padding:10px 6px;border-radius:12px;background:#f8f9fa;border:2px solid transparent;cursor:pointer;text-align:center;font-weight:800;font-size:15px;color:#333}
+        .time-btn.active{background:linear-gradient(135deg,#ffeaa7,#ffd93d);border-color:transparent;color:#e17055}
+        .time-btn small{display:block;font-size:11px;font-weight:500;opacity:.7;margin-top:3px}
+        .custom-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+        .custom-input{width:55px;height:42px;border:2px solid #eee;border-radius:10px;text-align:center;font-size:18px;font-weight:700;color:#333}
+        .custom-sep{font-size:22px;font-weight:700;color:#ccc}
+        .apply-btn{padding:10px 18px;background:linear-gradient(135deg,#ff9a9e,#ff6b6b);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+        .status{padding:12px 20px;text-align:center;font-size:13px;color:#b2bec3;background:#fafafa}
+        .debug{margin:0;padding:8px 12px;background:#111;color:#0f0;font-size:10px;font-family:monospace;max-height:60px;overflow-y:auto;white-space:pre-wrap}
     </style>
 </head>
 <body>
-    <div class="metronome-container p-6 md:p-10 max-w-3xl w-full mx-4 relative">
-        <div class="text-center mb-4">
-            <h1 class="text-3xl md:text-5xl font-bold mb-2 leading-tight" id="title-click-area">
-                <span class="gradient-title">🎵 小兔头节拍器</span>
-            </h1>
-            <p class="text-gray-600 text-sm md:text-lg font-medium">不同音效模式，满足你的不同练习需求 ✨</p>
+    <div class="container">
+        <div class="header">
+            <div class="bunny">🐰</div>
+            <h1>小兔头节拍器</h1>
         </div>
-
-        <div class="flex justify-center items-center gap-4 md:gap-8 mb-6">
-            <button class="main-btn bg-gradient-to-r from-gray-400 to-gray-600 text-white w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center text-xl md:text-2xl" id="reset-btn">
-                🔄
-            </button>
-            <button class="main-btn bg-gradient-to-r from-green-500 to-teal-500 text-white w-24 h-24 md:w-36 md:h-36 rounded-full flex items-center justify-center text-xl md:text-2xl font-semibold" id="start-stop-btn">
-                ▶️ 开始
-            </button>
-            <button class="main-btn bg-gradient-to-r from-purple-500 to-pink-500 text-white w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center text-xl md:text-2xl" id="test-sound-btn">
-                🔊 试音
-            </button>
+        <div class="beats-section" id="beats-container"></div>
+        <div class="bpm-section">
+            <button class="bpm-btn" id="bpm-minus">−</button>
+            <div class="bpm-display">
+                <div class="bpm-val" id="bpm-display">120</div>
+                <div class="bpm-unit">BPM</div>
+            </div>
+            <button class="bpm-btn" id="bpm-plus">+</button>
         </div>
-
-        <div class="status-panel text-center mb-6 py-3 px-4">
-            <span class="text-gray-600 font-semibold text-base md:text-lg" id="status-text">就绪 - 选择音效模式后点击开始</span>
+        <div class="slider-wrap">
+            <input type="range" min="40" max="208" value="120" id="bpm-slider">
         </div>
-
-        <div class="flex justify-center items-center gap-3 md:gap-5 mb-6 flex-wrap" id="beats-container">
+        <div class="control">
+            <button class="play-btn" id="play-btn">▶</button>
         </div>
-
-        <div class="space-y-4">
-            <div>
-                <label class="text-lg font-semibold text-gray-800 block mb-3">🎧 音效模式选择</label>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="sound-mode-grid">
-                    <div class="sound-mode-card p-4" data-mode="traditional">
-                        <div class="flex flex-col items-center text-center">
-                            <div class="mode-icon w-10 h-10">🥁</div>
-                            <h3 class="font-bold text-base mb-1">传统模式</h3>
-                            <p class="text-xs opacity-80">第一声重音，后面轻音</p>
-                        </div>
+        <div class="settings">
+            <button class="toggle" id="settings-toggle">设置 <span class="toggle-arrow">▼</span></button>
+            <div class="panel" id="settings-panel">
+                <div class="panel-inner">
+                    <div class="section-title">音效模式</div>
+                    <div class="mode-row">
+                        <div class="mode-btn" data-mode="traditional"><div class="mode-icon">🥁</div>传统</div>
+                        <div class="mode-btn active" data-mode="uniform"><div class="mode-icon">🎵</div>均匀</div>
+                        <div class="mode-btn" data-mode="voice"><div class="mode-icon">🗣️</div>童音</div>
                     </div>
-                    <div class="sound-mode-card active p-4" data-mode="uniform">
-                        <div class="flex flex-col items-center text-center">
-                            <div class="mode-icon w-10 h-10">⚖️</div>
-                            <h3 class="font-bold text-base mb-1">均匀模式</h3>
-                            <p class="text-xs opacity-80">所有节拍音量一致</p>
-                        </div>
+                    <div class="section-title">节拍</div>
+                    <div class="time-row">
+                        <button class="time-btn active" data-sig="4/4">4/4<small>四拍</small></button>
+                        <button class="time-btn" data-sig="3/4">3/4<small>圆舞曲</small></button>
+                        <button class="time-btn" data-sig="2/4">2/4<small>进行曲</small></button>
+                        <button class="time-btn" data-sig="6/8">6/8<small>八六拍</small></button>
+                        <button class="time-btn" data-sig="5/4">5/4<small>复合拍</small></button>
+                        <button class="time-btn" data-sig="7/8">7/8<small>现代</small></button>
                     </div>
-                    <div class="sound-mode-card p-4" data-mode="voice" id="voice-mode-card">
-                        <div class="flex flex-col items-center text-center">
-                            <div class="mode-icon w-10 h-10">👶</div>
-                            <h3 class="font-bold text-base mb-1">童音数字</h3>
-                            <p class="text-xs opacity-80">朗读 1 2 3 4...</p>
-                        </div>
+                    <div class="section-title">自定义</div>
+                    <div class="custom-row">
+                        <input type="number" id="custom-beats" class="custom-input" min="1" max="16" value="4">
+                        <span class="custom-sep">/</span>
+                        <input type="number" id="custom-unit" class="custom-input" min="1" max="16" value="4">
+                        <button class="apply-btn" id="apply-btn">应用</button>
                     </div>
                 </div>
             </div>
-
-            <div class="section-card p-4 mb-0">
-                <div class="flex items-center justify-between mb-4">
-                    <label class="text-lg font-semibold text-gray-800">速度调节</label>
-                    <div class="flex items-center gap-2">
-                        <span class="text-3xl font-bold gradient-title" id="bpm-display">120</span>
-                        <span class="text-gray-600 font-semibold text-base">BPM</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button class="bpm-btn w-10 h-10 text-xl" id="bpm-decrease">-</button>
-                    <input 
-                        type="range" 
-                        min="40" 
-                        max="208" 
-                        value="120" 
-                        class="bpm-slider"
-                        id="bpm-slider"
-                    >
-                    <button class="bpm-btn w-10 h-10 text-xl" id="bpm-increase">+</button>
-                </div>
-                <div class="flex justify-between text-sm text-gray-600 mt-3 px-1">
-                    <span class="font-semibold">🐢 慢速 40</span>
-                    <span class="font-semibold">⚡ 快速 208</span>
-                </div>
-            </div>
-
-            <div class="section-card p-4 mb-0">
-                <label class="text-lg font-semibold text-gray-800 block mb-3">🎼 常见节拍</label>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    <button class="time-btn active py-3 px-3" data-signature="4/4">
-                        <span class="text-lg">4/4</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">四分音符为一拍</div>
-                    </button>
-                    <button class="time-btn py-3 px-3" data-signature="3/4">
-                        <span class="text-lg">3/4</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">圆舞曲</div>
-                    </button>
-                    <button class="time-btn py-3 px-3" data-signature="2/4">
-                        <span class="text-lg">2/4</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">进行曲</div>
-                    </button>
-                    <button class="time-btn py-3 px-3" data-signature="6/8">
-                        <span class="text-lg">6/8</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">八六拍</div>
-                    </button>
-                    <button class="time-btn py-3 px-3" data-signature="5/4">
-                        <span class="text-lg">5/4</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">非常规拍</div>
-                    </button>
-                    <button class="time-btn py-3 px-3" data-signature="7/8">
-                        <span class="text-lg">7/8</span>
-                        <div class="text-xs font-normal mt-1 opacity-70">现代风格</div>
-                    </button>
-                </div>
-            </div>
-
-            <div class="section-card p-4 mb-0">
-                <label class="text-lg font-semibold text-gray-800 block mb-3">⚙️ 自定义节拍</label>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <div class="flex items-center gap-2 justify-center sm:justify-start">
-                        <input 
-                            type="number" 
-                            min="1" 
-                            max="16" 
-                            value="4" 
-                            class="custom-input w-16 px-2 py-2 text-center font-bold text-lg text-gray-800"
-                            id="custom-beats"
-                        >
-                        <span class="text-2xl font-bold text-gray-600">/</span>
-                        <input 
-                            type="number" 
-                            min="1" 
-                            max="16" 
-                            value="4" 
-                            class="custom-input w-16 px-2 py-2 text-center font-bold text-lg text-gray-800"
-                            id="custom-unit"
-                        >
-                    </div>
-                    <button class="main-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold text-base" id="apply-custom">
-                        应用设置
-                    </button>
-                </div>
-            </div>
         </div>
-
-        <div class="mt-4 p-3 bg-gray-100 rounded-2xl border border-gray-300" id="debug-area" style="display: none;">
-            <div class="text-gray-800 font-semibold mb-2 text-sm">📋 调试日志：</div>
-            <div id="debug-log" class="text-xs text-gray-600 max-h-32 overflow-y-auto" style="max-height: 100px;"></div>
-        </div>
+        <div class="debug" id="debug-log"></div>
+        <div class="status">🎈 点击播放按钮开始吧~</div>
     </div>
-
 <script>
-// ==============================================
-// 屏幕常亮 + 息屏继续发声（已整合，不影响原有功能）
-// ==============================================
-let wakeLock = null;
-async function requestWakeLock() {
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-  } catch (err) {}
-}
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
-}
-
-let keepAliveAudio = null;
-function initKeepAlive() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    keepAliveAudio = new AudioCtx();
-    const osc = keepAliveAudio.createOscillator();
-    osc.frequency.value = 0;
-    osc.start();
-    osc.connect(keepAliveAudio.destination);
-  } catch (e) {}
-}
-
-window.addEventListener('load', () => {
-  initKeepAlive();
-  document.addEventListener('click', async function firstClick() {
-    if (keepAliveAudio && keepAliveAudio.state === 'suspended') keepAliveAudio.resume();
-    await requestWakeLock();
-    document.removeEventListener('click', firstClick);
-  }, { once: true });
-});
-</script>
-
-<script>
-class SmartMetronome {
-    constructor() {
-        this.bpm = 120;
-        this.timeSignature = '4/4';
-        this.isRunning = false;
-        this.currentBeat = 0;
-        this.intervalId = null;
-        this.beatCount = 4;
-        this.soundMode = 'uniform';
-        
-        this.speechSynth = 'speechSynthesis' in window ? window.speechSynthesis : null;
-        this.voice = null;
-        
-        this.audioContext = null;
-        this.sounds = {};
-        this.audioInitialized = false;
-        
-        this.log('SmartMetronome v4 最新版本 - ' + new Date().toLocaleDateString());
-        this.log('浏览器: ' + navigator.userAgent.substring(0, 100));
-        this.log('AudioContext 支持: ' + (window.AudioContext || window.webkitAudioContext ? '✅ 是' : '❌ 否'));
-        this.log('SpeechSynthesis 支持: ' + (window.speechSynthesis ? '✅ 是' : '❌ 否'));
-        
-        if (!this.speechSynth && this.soundMode === 'voice') {
-            this.soundMode = 'uniform';
-        }
-        
-        this.initSpeech();
-        this.log('调用 bindEvents...');
-        this.bindEvents();
-        this.log('更新节拍...');
-        this.updateBeats();
-        this.updateStatus();
-        
-        if (!this.speechSynth) {
-            this.log('不支持语音，隐藏童音模式卡片');
-            const voiceCard = document.getElementById('voice-mode-card');
-            if (voiceCard) {
-                voiceCard.style.display = 'none';
-                this.log('✅ 已隐藏童音卡片');
-            } else {
-                this.log('❌ 找不到voice-mode-card');
-            }
-            const grid = document.getElementById('sound-mode-grid');
-            if (grid) {
-                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-                this.log('✅ 网格已改为两列');
-            }
-        } else {
-            const self = this;
-            setTimeout(() => {
-                const testUtterance = new SpeechSynthesisUtterance('1');
-                testUtterance.onerror = () => {
-                    self.log('语音测试失败，自动隐藏童音模式');
-                    const voiceCard = document.getElementById('voice-mode-card');
-                    if (voiceCard) {
-                        voiceCard.style.display = 'none';
-                        const grid = document.getElementById('sound-mode-grid');
-                        if (grid) {
-                            grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-                        }
-                        self.setSoundMode('uniform');
-                    }
-                };
-                if (self.speechSynth) {
-                    self.speechSynth.speak(testUtterance);
-                    setTimeout(() => self.speechSynth.cancel(), 1000);
-                }
-            }, 500);
-        }
-        
-        this.log('✅ 初始化完成');
-    }
-    
-    log(msg) {
-        const logDiv = document.getElementById('debug-log');
-        if (!logDiv) return;
-        const line = document.createElement('div');
-        line.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
-        logDiv.appendChild(line);
-        logDiv.scrollTop = logDiv.scrollHeight;
-    }
-    
-    initAudio() {
-        if (this.audioInitialized || !window.AudioContext && !window.webkitAudioContext) return;
-        
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.audioContext = new AudioContext();
-        
-        this.sounds.strong = this.createOscillator(880, 0.15);
-        this.sounds.weak = this.createOscillator(440, 0.12);
-        this.sounds.uniform = this.createOscillator(660, 0.13);
-        this.audioInitialized = true;
-    }
-    
-    initSpeech() {
-        if (!this.speechSynth) {
-            this.log('语音合成不支持，跳过初始化');
-            return;
-        }
-        const voices = this.speechSynth.getVoices();
-        this.voice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.lang.startsWith('zh')) || voices[0];
-        
-        this.log('初始语音数量: ' + voices.length + ', 选中: ' + (this.voice ? this.voice.name : 'none'));
-        
-        if (voices.length === 0) {
-            const self = this;
-            speechSynthesis.onvoiceschanged = function() {
-                const newVoices = self.speechSynth.getVoices();
-                self.log('voiceschanged 事件触发，语音数量: ' + newVoices.length);
-                self.voice = newVoices.find(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.lang.startsWith('zh')) || newVoices[0];
-            };
-        }
-    }
-    
-    createOscillator(frequency, duration) {
-        return () => {
-            if (!this.audioContext) return;
-            if (this.audioContext.state === 'suspended') {
-                this.audioContext.resume();
-            }
-            
-            const oscillator = this.audioContext.createOscillator();
-            const gainNode = this.audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(this.audioContext.destination);
-            
-            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-            
-            oscillator.start(this.audioContext.currentTime);
-            oscillator.stop(this.audioContext.currentTime + duration);
-        };
-    }
-    
-    speakBeat(number) {
-        if (!this.speechSynth || this.soundMode !== 'voice') return;
-        
-        const utterance = new SpeechSynthesisUtterance(number.toString());
-        if (this.voice && this.voice.name) {
-            utterance.voice = this.voice;
-        }
-        
-        let rate = 0.8 + (this.bpm / 100);
-        if (rate < 0.8) rate = 0.8;
-        if (rate > 2.5) rate = 2.5;
-        utterance.rate = rate;
-        utterance.pitch = 1.5;
-        utterance.volume = 1;
-        
-        utterance.onerror = (event) => {
-            this.log('语音错误: ' + event.error + ', 数字: ' + number);
-        };
-        utterance.onend = () => {
-            this.log('语音播放完成: ' + number);
-        };
-        utterance.onstart = () => {
-            this.log('语音开始播放: ' + number);
-        };
-        
-        if (this.speechSynth.paused) {
-            this.speechSynth.resume();
-        }
-        
-        this.speechSynth.speak(utterance);
-    }
-    
-    setSoundMode(mode) {
-        this.currentBeat = 0;
-        
-        if (mode === 'voice' && !this.speechSynth) {
-            alert('当前浏览器不支持语音合成，无法使用童音数字模式');
-            return;
-        }
-        
-        this.soundMode = mode;
-        
-        if (mode === 'voice' && this.speechSynth) {
-            this.initSpeech();
-            if (this.speechSynth.paused) {
-                this.speechSynth.resume();
-            }
-        }
-        
-        document.querySelectorAll('.sound-mode-card').forEach(card => {
-            card.classList.remove('active');
-            if (card.dataset.mode === mode) {
-                card.classList.add('active');
-            }
-        });
-        
-        this.updateBeats();
-        this.updateStatus();
-        
-        if (this.isRunning) {
-            this.stop();
-            this.start();
-        }
-    }
-    
-    updateBeats() {
-        const container = document.getElementById('beats-container');
-        container.innerHTML = '';
-        
-        for (let i = 0; i < this.beatCount; i++) {
-            const beatEl = document.createElement('div');
-            beatEl.className = 'beat-circle';
-            beatEl.dataset.beat = i;
-            
-            if (this.soundMode === 'traditional' && i === 0) {
-                beatEl.classList.add('strong');
-            } else if (this.soundMode === 'uniform') {
-                beatEl.classList.add('uniform');
-            } else if (this.soundMode === 'voice') {
-                beatEl.classList.add('voice');
-            }
-            
-            beatEl.textContent = i + 1;
-            
-            beatEl.addEventListener('click', () => {
-                if (this.isRunning) {
-                    this.currentBeat = i;
-                }
-            });
-            
-            container.appendChild(beatEl);
-        }
-    }
-    
-    updateStatus() {
-        const modeNames = {
-            'traditional': '传统重音模式',
-            'uniform': '均匀节拍模式',
-            'voice': '童音数字模式'
-        };
-        
-        if (this.isRunning) {
-            document.getElementById('status-text').textContent = 
-                `${modeNames[this.soundMode]} - 运行中 ${this.bpm} BPM`;
-        } else {
-            document.getElementById('status-text').textContent = 
-                `${modeNames[this.soundMode]} - 就绪，点击开始`;
-        }
-    }
-    
-    setBpm(bpm) {
-        this.bpm = Math.max(40, Math.min(208, bpm));
-        document.getElementById('bpm-display').textContent = this.bpm;
-        document.getElementById('bpm-slider').value = this.bpm;
-        
-        if (this.isRunning) {
-            this.stop();
-            this.start();
-        }
-        this.updateStatus();
-    }
-    
-    setTimeSignature(signature) {
-        this.timeSignature = signature;
-        const [beats] = signature.split('/').map(Number);
-        this.beatCount = beats;
-        this.currentBeat = 0;
-        
-        this.updateBeats();
-        
-        document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.signature === signature) {
-                btn.classList.add('active');
-            }
-        });
-        
-        this.updateStatus();
-    }
-    
-    playBeat(currentBeat) {
-        if (this.soundMode === 'traditional') {
-            if (currentBeat === 0) {
-                this.sounds.strong();
-            } else {
-                this.sounds.weak();
-            }
-        } else if (this.soundMode === 'uniform') {
-            this.sounds.uniform();
-        } else if (this.soundMode === 'voice') {
-            this.speakBeat(currentBeat + 1);
-        }
-    }
-    
-    start() {
-        if (this.isRunning) return;
-        
-        if (!this.audioInitialized) {
-            this.initAudio();
-            this.audioInitialized = true;
-        }
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
-        }
-        
-        if (this.speechSynth && this.soundMode === 'voice') {
-            this.speechSynth.cancel();
-            this.speechSynth.resume();
-        }
-        
-        this.isRunning = true;
-        const btn = document.getElementById('start-stop-btn');
-        btn.innerHTML = '⏸️ 暂停';
-        btn.classList.remove('from-green-500', 'to-teal-50');
-        btn.classList.add('from-yellow-500', 'to-orange-500');
-        
-        const interval = 60000 / this.bpm;
-        this.intervalId = setInterval(() => this.tick(), interval);
-        setTimeout(() => this.tick(), 50);
-        this.updateStatus();
-    }
-    
-    stop() {
-        if (!this.isRunning) return;
-        
-        this.isRunning = false;
-        clearInterval(this.intervalId);
-        if (this.speechSynth) {
-            this.speechSynth.cancel();
-        }
-        
-        const btn = document.getElementById('start-stop-btn');
-        btn.innerHTML = '▶️ 开始';
-        btn.classList.remove('from-yellow-500', 'to-orange-500');
-        btn.classList.add('from-green-500', 'to-teal-500');
-        
-        document.querySelectorAll('.beat-circle').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        this.updateStatus();
-    }
-    
-    tick() {
-        document.querySelectorAll('.beat-circle').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        const beatElement = document.querySelector(`[data-beat="${this.currentBeat}"]`);
-        if (beatElement) {
-            beatElement.classList.add('active');
-        }
-        
-        this.playBeat(this.currentBeat);
-        
-        this.currentBeat = (this.currentBeat + 1) % this.beatCount;
-    }
-    
-    reset() {
-        if (this.speechSynth) {
-            this.speechSynth.cancel();
-        }
-        this.stop();
-        this.currentBeat = 0;
-        this.setBpm(120);
-        this.setTimeSignature('4/4');
-        this.setSoundMode('uniform');
-        document.getElementById('custom-beats').value = 4;
-        document.getElementById('custom-unit').value = 4;
-    }
-    
-    testSound() {
-        if (!this.audioInitialized) {
-            this.initAudio();
-            this.audioInitialized = true;
-        }
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
-        }
-        
-        if (this.soundMode === 'traditional') {
-            this.sounds.strong();
-            setTimeout(() => this.sounds.weak(), 300);
-            setTimeout(() => this.sounds.weak(), 600);
-            setTimeout(() => this.sounds.weak(), 900);
-        } else if (this.soundMode === 'uniform') {
-            for (let i = 0; i < 4; i++) {
-                setTimeout(() => this.sounds.uniform(), i * 300);
-            }
-        } else if (this.soundMode === 'voice') {
-            for (let i = 0; i < Math.min(4, this.beatCount); i++) {
-                setTimeout(() => this.speakBeat(i + 1), i * 800);
-            }
-        }
-    }
-    
-    bindEvents() {
-        const self = this;
-        
-        document.getElementById('bpm-slider').oninput = function(e) {
-            self.log('bpm-slider input: ' + e.target.value);
-            self.setBpm(parseInt(e.target.value));
-        };
-        document.getElementById('bpm-slider').onchange = function(e) {
-            self.log('bpm-slider change: ' + e.target.value);
-            self.setBpm(parseInt(e.target.value));
-        };
-        
-        document.getElementById('bpm-increase').onclick = function() {
-            self.log('点击: bpm-increase');
-            self.setBpm(self.bpm + 1);
-        };
-        document.getElementById('bpm-decrease').onclick = function() {
-            self.log('点击: bpm-decrease');
-            self.setBpm(self.bpm - 1);
-        };
-        
-        document.getElementById('start-stop-btn').onclick = function() {
-            self.log('点击: start-stop-btn, 当前状态: ' + (self.isRunning ? '运行中' : '已停止'));
-            if (!self.audioInitialized) {
-                self.log('初始化音频...');
-                self.initAudio();
-                self.audioInitialized = true;
-            }
-            if (self.audioContext && self.audioContext.state === 'suspended') {
-                self.log('恢复音频上下文');
-                self.audioContext.resume();
-            }
-            
-            if (self.isRunning) {
-                self.stop();
-            } else {
-                self.start();
-            }
-        };
-        
-        document.getElementById('reset-btn').onclick = function() {
-            self.log('点击: reset-btn');
-            self.reset();
-        };
-        
-        document.getElementById('test-sound-btn').onclick = function() {
-            self.log('点击: test-sound-btn');
-            if (!self.audioInitialized) {
-                self.log('初始化音频...');
-                self.initAudio();
-                self.audioInitialized = true;
-            }
-            if (self.audioContext && self.audioContext.state === 'suspended') {
-                self.audioContext.resume();
-            }
-            self.testSound();
-        };
-        
-        document.querySelectorAll('.sound-mode-card').forEach(function(card, index) {
-            card.onclick = function() {
-                self.log('点击: 音效模式 ' + card.dataset.mode);
-                self.setSoundMode(card.dataset.mode);
-            };
-        });
-        
-        document.querySelectorAll('.time-btn').forEach(function(btn) {
-            btn.onclick = function() {
-                self.log('点击: 节拍类型 ' + btn.dataset.signature);
-                self.setTimeSignature(btn.dataset.signature);
-            };
-        });
-        
-        document.getElementById('apply-custom').onclick = function() {
-            self.log('点击: 应用自定义节拍');
-            const beats = parseInt(document.getElementById('custom-beats').value);
-            
-            if (isNaN(beats) || beats < 1 || beats > 16) {
-                alert('请输入有效的节拍数 (1-16)');
-                return;
-            }
-            
-            self.setTimeSignature(`${beats}/4`);
-        };
-        
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = function() {
-                self.log('语音列表加载完成');
-                self.initSpeech();
-            };
-        }
-        
-        const applyBtn = document.getElementById('apply-custom');
-        let longPressTimer = null;
-        if (applyBtn) {
-            applyBtn.addEventListener('touchstart', function() {
-                longPressTimer = setTimeout(() => {
-                    if (!self.debugVisible) {
-                        document.getElementById('debug-area').style.display = 'block';
-                        self.debugVisible = true;
-                        self.log('调试区域已打开（长按应用设置触发');
-                    }
-                }, 500);
-            });
-            applyBtn.addEventListener('touchend', function() {
-                clearTimeout(longPressTimer);
-            });
-            applyBtn.addEventListener('touchcancel', function() {
-                clearTimeout(longPressTimer);
-            });
-        }
-        
-        this.log('✓ 所有事件绑定完成');
-    }
-}
-
-window.metronome = new SmartMetronome();
+var log=function(){var m=Array.prototype.slice.call(arguments).join(" ");console.log(m);var d=document.getElementById("debug-log");if(d){d.textContent+=m+"\n";d.scrollTop=d.scrollHeight;}};
+var s={bpm:120,bc:4,bu:4,r:false,cb:0,sm:"uniform",ac:null,sn:null,ss:window.speechSynthesis};
+log("页面加载完成");
+document.getElementById("settings-toggle").onclick=function(){this.classList.toggle("open");document.getElementById("settings-panel").classList.toggle("open");};
+document.getElementById("play-btn").onclick=function(){s.r?stop():start();};
+document.getElementById("bpm-minus").onclick=function(){setBpm(s.bpm-1);};
+document.getElementById("bpm-plus").onclick=function(){setBpm(s.bpm+1);};
+document.getElementById("bpm-slider").oninput=function(e){setBpm(parseInt(e.target.value));};
+document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);};});
+document.querySelectorAll(".time-btn").forEach(function(el){el.onclick=function(){setTS(el.dataset.sig);};});
+document.getElementById("apply-btn").onclick=function(){var b=parseInt(document.getElementById("custom-beats").value)||4;var u=parseInt(document.getElementById("custom-unit").value)||4;setTS(b+"/"+u);};
+function setBpm(b){s.bpm=Math.max(40,Math.min(208,b));document.getElementById("bpm-display").textContent=s.bpm;document.getElementById("bpm-slider").value=s.bpm;if(s.r){stop();start();}}
+function initAudio(){if(s.ac)return;try{s.ac=new(window.AudioContext||window.webkitAudioContext)();s.sn={s:makeOsc(880,0.15),w:makeOsc(440,0.12),u:makeOsc(660,0.13)};}catch(e){}}
+function makeOsc(f,d){return function(){if(!s.ac||s.ac.state==="suspended")return;var o=s.ac.createOscillator();var g=s.ac.createGain();o.connect(g);g.connect(s.ac.destination);o.frequency.value=f;o.type="sine";g.gain.value=0.5;g.gain.exponentialRampToValueAtTime(0.01,s.ac.currentTime+d);o.start();o.stop(s.ac.currentTime+d);};}
+function speak(n){if(!s.ss||s.sm!=="voice")return;var u=new SpeechSynthesisUtterance(n.toString());u.rate=Math.min(2.5,Math.max(0.8,0.8+s.bpm/100));u.pitch=1.5;s.ss.speak(u);}
+function setMode(mode){s.sm=mode;s.cb=0;document.querySelectorAll(".mode-btn").forEach(function(e){e.classList.toggle("active",e.dataset.mode===mode);});updateBeats();if(s.r){stop();start();}}
+function setTS(sig){var a=sig.split("/");s.bc=parseInt(a[0]);s.bu=parseInt(a[1]);s.cb=0;document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===sig);});updateBeats();}
+function updateBeats(){var c=document.getElementById("beats-container");c.innerHTML="";for(var i=0;i<s.bc;i++){var e=document.createElement("div");var cls="beat";if(s.sm==="traditional"&&i===0)cls+=" strong";else cls+=" "+s.sm;e.className=cls;e.textContent=i+1;e.dataset.beat=i;c.appendChild(e);}}
+function playBeat(b){if(s.sm==="traditional"){b===0?s.sn.s():s.sn.w();}else if(s.sm==="uniform"){s.sn.u();}else if(s.sm==="voice"){speak(b+1);}}
+function start(){if(s.r)return;initAudio();if(s.ac&&s.ac.state==="suspended")s.ac.resume();s.r=true;var btn=document.getElementById("play-btn");btn.innerHTML="⏸";btn.classList.add("running");s.iId=setInterval(tick,60000/s.bpm);setTimeout(tick,50);}
+function stop(){if(!s.r)return;s.r=false;clearInterval(s.iId);var btn=document.getElementById("play-btn");btn.innerHTML="▶";btn.classList.remove("running");document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});}
+function tick(){document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});var el=document.querySelector("[data-beat='"+s.cb+"']");if(el)el.classList.add("pop");playBeat(s.cb);s.cb=(s.cb+1)%s.bc;}
+updateBeats();
 </script>
 </body>
 </html>
