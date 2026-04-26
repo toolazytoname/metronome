@@ -31,7 +31,7 @@
         .control{padding:10px 25px 25px;display:flex;justify-content:center;background:#fff}
         .play-btn{width:80px;height:80px;border-radius:50%;border:none;font-size:36px;cursor:pointer;background:#55efc4;color:#fff;box-shadow:0 8px 25px rgba(0,184,148,0.4)}
         .play-btn.running{background:#ff6b6b;box-shadow:0 8px 25px rgba(255,107,107,0.4)}
-        .settings{background:linear-gradient(135deg,#fff8f5,#fffaf8);border-radius:24px;margin:8px 0 0;overflow:hidden;box-shadow:0 2px 12px rgba(252,147,127,0.08)}
+        .settings{background:linear-gradient(135deg,#fff8f5,#fffaf8);border-radius:24px;margin:8px 0;overflow:hidden;box-shadow:0 2px 12px rgba(252,147,127,0.08)}
         .toggle{width:100%;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#ff9a9e;background:transparent;transition:background .2s}
         .toggle:hover{background:rgba(255,154,158,0.08)}
         .toggle-arrow{font-size:11px;background:rgba(255,154,158,0.12);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:transform .3s}
@@ -113,6 +113,39 @@
         
     </div>
 <script>
+// ─── 统计配置 ───
+// 友盟统计 ID（注册后填入：https://tongji.umeng.com/）
+var UMENG_ID = ''; // 如: '1234567890'
+// Google Analytics 4 衡量 ID（注册后填入：https://analytics.google.com/）
+var GA4_ID = '';   // 如: 'G-ABC123XYZ'
+
+// ─── 统计核心函数 ───
+var _hmt = _hmt || [];
+function track(event, data) {
+  data = data || {};
+  data.site = '小兔头节拍器';
+  // 友盟
+  if (UMENG_ID) {
+    _hmt.push(['_trackEvent', event, JSON.stringify(data)]);
+  }
+  // GA4
+  if (GA4_ID && window.gtag) {
+    gtag('event', event, data);
+  }
+  log('[统计]', event, data);
+}
+</script>
+<!-- 友盟统计 SDK（UMENG_ID 填入后取消注释） -->
+<!--
+<script>(function(){var hm=document.createElement("script");hm.src="https://hm.baidu.com/hm.js?"+UMENG_ID;var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(hm,s);})();
+</script>
+-->
+<!-- GA4（GA4_ID 填入后取消注释） -->
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA4_ID"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',GA4_ID);</script>
+-->
+<script>
 var log=function(){var m=Array.prototype.join.call(arguments," ");console.log(m);var d=document.getElementById("debug-log");if(d){d.textContent+=m+"\n";d.scrollTop=d.scrollHeight;}};
 var s={bpm:120,bc:4,bu:4,r:false,cb:0,sm:"uniform",ac:null,sn:null,ss:window.speechSynthesis};
 var cfg=JSON.parse(localStorage.getItem("metronome")||"{}");
@@ -126,13 +159,13 @@ document.getElementById("custom-unit").value=s.bu;
 document.querySelectorAll(".mode-btn").forEach(function(e){e.classList.toggle("active",e.dataset.mode===s.sm);});
 document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===s.bc+"/"+s.bu);});
 log("加载配置 BPM="+s.bpm+" bc="+s.bc+" sm="+s.sm);
-document.getElementById("settings-toggle").onclick=function(){this.classList.toggle("open");document.getElementById("settings-panel").classList.toggle("open");};
-document.getElementById("play-btn").onclick=function(){s.r?stop():start();};
+document.getElementById("settings-toggle").onclick=function(){var o=this.classList.contains("open");this.classList.toggle("open");document.getElementById("settings-panel").classList.toggle("open");track("settings_panel",{action:o?"close":"open"});};
+document.getElementById("play-btn").onclick=function(){s.r?stop():start();track("play",{action:s.r?"stop":"start",bpm:s.bpm,beats:s.bc+"/"+s.bu});};
 document.getElementById("bpm-minus").onclick=function(){setBpm(s.bpm-1);};
 document.getElementById("bpm-plus").onclick=function(){setBpm(s.bpm+1);};
 document.getElementById("bpm-slider").oninput=function(e){setBpm(parseInt(e.target.value));};
-document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);};});
-document.querySelectorAll(".time-btn").forEach(function(el){el.onclick=function(){setTS(el.dataset.sig);};});
+document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);track("sound_mode",{mode:el.dataset.mode});};});
+document.querySelectorAll(".time-btn").forEach(function(el){el.onclick=function(){setTS(el.dataset.sig);track("time_sig",{sig:el.dataset.sig});};});
 var applyBtn=document.getElementById("apply-btn");
 applyBtn.addEventListener("contextmenu",function(e){e.preventDefault();document.getElementById("debug-log").classList.toggle("show");});
 var applyTimer=null;
@@ -142,9 +175,9 @@ applyBtn.addEventListener("touchmove",function(){if(applyTimer){clearTimeout(app
 applyBtn.addEventListener("mousedown",function(e){applyTimer=setTimeout(function(){document.getElementById("debug-log").classList.add("show");},2000);});
 applyBtn.addEventListener("mouseup",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
 applyBtn.addEventListener("mouseleave",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
-document.getElementById("apply-btn").onclick=function(){var b=parseInt(document.getElementById("custom-beats").value)||4;var u=parseInt(document.getElementById("custom-unit").value)||4;setTS(b+"/"+u);};
+document.getElementById("apply-btn").onclick=function(){var b=parseInt(document.getElementById("custom-beats").value)||4;var u=parseInt(document.getElementById("custom-unit").value)||4;setTS(b+"/"+u);track("time_sig_custom",{sig:b+"/"+u});};
 function save(){localStorage.setItem("metronome",JSON.stringify({bpm:s.bpm,bc:s.bc,bu:s.bu,sm:s.sm}));}
-function setBpm(b){s.bpm=Math.max(40,Math.min(208,b));document.getElementById("bpm-display").textContent=s.bpm;document.getElementById("bpm-slider").value=s.bpm;if(s.r){stop();start();}save();}
+function setBpm(b){var old=s.bpm;s.bpm=Math.max(40,Math.min(208,b));document.getElementById("bpm-display").textContent=s.bpm;document.getElementById("bpm-slider").value=s.bpm;if(s.r){stop();start();}save();if(old!==s.bpm)track("bpm_change",{from:old,to:s.bpm});}
 function initAudio(){if(s.ac)return;try{s.ac=new(window.AudioContext||window.webkitAudioContext)();s.sn={s:makeOsc(880,0.15),w:makeOsc(440,0.12),u:makeOsc(660,0.13)};}catch(e){}}
 function makeOsc(f,d){return function(){if(!s.ac||s.ac.state==="suspended")return;var o=s.ac.createOscillator();var g=s.ac.createGain();o.connect(g);g.connect(s.ac.destination);o.frequency.value=f;o.type="sine";g.gain.value=0.5;g.gain.exponentialRampToValueAtTime(0.01,s.ac.currentTime+d);o.start();o.stop(s.ac.currentTime+d);};}
 function speak(n){if(!s.ss||s.sm!=="voice")return;var u=new SpeechSynthesisUtterance(n.toString());u.rate=Math.min(2.5,Math.max(0.8,0.8+s.bpm/100));u.pitch=1.5;s.ss.speak(u);}
