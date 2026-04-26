@@ -31,13 +31,14 @@
         .control{padding:10px 25px 25px;display:flex;justify-content:center;background:#fff}
         .play-btn{width:80px;height:80px;border-radius:50%;border:none;font-size:36px;cursor:pointer;background:#55efc4;color:#fff;box-shadow:0 8px 25px rgba(0,184,148,0.4)}
         .play-btn.running{background:#ff6b6b;box-shadow:0 8px 25px rgba(255,107,107,0.4)}
-        .settings{background:#fffaf8;border-radius:24px;margin:8px 0}
-        .toggle{width:100%;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#ff9a9e}
-        .toggle-arrow{font-size:12px}
+        .settings{background:linear-gradient(135deg,#fff8f5,#fffaf8);border-radius:24px;margin:8px 0;overflow:hidden;box-shadow:0 2px 12px rgba(252,147,127,0.08)}
+        .toggle{width:100%;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#ff9a9e;background:transparent;transition:background .2s}
+        .toggle:hover{background:rgba(255,154,158,0.08)}
+        .toggle-arrow{font-size:11px;background:rgba(255,154,158,0.12);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:transform .3s}
         .toggle.open .toggle-arrow{transform:rotate(180deg)}
-        .panel{max-height:0;overflow:hidden;transition:max-height .3s}
+        .panel{max-height:0;overflow:hidden;transition:max-height .35s ease}
         .panel.open{max-height:450px}
-        .panel-inner{padding:15px 20px 20px}
+        .panel-inner{padding:15px 20px 20px;border-top:1px solid rgba(252,147,127,0.1)}
         .section-title{font-size:11px;font-weight:700;color:#b2bec3;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
         .mode-row{display:flex;gap:8px;margin-bottom:15px}
         .mode-btn{flex:1;padding:10px 6px;border-radius:12px;background:#f8f9fa;border:2px solid transparent;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#666}
