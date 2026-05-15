@@ -23,11 +23,9 @@ class AudioManager {
     if (this._inited) return;
     this._inited = true;
 
-    // 优先使用本地打包音频（assets/sounds/）
-    // 将 sounds/ 目录复制到 assets/sounds/ 后取消下面注释
-    // const base = '../assets/sounds';
-    // 生产环境用 GitHub CDN（不占包体积）
-    const base = 'https://raw.githubusercontent.com/toolazytoname/metronome-miniapp/master/sounds';
+    // 音频路径：本地打包（assets/sounds/ 目录）
+    // 相对路径从 pages/index/ 出发，往上两级到 miniapp/ 根目录
+    const base = '../../assets/sounds';
 
     const files = {
       strong: 'beat-strong.mp3',
@@ -45,9 +43,13 @@ class AudioManager {
       ctx.volume = 0.8;
       ctx.autoplay = false;
       ctx.loop = false;
+      // 错误处理：防止单个音频失败影响整体
+      ctx.onError((err) => {
+        console.warn(`[Audio] ${key} error:`, err);
+      });
       this._pool[key] = ctx;
     }
-    console.log('[Audio] Initialized');
+    console.log('[Audio] Initialized, base:', base);
   }
 
   play(key) {
@@ -106,6 +108,19 @@ Page({
     this._loadState();
     this._updateBeats();
     console.log('[Metronome] Page loaded, bpm:', this.data.bpm);
+  },
+
+  onShow() {
+    // 从后台切回来：如果之前在播放，继续（用户期望）
+    // 注意：小程序切后台 audio 会被暂停，这里不自动恢复
+  },
+
+  onHide() {
+    // 切后台自动停止（平台限制，音频本就不能在后台播放）
+    if (this.data.running) {
+      this._stop();
+    }
+    console.log('[Metronome] Page hidden, stopped');
   },
 
   onUnload() {
