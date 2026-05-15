@@ -104,7 +104,6 @@ Page({
   // 生命周期
   // ========================================================
   onLoad() {
-    audioManager.init();
     this._loadState();
     this._updateBeats();
     console.log('[Metronome] Page loaded, bpm:', this.data.bpm);
@@ -211,6 +210,11 @@ Page({
     this._setBpm(parseInt(e.detail.value));
   },
 
+  onBpmChanging(e) {
+    // 实时跟随滑块拖动（松开时才保存状态）
+    this.setData({ bpm: parseInt(e.detail.value) });
+  },
+
   onModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
     const prev = this.data.soundMode;
@@ -295,6 +299,8 @@ Page({
   // 播放 / 停止
   // ========================================================
   _start() {
+    // 首次启动时初始化音频（必须在用户点击后调用，避免被系统拦截）
+    audioManager.init();
     this._currentBeat = 0;
     this._startTick();
     this.setData({ running: true });

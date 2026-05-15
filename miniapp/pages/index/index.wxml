@@ -31,6 +31,7 @@
         max="208"
         value="{{bpm}}"
         bindchange="onBpmChange"
+        bindchanging="onBpmChanging"
         backgroundColor="#e0e0e0"
         selected-color="#ff9a9e"
         block-size="26"
