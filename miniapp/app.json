@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "小兔头节拍器",
+    "navigationBarBackgroundColor": "#ffecd2",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fcb69f"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

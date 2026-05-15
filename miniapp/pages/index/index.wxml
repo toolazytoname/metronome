@@ -1,0 +1,129 @@
+<view class="container">
+  <!-- 顶部：兔兔图标 + 标题 -->
+  <view class="header">
+    <text class="bunny">🐰</text>
+    <text class="title">小兔头节拍器</text>
+  </view>
+
+  <!-- 节拍指示器 -->
+  <view class="beats-section">
+    <view
+      wx:for="{{beats}}"
+      wx:key="index"
+      class="beat {{item.className}} {{item.active ? 'pop' : ''}}"
+    >{{item.num}}</view>
+  </view>
+
+  <!-- BPM 显示 -->
+  <view class="bpm-section">
+    <view class="bpm-display">
+      <text class="bpm-val">{{bpm}}</text>
+      <text class="bpm-unit">BPM</text>
+    </view>
+  </view>
+
+  <!-- BPM 滑块 -->
+  <view class="slider-wrap">
+    <view class="slider-row">
+      <button class="bpm-btn sm" bindtap="onBpmMinus">−</button>
+      <slider
+        min="40"
+        max="208"
+        value="{{bpm}}"
+        bindchange="onBpmChange"
+        backgroundColor="#e0e0e0"
+        selected-color="#ff9a9e"
+        block-size="26"
+      />
+      <button class="bpm-btn sm" bindtap="onBpmPlus">+</button>
+    </view>
+  </view>
+
+  <!-- 播放按钮 -->
+  <view class="control">
+    <button class="play-btn {{running ? 'running' : ''}}" bindtap="onPlay">
+      {{running ? '⏸' : '▶'}}
+    </button>
+  </view>
+
+  <!-- 设置面板 -->
+  <view class="settings">
+    <button class="toggle {{settingsOpen ? 'open' : ''}}" bindtap="onToggleSettings">
+      <text>设置</text>
+      <text class="toggle-arrow">▼</text>
+    </button>
+    <view class="panel {{settingsOpen ? 'open' : ''}}">
+      <view class="panel-inner">
+
+        <!-- 音效模式 -->
+        <view class="section-title">音效模式</view>
+        <view class="mode-row">
+          <view
+            class="mode-btn {{soundMode === 'traditional' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="traditional"
+          >
+            <text class="mode-icon">🥁</text>
+            <text>传统</text>
+          </view>
+          <view
+            class="mode-btn {{soundMode === 'uniform' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="uniform"
+          >
+            <text class="mode-icon">🎵</text>
+            <text>均匀</text>
+          </view>
+          <view
+            class="mode-btn {{soundMode === 'voice' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="voice"
+          >
+            <text class="mode-icon">🗣️</text>
+            <text>童音</text>
+          </view>
+        </view>
+
+        <!-- 节拍预设 -->
+        <view class="section-title">节拍</view>
+        <view class="time-grid">
+          <view
+            wx:for="{{timeSigs}}"
+            wx:key="sig"
+            class="time-btn {{currentSig === item.sig ? 'active' : ''}}"
+            bindtap="onTimeSigChange"
+            data-sig="{{item.sig}}"
+          >
+            {{item.sig}}
+            <text class="time-label">{{item.label}}</text>
+          </view>
+        </view>
+
+        <!-- 自定义节拍 -->
+        <view class="section-title">自定义</view>
+        <view class="custom-row">
+          <input
+            type="number"
+            class="custom-input"
+            value="{{customBeats}}"
+            bindinput="onCustomBeatsInput"
+            min="1"
+            max="16"
+          />
+          <text class="custom-sep">/</text>
+          <input
+            type="number"
+            class="custom-input"
+            value="{{customUnit}}"
+            bindinput="onCustomUnitInput"
+            min="1"
+            max="16"
+          />
+          <button class="apply-btn" bindtap="onApplyCustom">应用</button>
+        </view>
+
+      </view>
+    </view>
+  </view>
+
+</view>
