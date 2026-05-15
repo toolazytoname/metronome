@@ -2,6 +2,12 @@
   "rewrites": [
     { "source": "/", "destination": "/metronome-v4.html" }
   ],
+  "ignore": [
+    "git", "node_modules", "README.md", "vercel.json",
+    "metronome-v4.html", "metronome-v4.js", "metronome-v4.css",
+    "index-original.html", "app.json", "app.js", "app.wxss",
+    "project.config.json", "sitemap.json"
+  ],
   "headers": [
     {
       "source": "/(.*)",
