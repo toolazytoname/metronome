@@ -170,7 +170,9 @@ Page({
         const bpm = saved.bpm || DEFAULT_STATE.bpm;
         const bc = saved.bc || DEFAULT_STATE.bc;
         const bu = saved.bu || DEFAULT_STATE.bu;
-        const sm = saved.sm || DEFAULT_STATE.sm;
+        const sm = (saved.sm === 'traditional' || saved.sm === 'uniform')
+          ? saved.sm  // voice mode hidden, fallback to uniform
+          : DEFAULT_STATE.sm;
         const sig = `${bc}/${bu}`;
         this.setData({
           bpm,
@@ -250,6 +252,8 @@ Page({
 
   onModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
+    // voice mode permanently hidden (synthesized sounds not natural)
+    if (mode === 'voice') return;
     const prev = this.data.soundMode;
     this.setData({ soundMode: mode });
     this._updateBeats();
