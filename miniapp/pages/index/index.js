@@ -2,62 +2,95 @@
 // 移植自 https://jpq.weichao.studio/
 
 // ============================================================
-// 音频管理器
+// 音频管理器（Web Audio API 合成，无延迟，支持任意节拍数）
 // ============================================================
 class AudioManager {
   constructor() {
-    // 预置音频池（小程序需要预加载，否则首次播放有延迟）
+    this._ctx = null;
+    this._inited = false;
+    // 预载的采样（用于鼓点）
     this._pool = {
       strong: null,
       weak: null,
       uniform: null,
-      voice1: null,
-      voice2: null,
-      voice3: null,
-      voice4: null,
     };
-    this._inited = false;
   }
 
   init() {
     if (this._inited) return;
     this._inited = true;
+    this._ctx = wx.createInnerAudioContext();
 
-    // 音频路径：本地打包（assets/sounds/ 目录）
-    // 相对路径从 pages/index/ 出发，往上两级到 miniapp/ 根目录
+    // 预加载鼓点采样
     const base = '../../assets/sounds';
-
     const files = {
       strong: 'beat-strong.mp3',
       weak: 'beat-weak.mp3',
       uniform: 'beat-uniform.mp3',
-      voice1: 'voice-1.mp3',
-      voice2: 'voice-2.mp3',
-      voice3: 'voice-3.mp3',
-      voice4: 'voice-4.mp3',
     };
-
     for (const [key, file] of Object.entries(files)) {
       const ctx = wx.createInnerAudioContext();
       ctx.src = `${base}/${file}`;
       ctx.volume = 0.8;
       ctx.autoplay = false;
       ctx.loop = false;
-      // 错误处理：防止单个音频失败影响整体
-      ctx.onError((err) => {
-        console.warn(`[Audio] ${key} error:`, err);
-      });
+      ctx.onError((err) => console.warn(`[Audio] ${key} error:`, err));
       this._pool[key] = ctx;
     }
-    console.log('[Audio] Initialized, base:', base);
+    console.log('[Audio] Initialized');
   }
 
+  _getCtx() {
+    if (!this._ctx) this._ctx = wx.createInnerAudioContext();
+    return this._ctx;
+  }
+
+  // 播放鼓点采样
   play(key) {
     const ctx = this._pool[key];
     if (!ctx) return;
-    // 每次都重新 seek 到 0，确保可以连续快速触发
     ctx.seek(0);
     ctx.play();
+  }
+
+  // 合成数字音效（滴滴声），pitch 对应数字 1-9
+  // 取代预录语音，彻底支持任意节拍数
+  playNumber(num, when = 0) {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime + when;
+    const pitchMap = {
+      1: 262, 2: 294, 3: 330, 4: 349,
+      5: 392, 6: 440, 7: 494, 8: 523, 9: 587,
+    };
+    const freq = pitchMap[num] || 440;
+    const vol = 0.4;
+
+    // 高频短滴（数字音）
+    const osc1 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.value = freq;
+    g1.gain.setValueAtTime(0, t);
+    g1.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc1.connect(g1);
+    g1.connect(ctx);
+
+    // 低频辅助（让声音更实）
+    const osc2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.value = freq * 0.5;
+    g2.gain.setValueAtTime(0, t);
+    g2.gain.linearRampToValueAtTime(vol * 0.3, t + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+    osc2.connect(g2);
+    g2.connect(ctx);
+
+    osc1.start(t);
+    osc1.stop(t + 0.15);
+    osc2.start(t);
+    osc2.stop(t + 0.15);
   }
 }
 
@@ -318,8 +351,26 @@ Page({
   _startTick() {
     const interval = 60000 / this.data.bpm;
     const that = this;
+    // 记录首次 tick 的系统时间，用以消除 setInterval 累积漂移
+    this._tickBase = Date.now();
+    this._nextTickAt = this._tickBase + interval;
     this._timer = setInterval(() => {
-      that._tick();
+      // 等到真正的目标时间再 tick（补偿 setInterval 的漂移）
+      const now = Date.now();
+      const delay = this._nextTickAt - now;
+      if (delay > 0) {
+        // 还没到时间，短暂等待（最坏误差 < 16ms，视觉上无感）
+        setTimeout(() => { that._tick(); }, delay);
+      } else {
+        // 已过期（音频回调延迟导致），立即 tick 并更新基准
+        that._tick();
+      }
+      // 计算下一次的目标时间
+      that._nextTickAt += interval;
+      // 若已严重滞后（超过一个完整 interval），重新对齐基准避免雪崩
+      if (Date.now() - that._nextTickAt > interval) {
+        that._nextTickAt = Date.now() + interval;
+      }
     }, interval);
   },
 
@@ -352,9 +403,8 @@ Page({
     } else if (sm === 'uniform') {
       audioManager.play('uniform');
     } else if (sm === 'voice') {
-      const voiceMap = { 0: 'voice1', 1: 'voice2', 2: 'voice3', 3: 'voice4' };
-      const voiceKey = voiceMap[cb % 4];
-      if (voiceKey) audioManager.play(voiceKey);
+      // 合成数字音，支持任意节拍数
+      audioManager.playNumber(cb + 1);
     }
 
     // 3. 推进到下一拍
