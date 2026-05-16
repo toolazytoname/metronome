@@ -75,14 +75,7 @@
             <text class="mode-icon">🎵</text>
             <text>均匀</text>
           </view>
-          <view
-            class="mode-btn {{soundMode === 'voice' ? 'active' : ''}}"
-            bindtap="onModeChange"
-            data-mode="voice"
-          >
-            <text class="mode-icon">🗣️</text>
-            <text>童音</text>
-          </view>
+          
         </view>
 
         <!-- 节拍预设 -->
