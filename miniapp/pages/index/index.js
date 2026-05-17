@@ -2,11 +2,10 @@
 // 移植自 https://jpq.weichao.studio/
 
 // ============================================================
-// 音频管理器（Web Audio API 合成，无延迟，支持任意节拍数）
+// 音频管理器（鼓点采样播放，无延迟）
 // ============================================================
 class AudioManager {
   constructor() {
-    this._ctx = null;
     this._inited = false;
     // 预载的采样（用于鼓点）
     this._pool = {
@@ -19,7 +18,6 @@ class AudioManager {
   init() {
     if (this._inited) return;
     this._inited = true;
-    this._ctx = wx.createInnerAudioContext();
 
     // 预加载鼓点采样
     const base = '../../assets/sounds';
@@ -40,57 +38,11 @@ class AudioManager {
     console.log('[Audio] Initialized');
   }
 
-  _getCtx() {
-    if (!this._ctx) this._ctx = wx.createInnerAudioContext();
-    return this._ctx;
-  }
-
-  // 播放鼓点采样
   play(key) {
     const ctx = this._pool[key];
     if (!ctx) return;
     ctx.seek(0);
     ctx.play();
-  }
-
-  // 合成数字音效（滴滴声），pitch 对应数字 1-9
-  // 取代预录语音，彻底支持任意节拍数
-  playNumber(num, when = 0) {
-    const ctx = this._getCtx();
-    const t = ctx.currentTime + when;
-    const pitchMap = {
-      1: 262, 2: 294, 3: 330, 4: 349,
-      5: 392, 6: 440, 7: 494, 8: 523, 9: 587,
-    };
-    const freq = pitchMap[num] || 440;
-    const vol = 0.4;
-
-    // 高频短滴（数字音）
-    const osc1 = ctx.createOscillator();
-    const g1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.value = freq;
-    g1.gain.setValueAtTime(0, t);
-    g1.gain.linearRampToValueAtTime(vol, t + 0.01);
-    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    osc1.connect(g1);
-    g1.connect(ctx);
-
-    // 低频辅助（让声音更实）
-    const osc2 = ctx.createOscillator();
-    const g2 = ctx.createGain();
-    osc2.type = 'triangle';
-    osc2.frequency.value = freq * 0.5;
-    g2.gain.setValueAtTime(0, t);
-    g2.gain.linearRampToValueAtTime(vol * 0.3, t + 0.01);
-    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
-    osc2.connect(g2);
-    g2.connect(ctx);
-
-    osc1.start(t);
-    osc1.stop(t + 0.15);
-    osc2.start(t);
-    osc2.stop(t + 0.15);
   }
 }
 
@@ -406,9 +358,6 @@ Page({
       audioManager.play(cb === 0 ? 'strong' : 'weak');
     } else if (sm === 'uniform') {
       audioManager.play('uniform');
-    } else if (sm === 'voice') {
-      // 合成数字音，支持任意节拍数
-      audioManager.playNumber(cb + 1);
     }
 
     // 3. 推进到下一拍

@@ -4,7 +4,7 @@
 
 ## 功能
 
-- 🎵 **三种音效模式**：传统（强/弱）、均匀、童音报数
+- 🎵 **两种音效模式**：传统（强/弱）、均匀
 - 🎼 **节拍预设**：4/4、3/4、2/4、6/8、5/4、7/8 + 自定义
 - 📊 **BPM 范围**：40 - 208，滑块 + 步进调节
 - 💾 **配置持久化**：BPM、拍号、音效模式自动记忆
@@ -17,9 +17,8 @@ miniapp/
 ├── app.js / app.json / app.wxss     # 全局入口
 ├── assets/sounds/                    # 音频文件（本地打包）
 │   ├── beat-strong.mp3               # 强拍（880Hz）
-│   ├── beat-weak.mp3                 # 弱拍（440Hz）
-│   ├── beat-uniform.mp3              # 均匀拍（660Hz）
-│   └── voice-1~4.mp3                 # 童音报数
+│   ├── beat-weak.mp3                  # 弱拍（440Hz）
+│   └── beat-uniform.mp3               # 均匀拍（660Hz）
 └── pages/index/                      # 主页面
     ├── index.wxml                    # 页面结构
     ├── index.wxss                    # 页面样式
