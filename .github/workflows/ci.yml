@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint miniapp JS
+        run: |
+          # Syntax check all JS files with Node.js
+          for f in miniapp/pages/index/index.js miniapp/app.js; do
+            echo "Checking $f..."
+            node --check "$f" || { echo "SYNTAX ERROR in $f"; exit 1; }
+          done
+          echo "✅ All JS files syntax OK"
+
+      - name: Validate JSON files
+        run: |
+          for f in miniapp/app.json miniapp/project.config.json miniapp/sitemap.json miniapp/pages/index/index.json; do
+            echo "Checking $f..."
+            python3 -c "import json; json.load(open('$f'))" || { echo "JSON ERROR in $f"; exit 1; }
+          done
+          echo "✅ All JSON files valid"
+
+      - name: Check audio files exist
+        run: |
+          for f in beat-strong.mp3 beat-weak.mp3 beat-uniform.mp3; do
+            if [ ! -f "miniapp/assets/sounds/$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+            size=$(stat -c%s "miniapp/assets/sounds/$f")
+            if [ "$size" -gt 2097152 ]; then
+              echo "FILE TOO LARGE ($size bytes): $f (max 2MB)"
+              exit 1
+            fi
+            echo "  ✅ $f ($size bytes)"
+          done
+
+      - name: Check for dead code (voice mode remnants)
+        run: |
+          # Verify voice files are deleted
+          if ls miniapp/assets/sounds/voice-*.mp3 1>/dev/null 2>&1; then
+            echo "❌ voice-*.mp3 files should be deleted"
+            exit 1
+          fi
+          echo "✅ No voice-*.mp3 files present"
+
+          # Verify playNumber is removed
+          if grep -q "playNumber" miniapp/pages/index/index.js; then
+            echo "❌ playNumber() should be removed"
+            exit 1
+          fi
+          echo "✅ No playNumber() in code"
+
+      - name: Verify miniapp structure
+        run: |
+          required_files=(
+            "miniapp/app.js"
+            "miniapp/app.json"
+            "miniapp/app.wxss"
+            "miniapp/project.config.json"
+            "miniapp/pages/index/index.js"
+            "miniapp/pages/index/index.wxml"
+            "miniapp/pages/index/index.wxss"
+            "miniapp/pages/index/index.json"
+            "miniapp/assets/sounds/beat-strong.mp3"
+            "miniapp/assets/sounds/beat-weak.mp3"
+            "miniapp/assets/sounds/beat-uniform.mp3"
+          )
+          for f in "${required_files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+            echo "  ✅ $f"
+          done
