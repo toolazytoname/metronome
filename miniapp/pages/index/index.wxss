@@ -27,10 +27,14 @@
   border-radius: 40px 40px 0 0;
 }
 
-.bunny {
-  font-size: 64px;
+.bunny-img {
+  width: 80px;
+  height: 80px;
   display: block;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  margin: 0 auto;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .title {

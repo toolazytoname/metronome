@@ -2,7 +2,7 @@
   <view class="card">
     <!-- 顶部：兔兔图标 + 标题 -->
     <view class="header">
-      <text class="bunny">🐰</text>
+      <image class="bunny-img" src="/images/bunny.png" mode="aspectFit"></image>
       <text class="title">小兔头节拍器</text>
     </view>
 
