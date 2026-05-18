@@ -20,7 +20,7 @@ class AudioManager {
     this._inited = true;
 
     // 预加载鼓点采样
-    const base = '../../assets/sounds';
+    const base = '/assets/sounds';
     const files = {
       strong: 'beat-strong.mp3',
       weak: 'beat-weak.mp3',

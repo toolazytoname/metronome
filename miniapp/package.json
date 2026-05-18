@@ -1,0 +1,13 @@
+{
+  "name": "metronome-miniapp",
+  "version": "1.0.0",
+  "description": "小兔头节拍器微信小程序",
+  "scripts": {
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0"
+  }
+}
