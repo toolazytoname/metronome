@@ -1,0 +1,26 @@
+{
+  "name": "小兔头节拍器 - 免费在线节拍器",
+  "short_name": "节拍器",
+  "description": "免费在线网页节拍器，支持 40-208 BPM，多种拍号和音效模式",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffecd2",
+  "theme_color": "#ff9a9e",
+  "lang": "zh-CN",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/images/bunny.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/bunny.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
