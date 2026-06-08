@@ -24,4 +24,4 @@ node_modules/
 *~
 
 # Local development artifacts
-*.bak
+*.bakminiapp/coverage/
