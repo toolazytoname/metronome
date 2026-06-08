@@ -2,7 +2,9 @@
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     { "source": "/about", "destination": "/landing.html" },
-    { "source": "/about/", "destination": "/landing.html" }
+    { "source": "/about/", "destination": "/landing.html" },
+    { "source": "/about/en", "destination": "/en/landing.html" },
+    { "source": "/about/en/", "destination": "/en/landing.html" }
   ],
   "headers": [
     {

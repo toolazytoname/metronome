@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小兔头节拍器 - 网页也能当节拍器，免费、免下载、永久在线</title>
-    <meta name="description" content="小兔头节拍器是一款免费、无需下载、浏览器打开即用的网页节拍器。40-208 BPM 自由调节，支持 4/4、3/4、2/4、6/8、5/4、7/8 多种拍号，三种音效模式（传统鼓点 / 均匀节拍 / 童音数数）。适合钢琴、吉他、鼓、舞蹈、跑步节奏训练和音乐教学。">
-    <meta name="keywords" content="节拍器,在线节拍器,网页节拍器,免费节拍器,BPM,节拍器在线使用,练琴节拍器,童音节拍器,钢琴节拍器,metronome,online metronome">
-    <meta name="author" content="小兔头节拍器">
+    <title>Little Rabbit Metronome - A Free Online Metronome, No Download, Forever</title>
+    <meta name="description" content="Little Rabbit Metronome is a free online metronome that runs in your browser — no download, no sign-up. Supports 40-208 BPM and 4/4, 3/4, 2/4, 6/8, 5/4, 7/8 time signatures, with three sound modes: traditional drum, steady tick, and voice count. Great for piano, guitar, drums, dance, running rhythm training, and music education.">
+    <meta name="keywords" content="metronome, online metronome, web metronome, free metronome, BPM, time signature, piano metronome, voice count metronome, online metronome for guitar">
+    <meta name="author" content="Little Rabbit Metronome">
     <meta name="robots" content="index, follow">
 
-    <link rel="canonical" href="https://jpq.weichao.studio/about/">
+    <link rel="alternate" hreflang="zh-CN" href="https://jpq.weichao.studio/about/">
+    <link rel="alternate" hreflang="en" href="https://jpq.weichao.studio/about/en/">
+    <link rel="alternate" hreflang="x-default" href="https://jpq.weichao.studio/about/">
+    <link rel="canonical" href="https://jpq.weichao.studio/about/en/">
     <link rel="manifest" href="/manifest.json">
     <base href="/">
     <link rel="icon" type="image/png" href="/images/bunny.png">
@@ -17,21 +20,21 @@
     <meta name="theme-color" content="#ff9a9e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="节拍器">
+    <meta name="apple-mobile-web-app-title" content="Metronome">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="小兔头节拍器 - 网页也能当节拍器">
-    <meta property="og:description" content="免费、免下载、浏览器打开即用。40-208 BPM 自由调节，多种拍号和音效模式。">
+    <meta property="og:title" content="Little Rabbit Metronome - A Free Online Metronome">
+    <meta property="og:description" content="Free, no download, runs in any browser. 40-208 BPM, multiple time signatures and sound modes.">
     <meta property="og:image" content="https://jpq.weichao.studio/images/bunny.png">
-    <meta property="og:url" content="https://jpq.weichao.studio/about/">
-    <meta property="og:site_name" content="小兔头节拍器">
-    <meta property="og:locale" content="zh_CN">
+    <meta property="og:url" content="https://jpq.weichao.studio/about/en/">
+    <meta property="og:site_name" content="Little Rabbit Metronome">
+    <meta property="og:locale" content="en_US">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="小兔头节拍器 - 网页也能当节拍器">
-    <meta name="twitter:description" content="免费、免下载、浏览器打开即用。40-208 BPM 自由调节，多种拍号和音效模式。">
+    <meta name="twitter:title" content="Little Rabbit Metronome - A Free Online Metronome">
+    <meta name="twitter:description" content="Free, no download, runs in any browser. 40-208 BPM, multiple time signatures and sound modes.">
     <meta name="twitter:image" content="https://jpq.weichao.studio/images/bunny.png">
 
     <!-- JSON-LD -->
@@ -39,9 +42,9 @@
     {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "小兔头节拍器",
+        "name": "Little Rabbit Metronome",
         "alternateName": "Little Rabbit Metronome",
-        "description": "免费在线网页节拍器，支持 40-208 BPM 和 4/4、3/4、6/8 等多种拍号，三种音效模式：传统鼓点、均匀节拍、童音数数。",
+        "description": "Free online web metronome, supports 40-208 BPM and 4/4, 3/4, 6/8 time signatures, with three sound modes: traditional drum, steady tick, and voice count.",
         "url": "https://jpq.weichao.studio/about/",
         "applicationCategory": "MultimediaApplication",
         "operatingSystem": "Any (Web Browser)",
@@ -51,7 +54,7 @@
             "priceCurrency": "CNY"
         },
         "image": "https://jpq.weichao.studio/images/bunny.png",
-        "inLanguage": "zh-CN"
+        "inLanguage": "en"
     }
     </script>
 
@@ -320,80 +323,80 @@
 <body>
 <div class="wrap">
     <nav class="topnav">
-        <a href="./" id="back-link">← 回到节拍器</a>
-        <a href="/about/en/" class="lang">EN</a>
+        <a href="/en/" id="back-link">← Open the metronome</a>
+        <a href="/about/" class="lang" lang="zh-CN">中文</a>
     </nav>
 
     <!-- Hero -->
     <section class="hero">
         <img class="bunny" src="/images/bunny.png" alt="🐰">
-        <h1>网页也能当节拍器</h1>
+        <h1>A metronome in your browser</h1>
         <p class="sub">
-            免下载、免注册、<strong>永久免费</strong><br>
-            浏览器打开就能用，手机电脑都能跑
+            No downloads. No sign-up.<br>
+            <strong>Free forever.</strong> Open it in any browser.
         </p>
-        <a href="./" class="cta">立即打开节拍器</a>
-        <p class="meta">已支持 40-208 BPM · 4/4-7/8 拍号 · 3 种音效</p>
+        <a href="./" class="cta">Open the metronome</a>
+        <p class="meta">40-208 BPM · 4/4 to 7/8 time signatures · 3 sound modes</p>
     </section>
 
     <!-- 三大卖点 -->
     <section>
-        <h2>为什么选它</h2>
+        <h2>Why this one</h2>
         <div class="features">
             <div class="feat">
                 <div class="icon">🎵</div>
-                <h3>BPM 全覆盖</h3>
-                <p>40-208 自由调节<br>覆盖所有乐器</p>
+                <h3>Full BPM range</h3>
+                <p>40-208 BPM<br>for any instrument</p>
             </div>
             <div class="feat">
                 <div class="icon">🎼</div>
-                <h3>拍号自定</h3>
-                <p>4/4、3/4、6/8 等<br>也能自定义</p>
+                <h3>Custom signatures</h3>
+                <p>4/4, 3/4, 6/8, ...<br>or define your own</p>
             </div>
             <div class="feat">
                 <div class="icon">🐰</div>
-                <h3>童音模式</h3>
-                <p>给孩子练琴用<br>声音不刺耳</p>
+                <h3>Voice count</h3>
+                <p>For kids' practice<br>gentle, not harsh</p>
             </div>
             <div class="feat">
                 <div class="icon">📱</div>
-                <h3>全设备</h3>
-                <p>手机平板电脑<br>浏览器即开即用</p>
+                <h3>All devices</h3>
+                <p>Phone, tablet,<br>any browser works</p>
             </div>
         </div>
     </section>
 
     <!-- 适用场景 -->
     <section>
-        <h2>谁在用</h2>
-        <p class="section-sub">从初学到专业，都能用</p>
+        <h2>Who it's for</h2>
+        <p class="section-sub">Beginner to pro</p>
         <div class="cases">
             <div class="case">
                 <div class="emoji">🎹</div>
                 <div class="body">
-                    <h3>练琴的人</h3>
-                    <p>钢琴、吉他、鼓——稳定的节拍是基本功。免费、不打断练习流。</p>
+                    <h3>Piano / guitar / drums</h3>
+                    <p>Piano, guitar, drums — a steady beat is the foundation. Free, never interrupts your flow.</p>
                 </div>
             </div>
             <div class="case">
                 <div class="emoji">💃</div>
                 <div class="body">
-                    <h3>练舞的人</h3>
-                    <p>HIP-HOP、爵士、拉丁——BPM 自由调到你的舞种节奏。</p>
+                    <h3>Dance practice</h3>
+                    <p>HIP-HOP, jazz, Latin — set BPM to match your style.</p>
                 </div>
             </div>
             <div class="case">
                 <div class="emoji">🏃</div>
                 <div class="body">
-                    <h3>跑步 / 健身</h3>
-                    <p>把 BPM 调到 150-180 区间，配合呼吸找节奏。</p>
+                    <h3>Running / fitness</h3>
+                    <p>150-180 BPM range, syncing with your breath.</p>
                 </div>
             </div>
             <div class="case">
                 <div class="emoji">👨‍👩‍👧</div>
                 <div class="body">
-                    <h3>家长教小孩</h3>
-                    <p>童音模式数数 1-2-3-4，孩子跟得上不抗拒。</p>
+                    <h3>Parents teaching kids</h3>
+                    <p>Voice count 1-2-3-4 keeps kids engaged without scaring them off.</p>
                 </div>
             </div>
         </div>
@@ -401,37 +404,37 @@
 
     <!-- 三步上手 -->
     <section>
-        <h2>三步开始用</h2>
+        <h2>Up and running in 3 steps</h2>
         <div class="steps">
             <div class="step">
                 <div class="num">1</div>
-                <h3>打开网址</h3>
-                <p>浏览器访问<br>无需注册</p>
+                <h3>Open the URL</h3>
+                <p>Visit in your browser<br>no sign-up</p>
             </div>
             <div class="step">
                 <div class="num">2</div>
-                <h3>调 BPM</h3>
-                <p>拖滑块或加减号<br>40-208 之间</p>
+                <h3>Set BPM</h3>
+                <p>Slider or +/- buttons<br>between 40-208</p>
             </div>
             <div class="step">
                 <div class="num">3</div>
-                <h3>按 ▶</h3>
-                <p>节拍响起<br>设置自动保存</p>
+                <h3>Hit ▶</h3>
+                <p>Beats start<br>settings auto-saved</p>
             </div>
         </div>
     </section>
 
     <!-- 微信小程序 -->
     <section>
-        <h2>微信小程序也有</h2>
-        <p class="section-sub">扫码加到微信，离线也能用</p>
+        <h2>Also a WeChat Mini Program</h2>
+        <p class="section-sub">Scan to add to WeChat. Works offline.</p>
         <div class="qr-row">
-            <img class="qr-img" src="/images/qr-wechat.jpg" alt="小程序二维码">
+            <img class="qr-img" src="/images/qr-wechat.jpg" alt="WeChat mini program QR code">
             <div class="qr-info">
-                <h3>📱 微信扫码</h3>
+                <h3>📱 Scan with WeChat</h3>
                 <p>
-                    微信里扫一扫 → 打开"小兔头节拍器"小程序<br>
-                    手机没网也能用，所有设置自动保存
+                    Scan with WeChat to open the "Little Rabbit Metronome" mini program<br>
+                    Works offline, all settings auto-saved
                 </p>
             </div>
         </div>
@@ -439,33 +442,33 @@
 
     <!-- 分享 -->
     <section>
-        <h2>分享给朋友</h2>
-        <p class="section-sub">一键推荐，不用复制粘贴</p>
+        <h2>Share with friends</h2>
+        <p class="section-sub">One tap. No copy-paste needed.</p>
         <div class="share-buttons">
-            <button class="share-btn primary" id="share-web">📤 分享</button>
-            <button class="share-btn" id="share-copy">🔗 复制链接</button>
-            <a class="share-btn" id="share-qq" href="https://connect.qq.com/widget/shareqq/index.html?url=https%3A%2F%2Fjpq.weichao.studio%2F&title=%E5%B0%8F%E5%85%94%E5%A4%B4%E8%8A%82%E6%8B%8D%E5%99%A8%20-%20%E5%85%8D%E8%B4%B9%E7%BD%91%E9%A1%B5%E8%8A%82%E6%8B%8D%E5%99%A8" target="_blank" rel="noopener">QQ 好友</a>
-            <a class="share-btn" id="share-weibo" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fjpq.weichao.studio%2F&title=%E5%B0%8F%E5%85%94%E5%A4%B4%E8%8A%82%E6%8B%8D%E5%99%A8%20-%20%E5%85%8D%E8%B4%B9%E7%BD%91%E9%A1%B5%E8%8A%82%E6%8B%8D%E5%99%A8" target="_blank" rel="noopener">微博</a>
+            <button class="share-btn primary" id="share-web">📤 Share</button>
+            <button class="share-btn" id="share-copy">🔗 Copy link</button>
+            <a class="share-btn" id="share-qq" href="https://connect.qq.com/widget/shareqq/index.html?url=https%3A%2F%2Fjpq.weichao.studio%2Fabout%2Fen%2F&title=%E5%B0%8F%E5%85%94%E5%A4%B4%E8%8A%82%E6%8B%8D%E5%99%A8%20-%20%E5%85%8D%E8%B4%B9%E7%BD%91%E9%A1%B5%E8%8A%82%E6%8B%8D%E5%99%A8" target="_blank" rel="noopener">QQ</a>
+            <a class="share-btn" id="share-weibo" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fjpq.weichao.studio%2Fabout%2Fen%2F&title=%E5%B0%8F%E5%85%94%E5%A4%B4%E8%8A%82%E6%8B%8D%E5%99%A8%20-%20%E5%85%8D%E8%B4%B9%E7%BD%91%E9%A1%B5%E8%8A%82%E6%8B%8D%E5%99%A8" target="_blank" rel="noopener">Weibo</a>
         </div>
         <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-mute)">
-            微信里点"分享"按钮会调起原生面板
+            On WeChat, the Share button opens the native panel.
         </p>
     </section>
 
     <footer>
-        <p>小兔头节拍器 · <a href="./">jpq.weichao.studio</a></p>
-        <p style="margin-top:8px">永久免费 · 浏览器即用</p>
+        <p>Little Rabbit Metronome · <a href="./">jpq.weichao.studio</a></p>
+        <p style="margin-top:8px">Free forever. Open and play.</p>
     </footer>
 </div>
 
-<div class="share-toast" id="toast">已复制链接</div>
+<div class="share-toast" id="toast">Link copied</div>
 
 <script>
 (function() {
     'use strict';
-    var pageUrl = 'https://jpq.weichao.studio/';
-    var pageTitle = '小兔头节拍器 - 免费网页节拍器';
-    var pageDesc = '免下载、免注册、浏览器打开即用。40-208 BPM，多种拍号和音效模式。';
+    var pageUrl = 'https://jpq.weichao.studio/about/en/';
+    var pageTitle = 'Little Rabbit Metronome - Free Online Metronome';
+    var pageDesc = 'No download. Open in any browser. 40-208 BPM, multiple time signatures.';
 
     function showToast(msg) {
         var t = document.getElementById('toast');
@@ -479,7 +482,7 @@
     copyBtn.addEventListener('click', function() {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(pageUrl).then(function() {
-                showToast('已复制链接');
+                showToast('Link copied');
             }, function() {
                 fallbackCopy(pageUrl);
             });
@@ -494,8 +497,8 @@
         ta.style.opacity = '0';
         document.body.appendChild(ta);
         ta.select();
-        try { document.execCommand('copy'); showToast('已复制链接'); }
-        catch (e) { showToast('复制失败，请手动选择'); }
+        try { document.execCommand('copy'); showToast('Link copied'); }
+        catch (e) { showToast('Copy failed, please select manually'); }
         document.body.removeChild(ta);
     }
 
@@ -513,12 +516,12 @@
         // 不支持时降级为复制
         webShareBtn.addEventListener('click', function() {
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(pageUrl).then(function() { showToast('已复制链接'); });
+                navigator.clipboard.writeText(pageUrl).then(function() { showToast('Link copied'); });
             } else {
                 fallbackCopy(pageUrl);
             }
         });
-        webShareBtn.textContent = '🔗 复制链接';
+        webShareBtn.textContent = '🔗 Copy link';
     }
 })();
 </script>
