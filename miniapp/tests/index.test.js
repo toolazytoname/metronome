@@ -72,8 +72,28 @@ function makePage() {
   instance._currentBeat = 0;
   instance._timer = null;
   instance._tickBase = 0;
-  instance._nextTickAt = 0;
-  instance.setData = obj => { Object.assign(data, obj); };
+  instance._tickCount = 0;
+  instance._prevActive = undefined;
+  // Path-aware setData mock: 'beats[1].active' → data.beats[1].active,
+  // auto-creates intermediate arrays/objects when missing
+  instance.setData = obj => {
+    for (const [k, v] of Object.entries(obj)) {
+      const m = /^([^\[]+)(?:\[(\d+)\])?(?:\.([^.[\]]+))?$/.exec(k);
+      if (!m) { Object.assign(data, obj); return; }
+      const [, base, idx, leaf] = m;
+      if (idx !== undefined) {
+        if (!data[base]) data[base] = [];
+        while (data[base].length <= parseInt(idx)) data[base].push({});
+        if (leaf) data[base][parseInt(idx)][leaf] = v;
+        else data[base][parseInt(idx)] = v;
+      } else if (leaf) {
+        if (!data[base] || typeof data[base] !== 'object') data[base] = {};
+        data[base][leaf] = v;
+      } else {
+        data[base] = v;
+      }
+    }
+  };
   return instance;
 }
 
@@ -217,12 +237,16 @@ describe('State Persistence', () => {
 // Playback
 // ============================================================
 describe('Playback', () => {
-  it('_start sets running=true and resets _currentBeat to 0', () => { const p = makePage(); p.data.running = false; p._currentBeat = 5; p._start(); expect(p.data.running).toBe(true); expect(p._currentBeat).toBe(0); });
+  it('_start sets running=true, resets _currentBeat to 0, fires one immediate tick', () => { const p = makePage(); p.data.running = false; p._currentBeat = 5; p._start(); expect(p.data.running).toBe(true); expect(p._currentBeat).toBe(1); });
   it('_stop sets running=false and resets all beats active=false', () => { const p = makePage(); p.data.running = true; p._stopTick = () => {}; p.data.beats = [{ num: 1, className: 'uniform', active: true }, { num: 2, className: 'uniform', active: false }]; p._stop(); expect(p.data.running).toBe(false); expect(p.data.beats[0].active).toBe(false); });
-  it('_stopTick clears the interval timer', () => { const p = makePage(); let cleared = false; const orig = global.clearInterval; global.clearInterval = () => { cleared = true; }; p._timer = 42; p._stopTick(); global.clearInterval = orig; expect(cleared).toBe(true); expect(p._timer).toBe(null); });
   it('_tick advances _currentBeat with modulo wrap', () => { const p = makePage(); p.data.customBeats = '4'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }, { num: 4, className: 'uniform', active: false }]; p._currentBeat = 3; p._tick(); expect(p._currentBeat).toBe(0); });
   it('_tick activates the correct beat UI', () => { const p = makePage(); p.data.customBeats = '3'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); expect(p.data.beats[2].active).toBe(false); });
-  it('_startTick creates a setInterval', () => { const p = makePage(); p.data.bpm = 60; let created = false; const orig = global.setInterval; global.setInterval = (fn, ms) => { created = true; return orig(fn, ms); }; p._startTick(); global.setInterval = orig; expect(created).toBe(true); });
+  it('_tick deactivates previous beat on subsequent ticks', () => { const p = makePage(); p.data.customBeats = '3'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 0; p._tick(); expect(p.data.beats[0].active).toBe(true); p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); });
+  it('_startTick uses setTimeout chain (not setInterval)', () => { const p = makePage(); p.data.bpm = 60; p.data.running = true; p._tick = () => {}; let timeoutCreated = false; let intervalCreated = false; const origSetTimeout = global.setTimeout; const origSetInterval = global.setInterval; global.setTimeout = (fn, ms) => { timeoutCreated = true; return origSetTimeout(fn, ms); }; global.setInterval = (fn, ms) => { intervalCreated = true; return origSetInterval(fn, ms); }; p._startTick(); global.setTimeout = origSetTimeout; global.setInterval = origSetInterval; expect(timeoutCreated).toBe(true); expect(intervalCreated).toBe(false); });
+  it('_stopTick clears the setTimeout timer', () => { const p = makePage(); let cleared = false; const orig = global.clearTimeout; global.clearTimeout = () => { cleared = true; }; p._timer = 42; p._stopTick(); global.clearTimeout = orig; expect(cleared).toBe(true); expect(p._timer).toBe(null); });
+  it('_scheduleNextTick uses absolute timing — delay = target - now', () => { const p = makePage(); p.data.running = true; p._tick = () => {}; const captured = []; const orig = global.setTimeout; global.setTimeout = (...args) => { captured.push(args[1]); return 99; }; const base = Date.now(); p._tickBase = base; p._tickCount = 0; p._scheduleNextTick(500); global.setTimeout = orig; expect(captured.length).toBe(1); expect(captured[0]).toBeGreaterThanOrEqual(0); expect(captured[0]).toBeLessThanOrEqual(500);
+  });
+  it('_scheduleNextTick stops chaining when running=false', () => { const p = makePage(); p.data.running = false; p._tick = () => {}; let timeoutCreated = false; const orig = global.setTimeout; global.setTimeout = () => { timeoutCreated = true; return 99; }; p._scheduleNextTick(500); global.setTimeout = orig; expect(timeoutCreated).toBe(false); });
 });
 
 // ============================================================
@@ -247,10 +271,12 @@ describe('Integration', () => {
     p._currentBeat = 0;
     p._start();
     expect(p.data.running).toBe(true);
-    p._tick(); expect(p._currentBeat).toBe(1);
+    // _start() now fires one immediate tick (better UX: instant feedback on press)
+    expect(p._currentBeat).toBe(1);
     p._tick(); expect(p._currentBeat).toBe(2);
     p._tick(); expect(p._currentBeat).toBe(3);
     p._tick(); expect(p._currentBeat).toBe(0);
+    p._tick(); expect(p._currentBeat).toBe(1);
     p._stop();
     expect(p.data.running).toBe(false);
   });

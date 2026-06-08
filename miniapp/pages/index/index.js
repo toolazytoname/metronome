@@ -41,6 +41,8 @@ class AudioManager {
   play(key) {
     const ctx = this._pool[key];
     if (!ctx) return;
+    const t = Date.now();
+    console.log(`[DIAG] play() key=${key} t=${t}`);
     ctx.seek(0);
     ctx.play();
   }
@@ -291,8 +293,10 @@ Page({
     // 首次启动时初始化音频（必须在用户点击后调用，避免被系统拦截）
     audioManager.init();
     this._currentBeat = 0;
-    this._startTick();
+    // 注意：setData 必须先于 _startTick——setTimeout 链的第一次同步调用
+    // 会读 this.data.running 来判断要不要排下一拍，否则会被早退。
     this.setData({ running: true });
+    this._startTick();
     console.log('[Metronome] Started at', this.data.bpm, 'BPM');
   },
 
@@ -306,33 +310,30 @@ Page({
 
   _startTick() {
     const interval = 60000 / this.data.bpm;
-    const that = this;
-    // 记录首次 tick 的系统时间，用以消除 setInterval 累积漂移
     this._tickBase = Date.now();
-    this._nextTickAt = this._tickBase + interval;
-    this._timer = setInterval(() => {
-      // 等到真正的目标时间再 tick（补偿 setInterval 的漂移）
-      const now = Date.now();
-      const delay = this._nextTickAt - now;
-      if (delay > 0) {
-        // 还没到时间，短暂等待（最坏误差 < 16ms，视觉上无感）
-        setTimeout(() => { that._tick(); }, delay);
-      } else {
-        // 已过期（音频回调延迟导致），立即 tick 并更新基准
-        that._tick();
-      }
-      // 计算下一次的目标时间
-      that._nextTickAt += interval;
-      // 若已严重滞后（超过一个完整 interval），重新对齐基准避免雪崩
-      if (Date.now() - that._nextTickAt > interval) {
-        that._nextTickAt = Date.now() + interval;
-      }
-    }, interval);
+    this._tickCount = 0;
+    this._prevActive = undefined;
+    this._driftMax = 0;
+    this._driftSum = 0;
+    this._audioAt = null;
+    this._setDataAt = null;
+    console.log(`[DIAG] _startTick bpm=${this.data.bpm} interval=${interval.toFixed(1)}ms base=${this._tickBase}`);
+    this._scheduleNextTick(interval);
+  },
+
+  _scheduleNextTick(interval) {
+    if (!this.data.running) return;
+    this._tick();
+    this._tickCount += 1;
+    const target = this._tickBase + this._tickCount * interval;
+    const delay = Math.max(0, target - Date.now());
+    console.log(`[DIAG] _scheduleNextTick #${this._tickCount} target=${target} delay=${delay.toFixed(0)}ms now=${Date.now()}`);
+    this._timer = setTimeout(() => this._scheduleNextTick(interval), delay);
   },
 
   _stopTick() {
     if (this._timer) {
-      clearInterval(this._timer);
+      clearTimeout(this._timer);
       this._timer = null;
     }
   },
@@ -342,25 +343,44 @@ Page({
   // 每拍触发
   // ========================================================
   _tick() {
+    const tStart = Date.now();
     const sm = this.data.soundMode;
     const bc = this._getBeatCount();
     const cb = this._currentBeat;
 
-    // 1. 更新 UI 节拍指示器
-    const beats = this.data.beats.map((b, i) => ({
-      ...b,
-      active: i === cb,
-    }));
-    this.setData({ beats });
-
-    // 2. 播放音效
+    // 1. 音频先
     if (sm === 'traditional') {
       audioManager.play(cb === 0 ? 'strong' : 'weak');
     } else if (sm === 'uniform') {
       audioManager.play('uniform');
     }
+    const tAudioRequested = Date.now();
 
-    // 3. 推进到下一拍
+    // 2. UI
+    if (this._prevActive !== undefined) {
+      this.setData({ [`beats[${this._prevActive}].active`]: false });
+    }
+    this.setData({ [`beats[${cb}].active`]: true });
+    this._prevActive = cb;
+    const tSetData = Date.now();
+
+    // 诊断：报告本拍从 start 到 audio 调用的间隔 + setData 完成的间隔
+    const audioGap = tAudioRequested - tStart;
+    const setDataGap = tSetData - tStart;
+    console.log(`[DIAG] _tick beat=${cb} start=${tStart} audioReq→${audioGap}ms setData→${setDataGap}ms`);
+
+    // 漂移跟踪：相对目标时刻的偏差
+    if (this._tickCount > 0) {
+      const expected = this._tickBase + this._tickCount * (60000 / this.data.bpm);
+      const drift = tStart - expected;
+      this._driftMax = Math.max(this._driftMax, Math.abs(drift));
+      this._driftSum += drift;
+      if (this._tickCount % 10 === 0) {
+        const avg = (this._driftSum / this._tickCount).toFixed(1);
+        console.log(`[DIAG] drift report #${this._tickCount} max=${this._driftMax.toFixed(0)}ms avg=${avg}ms`);
+      }
+    }
+
     this._currentBeat = (cb + 1) % bc;
   },
 
