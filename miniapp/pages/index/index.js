@@ -8,18 +8,18 @@ class AudioManager {
   constructor() {
     this._inited = false;
     // 预载的采样（用于鼓点）
-    this._pool = {
-      strong: null,
-      weak: null,
-      uniform: null,
-    };
+    this._pool = { strong: [], weak: [], uniform: [] };
+    this._ready = { strong: false, weak: false, uniform: false };
+    this._index = { strong: 0, weak: 0, uniform: 0 };
+    this.POOL_SIZE = 3;
   }
 
   init() {
     if (this._inited) return;
     this._inited = true;
 
-    // 预加载鼓点采样
+    // 预加载鼓点采样 + 监听 onCanplay 标记就绪状态。
+    // 不预热（之前试过 play+stop 预热，会泄漏残响 + 反复触发 onCanplay 反而坏事）。
     const base = '/assets/sounds';
     const files = {
       strong: 'beat-strong.mp3',
@@ -27,24 +27,50 @@ class AudioManager {
       uniform: 'beat-uniform.mp3',
     };
     for (const [key, file] of Object.entries(files)) {
-      const ctx = wx.createInnerAudioContext();
-      ctx.src = `${base}/${file}`;
-      ctx.volume = 0.8;
-      ctx.autoplay = false;
-      ctx.loop = false;
-      ctx.onError((err) => console.warn(`[Audio] ${key} error:`, err));
-      this._pool[key] = ctx;
+      for (let i = 0; i < this.POOL_SIZE; i++) {
+        const ctx = wx.createInnerAudioContext();
+        ctx.src = `${base}/${file}`;
+        ctx.volume = 0.8;
+        ctx.autoplay = false;
+        ctx.loop = false;
+        ctx.onError((err) => console.warn(`[Audio] ${key}[${i}] error:`, err));
+        ctx.onCanplay(() => {
+          this._ready[key] = true;
+          console.log(`[Audio] ${key} ready (ctx ${i})`);
+        });
+        this._pool[key].push(ctx);
+      }
     }
-    console.log('[Audio] Initialized');
+    console.log(`[Audio] Initialized (pool size ${this.POOL_SIZE} per sound)`);
   }
 
   play(key) {
-    const ctx = this._pool[key];
-    if (!ctx) return;
-    const t = Date.now();
-    console.log(`[DIAG] play() key=${key} t=${t}`);
+    const ctxs = this._pool[key];
+    if (!ctxs || ctxs.length === 0) return;
+    if (!this._ready[key]) {
+      console.log(`[DIAG] play() key=${key} t=${Date.now()} NOT-READY → retry (up to 3s)`);
+      this._retryPlay(key, 60);
+      return;
+    }
+    const idx = this._index[key];
+    const ctx = ctxs[idx];
+    this._index[key] = (idx + 1) % ctxs.length;
+    console.log(`[DIAG] play() key=${key} ctx#${idx} t=${Date.now()}`);
     ctx.seek(0);
     ctx.play();
+  }
+  _retryPlay(key, attemptsLeft) {
+    if (attemptsLeft <= 0) {
+      console.warn(`[Audio] ${key} never became ready after 3s, dropping tick`);
+      return;
+    }
+    setTimeout(() => {
+      if (this._ready[key]) {
+        this.play(key);
+      } else {
+        this._retryPlay(key, attemptsLeft - 1);
+      }
+    }, 50);
   }
 }
 
@@ -278,9 +304,8 @@ Page({
     // 如果正在播放，重设定时器间隔
     if (this.data.running) {
       this._stopTick();
+      // _startTick 内部已通过 _scheduleNextTick 立即触发一次 _tick
       this._startTick();
-      // 立即触发一次（确保同步）
-      this._tick();
     }
     console.log('[Metronome] BPM:', old, '->', newBpm);
   },
@@ -315,8 +340,6 @@ Page({
     this._prevActive = undefined;
     this._driftMax = 0;
     this._driftSum = 0;
-    this._audioAt = null;
-    this._setDataAt = null;
     console.log(`[DIAG] _startTick bpm=${this.data.bpm} interval=${interval.toFixed(1)}ms base=${this._tickBase}`);
     this._scheduleNextTick(interval);
   },
@@ -356,12 +379,13 @@ Page({
     }
     const tAudioRequested = Date.now();
 
-    // 2. UI
-    if (this._prevActive !== undefined) {
-      this.setData({ [`beats[${this._prevActive}].active`]: false });
-    }
-    this.setData({ [`beats[${cb}].active`]: true });
-    this._prevActive = cb;
+    // 2. UI（稳妥写法：完整 beats 数组重渲，避路径式 setData 在某些 WeChat
+    //    版本上抛错导致整个 _tick 中断的坑。4 元素数组开销可忽略。）
+    const beats = this.data.beats.map((b, i) => ({
+      ...b,
+      active: i === cb,
+    }));
+    this.setData({ beats });
     const tSetData = Date.now();
 
     // 诊断：报告本拍从 start 到 audio 调用的间隔 + setData 完成的间隔

@@ -8,7 +8,8 @@ let RealPageDef = null;
 global.wx = {
   createInnerAudioContext: () => ({
     src: '', volume: 0.8, autoplay: false, loop: false,
-    onError() {}, play() {}, seek() {}, stop() {},
+    onError() {}, onCanplay() {}, onPlay() {}, onPause() {}, onStop() {}, onEnded() {}, onWaiting() {},
+    play() {}, seek() {}, stop() {}, pause() {},
   }),
   getStorageSync: () => null,
   setStorageSync: () => {},
