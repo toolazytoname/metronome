@@ -1,6 +1,8 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/metronome-v4.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/about", "destination": "/landing.html" },
+    { "source": "/about/", "destination": "/landing.html" }
   ],
   "ignore": [
     "git", "node_modules", "README.md", "vercel.json",
