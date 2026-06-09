@@ -117,6 +117,7 @@
     </style>
 </head>
 <body>
+    <button id="share-btn" aria-label="Share" title="Share" style="position:fixed;top:12px;right:128px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 10px;border-radius:16px;font-size:14px;font-weight:700;border:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:32px;text-align:center;line-height:1;">📤</button>
     <a href="/about/en/" aria-label="About" style="position:fixed;top:12px;right:88px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 10px;border-radius:16px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:32px;text-align:center;">?</a>
     <a href="/" lang="zh-CN" style="position:fixed;top:12px;right:12px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.1);">中文</a>
 <div class="container">
@@ -259,6 +260,32 @@ function stop(){if(!s.r)return;s.r=false;clearInterval(s.iId);var btn=document.g
 function tick(){document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});var el=document.querySelector("[data-beat='"+s.cb+"']");if(el)el.classList.add("pop");playBeat(s.cb);s.cb=(s.cb+1)%s.bc;}
 document.addEventListener("visibilitychange",function(){if(s.ac&&s.ac.state==="suspended")s.ac.resume();});
 updateBeats();
+
+// Share button: Web Share API preferred, copy link fallback
+(function(){
+  var btn=document.getElementById("share-btn");
+  if(!btn)return;
+  var url=location.origin+"/en/";
+  var title="Little Rabbit Metronome - Free Online Metronome";
+  btn.addEventListener("click",function(){
+    if(navigator.share){
+      navigator.share({title:title,text:"No download. Open in any browser.",url:url}).catch(function(){});
+    }else if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){showShareToast("Link copied");});
+    }else{
+      var ta=document.createElement("textarea");ta.value=url;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();
+      try{document.execCommand("copy");showShareToast("Link copied");}catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+  function showShareToast(msg){
+    var t=document.createElement("div");
+    t.textContent=msg;t.style.cssText="position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(45,52,54,0.95);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s";
+    document.body.appendChild(t);
+    requestAnimationFrame(function(){t.style.opacity="1";});
+    setTimeout(function(){t.style.opacity="0";setTimeout(function(){document.body.removeChild(t);},200);},1500);
+  }
+})();
 </script>
 </body>
 </html>
