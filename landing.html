@@ -315,6 +315,120 @@
             padding: 20px 0;
         }
         footer a { color: var(--primary); text-decoration: none; font-weight: 700; }
+
+        /* ==== UI 增强 v2.1 ==== */
+        /* Scroll-reveal：默认 visible，IO 只用来"再次确保"未来滚动时也保持可见 */
+        .reveal { opacity: 1; transform: none; transition: opacity .5s ease, transform .5s ease; }
+        .reveal.in { opacity: 1; transform: translateY(0); }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal, .reveal.in { opacity: 1; transform: none; transition: none; }
+        }
+
+        /* Version chip */
+        .version-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-top: 14px;
+            padding: 5px 14px;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,154,158,0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            letter-spacing: 0.02em;
+            box-shadow: var(--shadow-sm);
+        }
+        .version-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 0 3px rgba(168,237,234,0.4);
+            animation: livePulse 2s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(168,237,234,0.4); }
+            50%      { box-shadow: 0 0 0 6px rgba(168,237,234,0); }
+        }
+
+        /* FAQ */
+        .faq-list { display: flex; flex-direction: column; gap: 10px; }
+        .faq-item {
+            background: #fafafa;
+            border: 1.5px solid #eee;
+            border-radius: 16px;
+            transition: border-color .2s, background .2s, box-shadow .2s;
+        }
+        .faq-item[open] {
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 6px 18px -8px rgba(255,154,158,0.45);
+        }
+        .faq-item summary {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            list-style: none;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text);
+            transition: color .15s;
+        }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary:hover { color: var(--primary); }
+        .faq-chev {
+            width: 18px; height: 18px;
+            color: var(--text-mute);
+            flex: 0 0 18px;
+            transition: transform .2s ease, color .2s;
+        }
+        .faq-item[open] .faq-chev { transform: rotate(180deg); color: var(--primary); }
+        .faq-item p {
+            padding: 0 18px 14px;
+            font-size: 13.5px;
+            color: var(--text-mute);
+            line-height: 1.65;
+        }
+
+        /* 升级 Footer */
+        footer {
+            background: #fff;
+            border-radius: 32px;
+            padding: 28px 24px 24px;
+            box-shadow: var(--shadow);
+            text-align: left;
+        }
+        .foot-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .foot-bunny { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); object-fit: cover; }
+        .foot-name { font-size: 15px; font-weight: 800; color: var(--text); }
+        .foot-tag  { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+        .foot-links {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 8px; margin-bottom: 18px;
+        }
+        .foot-links a {
+            text-align: center;
+            padding: 10px 4px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            transition: all .15s;
+            text-decoration: none;
+        }
+        .foot-links a:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .foot-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #eee, transparent);
+            margin: 4px 0 14px;
+        }
+        .foot-meta {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-mute);
+            line-height: 1.7;
+        }
     </style>
 </head>
 <body>
@@ -333,6 +447,10 @@
             浏览器打开就能用，手机电脑都能跑
         </p>
         <a href="./" class="cta">立即打开节拍器</a>
+        <div class="version-chip" aria-label="版本">
+            <span class="version-dot"></span>
+            v2.1 · 2026 夏
+        </div>
         <p class="meta">已支持 40-208 BPM · 4/4-7/8 拍号 · 3 种音效</p>
     </section>
 
@@ -452,9 +570,68 @@
         </p>
     </section>
 
+    <!-- 常见问题 FAQ -->
+    <section class="faq-section" id="faq">
+        <h2>常见疑问</h2>
+        <p class="section-sub">怕踩坑？先看这里</p>
+        <div class="faq-list">
+            <details class="faq-item">
+                <summary>
+                    <span>真的永久免费吗？有没有广告？</span>
+                    <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <p>完全免费 · 永久免费 · 无广告 · 无内购 · 无需注册。开发者收入靠自愿打赏，没有付费墙。</p>
+            </details>
+            <details class="faq-item">
+                <summary>
+                    <span>微信小程序能离线用吗？</span>
+                    <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <p>支持。微信小程序版会缓存音频和配置，手机没网也能正常计时。所有设置（BPM、拍号、音效）自动保存在本地。</p>
+            </details>
+            <details class="faq-item">
+                <summary>
+                    <span>BPM 和拍号会自动保存吗？</span>
+                    <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <p>会的。下次打开自动恢复上次用的 BPM、拍号、音效，练习不被打断节奏。</p>
+            </details>
+            <details class="faq-item">
+                <summary>
+                    <span>iPad / 平板能用吗？触屏体验怎么样？</span>
+                    <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <p>所有设备都能用：手机、平板、电脑。触屏按钮做了大点击区，练习中单手就能调 BPM。</p>
+            </details>
+            <details class="faq-item">
+                <summary>
+                    <span>支持自定义拍号吗？比如 5/8？</span>
+                    <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <p>支持。预设 4/4、3/4、2/4、6/8、5/4、7/8，也可以手动输入任意拍号。</p>
+            </details>
+        </div>
+    </section>
+
     <footer>
-        <p>小兔头节拍器 · <a href="./">jpq.weichao.studio</a></p>
-        <p style="margin-top:8px">永久免费 · 浏览器即用</p>
+        <div class="foot-brand">
+            <img class="foot-bunny" src="/images/bunny.png" alt="" aria-hidden="true">
+            <div>
+                <div class="foot-name">小兔头节拍器</div>
+                <div class="foot-tag">xiaotutou-metronome.app</div>
+            </div>
+        </div>
+        <div class="foot-links">
+            <a href="#features">功能</a>
+            <a href="#faq">FAQ</a>
+            <a href="#share">分享</a>
+            <a href="mailto:hi@weichao.studio">联系</a>
+        </div>
+        <div class="foot-divider"></div>
+        <div class="foot-meta">
+            v2.1 · 永久免费 · MIT License<br/>
+            Made with ♥ for music students
+        </div>
     </footer>
 </div>
 
@@ -519,6 +696,32 @@
             }
         });
         webShareBtn.textContent = '🔗 复制链接';
+    }
+
+    // ===== UI 增强 v2.1：scroll-reveal 入场动画 =====
+    if ('IntersectionObserver' in window) {
+        var revealIO = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('in');
+                    revealIO.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+        document.querySelectorAll('section').forEach(function(el) {
+            el.classList.add('reveal');
+            // 启动时立即显示已在 viewport 内/之上的元素
+            // （fullPage 截图、锚点跳转、或首屏直接看到的 section）
+            var r = el.getBoundingClientRect();
+            if (r.top < window.innerHeight && r.bottom > 0) {
+                el.classList.add('in');
+            } else {
+                revealIO.observe(el);
+            }
+        });
+    } else {
+        // 降级：直接显示
+        document.querySelectorAll('section').forEach(function(el) { el.classList.add('in'); });
     }
 })();
 </script>

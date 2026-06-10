@@ -25,3 +25,12 @@ node_modules/
 
 # Local development artifacts
 *.bakminiapp/coverage/
+.vercel
+
+# UI 验证截图
+*-after*.png
+landing-v*.png
+index-v*.png
+index-real.png
+index-playing.png
+.bunny-after.png
