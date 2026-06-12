@@ -937,14 +937,21 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-QH9CD00C0V');
 
+// Umeng CNZZ queue: build _czc array up front; the script will flush the
+// queue and take over custom events once it loads
+window._czc = window._czc || [];
+_czc.push(['_setPageView', window.location.pathname]);
+
 // Analytics scripts deferred to first-paint idle + 1.5s — won't block render
-// (~30-50ms TBT saved; events queued by the stub above so nothing is lost)
+// (~30-50ms TBT saved; events queued by the stubs above so nothing is lost)
 window.addEventListener('load', function(){
   setTimeout(function(){
-    var hm = document.createElement('script');
-    hm.src = 'https://hm.baidu.com/hm.js?1281476758';
-    hm.async = true;
-    document.head.appendChild(hm);
+    // Umeng CNZZ (siteId = 1281476758) — v1.cnzz.com is the modern Umeng+ endpoint
+    var czc = document.createElement('script');
+    czc.src = 'https://v1.cnzz.com/z.php?id=1281476758&async=1';
+    czc.async = true;
+    document.head.appendChild(czc);
+    // GA4
     var ga = document.createElement('script');
     ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-QH9CD00C0V';
     ga.async = true;

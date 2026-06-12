@@ -15,7 +15,7 @@
         { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), usb=(), payment=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=()" },
-        { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://hm.baidu.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://www.google-analytics.com https://hm.baidu.com; connect-src 'self' https://hm.baidu.com https://*.google-analytics.com https://*.analytics.google.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" }
+        { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://v1.cnzz.com https://*.cnzz.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://www.google-analytics.com https://*.cnzz.com; connect-src 'self' https://v1.cnzz.com https://*.cnzz.com https://*.google-analytics.com https://*.analytics.google.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" }
       ]
     },
     {

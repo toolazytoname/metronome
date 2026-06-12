@@ -1,7 +1,12 @@
 {
   "description": "小兔头节拍器微信小程序",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "node_modules/umtrack-wx/node_modules/"
+      }
+    ],
     "include": []
   },
   "setting": {

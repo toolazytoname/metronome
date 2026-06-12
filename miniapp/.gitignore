@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# WeChat DevTools npm build output
+miniprogram_npm/
+
+# Logs
+*.log
+npm-debug.log*

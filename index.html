@@ -1035,14 +1035,22 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-QH9CD00C0V');
 
+// 友盟 CNZZ 队列：先建好 _czc 数组，事件 push 进去；
+// 友盟脚本加载后会自动 flush queue 并接管自定义事件
+window._czc = window._czc || [];
+_czc.push(['_setPageView', window.location.pathname]);
+
 // 分析脚本延迟到首屏空闲 + 1.5s 后加载，不阻塞首屏渲染
-// （TBT -30~50ms；events 不丢，gtag stub 已经把它们 queue 起来）
+// （TBT -30~50ms；events 不丢，gtag stub + _czc 队列已经把它们都 queue 起来）
 window.addEventListener('load', function(){
   setTimeout(function(){
-    var hm = document.createElement('script');
-    hm.src = 'https://hm.baidu.com/hm.js?1281476758';
-    hm.async = true;
-    document.head.appendChild(hm);
+    // 友盟 CNZZ 站长统计 (siteId = 1281476758)
+    // v1.cnzz.com 是友盟+ 升级版入口；async=1 异步
+    var czc = document.createElement('script');
+    czc.src = 'https://v1.cnzz.com/z.php?id=1281476758&async=1';
+    czc.async = true;
+    document.head.appendChild(czc);
+    // GA4
     var ga = document.createElement('script');
     ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-QH9CD00C0V';
     ga.async = true;
