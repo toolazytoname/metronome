@@ -1,4 +1,22 @@
 <view class="container">
+
+  <!-- 顶部豆子按钮区：分享 / 帮助 / 关于 -->
+  <view class="bean-row">
+    <button
+      class="bean bean-share"
+      open-type="share"
+      hover-class="bean-hover"
+    >
+      <text class="bean-icon">🔗</text>
+    </button>
+    <view class="bean bean-help" hover-class="bean-hover" bindtap="onHelp">
+      <text class="bean-icon">?</text>
+    </view>
+    <view class="bean bean-about" hover-class="bean-hover" bindtap="onAbout">
+      <text class="bean-icon">i</text>
+    </view>
+  </view>
+
   <view class="card">
     <!-- 顶部：兔兔图标（马卡龙圆锥彩虹环） + 标题 -->
     <view class="header">

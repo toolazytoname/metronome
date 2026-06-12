@@ -15,6 +15,100 @@
 }
 
 /* ============================================================
+   顶部豆子按钮区 —— 分享 / 帮助 / 关于
+   注意：微信原生胶囊（···⊙）占据系统级右上角不可覆盖；
+        这些豆子在 page 顶部的 toolbar 行里靠右排列。
+   ============================================================ */
+.bean-row {
+  width: 100%;
+  max-width: 840rpx;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  padding: 0 4rpx;
+  box-sizing: border-box;
+}
+
+/* 全 reset wx button 默认样式（border / padding / 灰底 / ::after 边框） */
+.bean {
+  width: 72rpx;
+  height: 72rpx;
+  padding: 0;
+  margin: 0;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0; /* 子元素 .bean-icon 自己定 size */
+  line-height: 1;
+  color: #251614;
+  background: #fff;
+  border: 0;
+  position: relative;
+  box-shadow:
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2rpx 0 rgba(0, 0, 0, 0.04),
+    0 8rpx 20rpx -6rpx rgba(37, 22, 20, 0.18);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.bean::after {
+  /* wx <button> 默认用 ::after 画边框，必须 unset */
+  border: none;
+}
+.bean-hover {
+  transform: translateY(2rpx) scale(0.95);
+}
+.bean-icon {
+  font-size: 34rpx;
+  font-weight: 700;
+  line-height: 1;
+  display: block;
+}
+
+.bean.bean-share {
+  background: linear-gradient(160deg, #fef2c5 0%, #f5dc98 100%);
+  color: #a67700;
+  box-shadow:
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.6),
+    inset 0 -4rpx 8rpx rgba(245, 220, 152, 0.20),
+    0 8rpx 24rpx -6rpx rgba(245, 220, 152, 0.40);
+}
+/* 分享豆子左上角两个装饰小白点（仿 web 主程序的 sparkle） */
+.bean.bean-share::before {
+  content: '';
+  position: absolute;
+  top: 10rpx;
+  left: 10rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 24rpx 8rpx 0 rgba(255, 255, 255, 0.55);
+}
+
+.bean.bean-help {
+  background: linear-gradient(160deg, #ddf5e9 0%, #b9eacf 100%);
+  color: #007950;
+  box-shadow:
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -4rpx 8rpx rgba(110, 213, 171, 0.18),
+    0 8rpx 24rpx -6rpx rgba(110, 213, 171, 0.40);
+}
+
+.bean.bean-about {
+  background: linear-gradient(160deg, #f3eeff 0%, #d8c8f4 100%);
+  color: #6549a3;
+  font-family: Georgia, serif;
+  font-style: italic;
+  box-shadow:
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -4rpx 8rpx rgba(187, 172, 235, 0.18),
+    0 8rpx 24rpx -6rpx rgba(187, 172, 235, 0.40);
+}
+
+/* ============================================================
    主卡片 —— 头像 / 节拍灯 / BPM / 滑块 / Play
    ============================================================ */
 .card {
