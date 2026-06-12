@@ -34,3 +34,6 @@ index-v*.png
 index-real.png
 index-playing.png
 .bunny-after.png
+
+# Playwright cache
+.playwright-mcp/

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <base href="/">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>小兔头节拍器 - 免费在线节拍器，BPM 40-208，支持 4/4 3/4 6/8 拍号</title>
     <meta name="description" content="小兔头节拍器是一款免费在线网页节拍器，无需下载，浏览器打开即用。支持 40-208 BPM，覆盖 4/4、3/4、2/4、6/8、5/4、7/8 多种拍号；提供传统鼓点、均匀节拍、童音数数三种音效模式，适合练琴、练舞、跑步节奏训练和音乐教学。">
     <meta name="keywords" content="节拍器,在线节拍器,网页节拍器,免费节拍器,BPM,节拍器在线使用,练琴节拍器,童音节拍器,metronome,online metronome">
@@ -33,7 +33,7 @@
     <meta name="twitter:description" content="免费在线网页节拍器，支持多种拍号和音效模式。">
     <meta name="twitter:image" content="https://jpq.weichao.studio/images/bunny.png">
 
-    <!-- JSON-LD: WebApplication schema for Google rich results -->
+    <!-- JSON-LD: WebApplication schema -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -54,81 +54,804 @@
     }
     </script>
 
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{min-height:100vh;background:linear-gradient(180deg,#ffecd2 0%,#fcb69f 100%);display:flex;align-items:center;justify-content:center;padding:15px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-        .container{background:#fff;border-radius:40px;box-shadow:0 20px 60px rgba(252,147,127,0.25);width:100%;max-width:420px;overflow:hidden}
-        .header{padding:25px 20px 15px;text-align:center;background:linear-gradient(180deg,#fff8f5 0%,#fff 100%)}
-        .bunny{width:80px;height:80px;border-radius:40px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:block;margin:0 auto}
-        h1{font-size:24px;font-weight:800;color:#ff9a9e;margin-top:5px}
-        .beats-section{padding:15px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;min-height:90px;align-items:center;background:#fff}
-        .beat{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;transition:transform .1s}
-        .beat.uniform{background:#a8edea;box-shadow:0 4px 12px rgba(168,237,234,0.5)}
-        .beat.strong{background:#ff6b6b;width:64px;height:64px;font-size:24px;box-shadow:0 5px 18px rgba(255,107,107,0.5)}
-        .beat.traditional{background:#a8edea;box-shadow:0 4px 12px rgba(168,237,234,0.5)}
-        .beat.voice{background:#ffd93d;box-shadow:0 4px 12px rgba(255,217,61,0.5)}
-        .beat.pop{transform:scale(1.3)}
-        .bpm-btn{width:44px;height:44px;border-radius:50%;border:none;font-size:26px;font-weight:700;cursor:pointer;background:#ffeaa7;color:#e17055;box-shadow:0 4px 12px rgba(255,217,61,0.4)}
-        .bpm-display{text-align:center}
-        .bpm-val{font-size:58px;font-weight:900;color:#74b9ff}
-        .bpm-unit{font-size:13px;color:#a29bfe;font-weight:700}
-                .slider-wrap{padding:0 20px 15px;background:#fff}
-        .slider-row{display:flex;align-items:center;gap:12px}
-        .bpm-btn.sm{width:32px;height:32px;border-radius:50%;border:none;font-size:18px;font-weight:700;cursor:pointer;background:#ffeaa7;color:#e17055;padding:0;line-height:1;flex-shrink:0}
-        .bpm-section{display:flex;justify-content:center;align-items:center;padding:10px 25px 5px;background:#fff}
-        input[type=range]{-webkit-appearance:none;width:100%;height:10px;border-radius:5px;background:linear-gradient(90deg,#a8edea,#ffeaa7,#ff9a9e)}
-        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #ff9a9e;cursor:pointer}
-        .control{padding:10px 25px 25px;display:flex;justify-content:center;background:#fff}
-        .play-btn{width:80px;height:80px;border-radius:50%;border:none;font-size:36px;cursor:pointer;background:#55efc4;color:#fff;box-shadow:0 8px 25px rgba(0,184,148,0.4)}
-        .play-btn.running{background:#ff6b6b;box-shadow:0 8px 25px rgba(255,107,107,0.4)}
-        .settings{background:linear-gradient(135deg,#fff8f5,#fffaf8);border-radius:24px;margin:8px 0;overflow:hidden;box-shadow:0 2px 12px rgba(252,147,127,0.08)}
-        .toggle{width:100%;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#ff9a9e;background:transparent;transition:background .2s}
-        .toggle:hover{background:rgba(255,154,158,0.08)}
-        .toggle-arrow{font-size:11px;background:rgba(255,154,158,0.12);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:transform .3s}
-        .toggle.open .toggle-arrow{transform:rotate(180deg)}
-        .panel{max-height:0;overflow:hidden;transition:max-height .35s ease}
-        .panel.open{max-height:1400px}
-        .panel-inner{max-height:700px;overflow-y:auto;padding:15px 20px 30px;border-top:1px solid rgba(252,147,127,0.1);scrollbar-width:thin;scrollbar-color:rgba(252,147,127,0.2) transparent}
-        .section-title{font-size:11px;font-weight:700;color:#b2bec3;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-        .mode-row{display:flex;gap:8px;margin-bottom:10px}
-        .mode-btn{flex:1;padding:10px 6px;border-radius:12px;background:#f8f9fa;border:2px solid transparent;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#666}
-        .mode-btn.active{background:linear-gradient(135deg,#a8edea,#7dd3d0);color:#fff}
-        .mode-icon{font-size:24px;margin-bottom:4px}
-        .time-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-        .time-btn{padding:10px 6px;border-radius:12px;background:#f8f9fa;border:2px solid transparent;cursor:pointer;text-align:center;font-weight:800;font-size:15px;color:#333}
-        .time-btn.active{background:linear-gradient(135deg,#ffeaa7,#ffd93d);border-color:transparent;color:#e17055}
-        .time-btn small{display:block;font-size:11px;font-weight:500;opacity:.7;margin-top:3px}
-        .custom-row{display:flex;align-items:center;gap:8px;margin-top:8px}
-        .custom-input{width:55px;height:42px;border:2px solid #eee;border-radius:10px;text-align:center;font-size:18px;font-weight:700;color:#333}
-        .custom-sep{font-size:22px;font-weight:700;color:#ccc}
-        .apply-btn{padding:10px 18px;background:linear-gradient(135deg,#ff9a9e,#ff6b6b);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
-        .donate-row{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(252,147,127,0.1)}
-        .donate-title{font-size:12px;font-weight:700;color:#b2bec3;letter-spacing:.3px}
-        .qr-pair{display:flex;gap:24px;align-items:center}
-        .qr-item{display:flex;flex-direction:column;align-items:center;gap:5px}
-        .qr-img{width:150px;height:150px;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);object-fit:cover;object-position:center;background:#fff}
-        .qr-label{font-size:12px;font-weight:700;color:#aaa}
-                .debug{margin:0;padding:8px 12px;background:#111;color:#0f0;font-size:10px;font-family:monospace;max-height:60px;overflow-y:auto;white-space:pre-wrap;display:none}
-        .debug.show{display:block}
-        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
 
-        /* ==== UI 增强 v2.1 ==== */
-        /* Now-playing 状态条 */
-        .now-playing{display:inline-flex;align-items:center;gap:6px;margin:6px auto 8px;padding:4px 12px;background:rgba(255,255,255,0.85);border:1px solid #eee;border-radius:16px;font-size:11.5px;font-weight:700;color:var(--text-mute);box-shadow:0 2px 6px rgba(0,0,0,0.04)}
-        .np-dot{width:7px;height:7px;border-radius:50%;background:#ccc;transition:background .2s,box-shadow .2s}
-        .now-playing.playing .np-dot{background:var(--primary);box-shadow:0 0 0 3px rgba(255,154,158,0.3);animation:npPulse 1s ease-in-out infinite}
-        @keyframes npPulse{0%,100%{box-shadow:0 0 0 3px rgba(255,154,158,0.3)}50%{box-shadow:0 0 0 6px rgba(255,154,158,0)}}
+    <style>
+        /* =============================================================
+           马卡龙设计 tokens —— 与 Open Design「节拍器优化」对齐
+           ============================================================= */
+        :root {
+            --bg:           oklch(98% 0.022 35);
+            --surface:      oklch(100% 0 0);
+            --surface-2:    oklch(98% 0.012 35);
+            --ink:          oklch(22% 0.025 30);
+            --fg:           oklch(28% 0.022 30);
+            --fg-2:         oklch(48% 0.020 30);
+            --muted:        oklch(60% 0.014 30);
+            --border:       oklch(92% 0.014 35);
+
+            --coral:        oklch(74% 0.165 22);
+            --coral-soft:   oklch(95% 0.040 25);
+            --coral-deep:   oklch(58% 0.190 22);
+            --mint:         oklch(80% 0.115 165);
+            --mint-soft:    oklch(95% 0.030 165);
+            --mint-deep:    oklch(50% 0.130 165);
+            --lavender:     oklch(78% 0.090 295);
+            --lavender-soft:oklch(96% 0.030 295);
+            --lavender-deep:oklch(48% 0.140 295);
+            --lemon:        oklch(90% 0.115 95);
+            --lemon-deep:   oklch(60% 0.140 85);
+
+            --shadow-sm:    0 2px 6px oklch(20% 0.02 30 / 0.04), 0 1px 2px oklch(20% 0.02 30 / 0.03);
+            --shadow-md:    0 12px 32px -10px oklch(20% 0.02 30 / 0.12), 0 4px 8px oklch(20% 0.02 30 / 0.04);
+
+            --r-md: 16px;
+            --r-lg: 22px;
+            --r-xl: 30px;
+            --r-2xl: 36px;
+            --r-pill: 999px;
+
+            --font-display: 'DM Serif Display', 'Inter', 'Noto Sans SC', serif;
+            --font-body:    'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font-body);
+            color: var(--fg);
+            background: var(--bg);
+            background-image:
+                radial-gradient(900px 500px at 8% -5%,   oklch(95% 0.060 22  / 0.55), transparent 55%),
+                radial-gradient(700px 450px at 100% 6%,  oklch(94% 0.050 350 / 0.45), transparent 55%),
+                radial-gradient(800px 500px at 0% 60%,   oklch(94% 0.040 165 / 0.35), transparent 60%),
+                radial-gradient(700px 500px at 100% 80%, oklch(94% 0.050 295 / 0.35), transparent 60%),
+                radial-gradient(600px 400px at 50% 100%, oklch(96% 0.060 95  / 0.40), transparent 60%),
+                linear-gradient(180deg, oklch(98% 0.020 35), oklch(97% 0.030 25));
+            background-attachment: fixed;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            line-height: 1.5;
+            font-size: 15px;
+            letter-spacing: -0.005em;
+        }
+        button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+        a { color: inherit; text-decoration: none; }
+        img { display: block; max-width: 100%; }
+
+        .phone {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 0 16px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =============================================================
+           右上角马卡龙豆子按钮 —— 替代原来的 share/about/EN fixed chips
+           ============================================================= */
+        .bean-row {
+            position: fixed;
+            top: 12px; right: 12px;
+            z-index: 1000;
+            display: flex;
+            gap: 6px;
+        }
+        .bean {
+            height: 36px;
+            min-width: 36px;
+            padding: 0 10px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            position: relative;
+            transition: transform .15s, box-shadow .2s;
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.5),
+                inset 0 -1px 0 oklch(0% 0 0 / 0.04),
+                0 4px 10px -3px oklch(20% 0.02 30 / 0.15);
+        }
+        .bean:hover { transform: translateY(-1px); }
+        .bean:active { transform: translateY(0) scale(0.96); }
+        .bean svg { width: 18px; height: 18px; stroke-width: 1.8; }
+        .bean.bean-share {
+            background: linear-gradient(160deg, oklch(95% 0.080 95), oklch(88% 0.140 85));
+            color: var(--lemon-deep);
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.6),
+                inset 0 -2px 4px oklch(78% 0.140 85 / 0.20),
+                0 4px 12px -3px oklch(78% 0.140 85 / 0.30);
+        }
+        /* OD 设计稿里 share 豆子左上角的两颗小白点装饰 */
+        .bean.bean-share::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: oklch(100% 0 0 / 0.85);
+            box-shadow: 12px 4px 0 oklch(100% 0 0 / 0.55);
+        }
+        .bean.bean-help {
+            background: linear-gradient(160deg, oklch(93% 0.045 165), oklch(85% 0.085 165));
+            color: var(--mint-deep);
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.55),
+                inset 0 -2px 4px oklch(80% 0.115 165 / 0.18),
+                0 4px 12px -3px oklch(80% 0.115 165 / 0.30);
+        }
+        .bean.bean-lang {
+            background: linear-gradient(160deg, oklch(93% 0.045 295), oklch(85% 0.075 295));
+            color: var(--lavender-deep);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            gap: 4px;
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.55),
+                inset 0 -2px 4px oklch(78% 0.090 295 / 0.18),
+                0 4px 12px -3px oklch(78% 0.090 295 / 0.30);
+        }
+        .bean.bean-lang svg { width: 14px; height: 14px; }
+
+        /* =============================================================
+           Container —— Hero 卡 + Settings 卡
+           ============================================================= */
+        .container {
+            margin-top: 56px;
+            background: var(--surface);
+            border: 1px solid oklch(100% 0 0 / 0.8);
+            border-radius: var(--r-2xl);
+            padding: 30px 22px 22px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, oklch(92% 0.060 350 / 0.6), transparent 70%);
+            pointer-events: none;
+        }
+        .container::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -40px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, oklch(92% 0.045 165 / 0.5), transparent 70%);
+            pointer-events: none;
+        }
+        .container > * { position: relative; z-index: 1; }
+
+        /* Header —— 头像 + 标题 */
+        .header { text-align: center; }
+        .bunny-wrap {
+            display: inline-block;
+            padding: 5px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg,
+                oklch(88% 0.110 22)  0deg,
+                oklch(90% 0.115 95)  90deg,
+                oklch(85% 0.115 165) 180deg,
+                oklch(85% 0.090 295) 270deg,
+                oklch(88% 0.110 22)  360deg);
+            box-shadow: 0 8px 24px -8px oklch(74% 0.165 22 / 0.35);
+        }
+        .bunny {
+            width: 84px; height: 84px;
+            border-radius: 50%;
+            overflow: hidden;
+            object-fit: cover;
+            display: block;
+            background: linear-gradient(160deg, oklch(99% 0.020 350), oklch(95% 0.030 25));
+            box-shadow:
+                inset 0 -4px 8px oklch(80% 0.060 25 / 0.25),
+                inset 0 4px 8px oklch(100% 0 0 / 0.7);
+        }
+        h1 {
+            margin-top: 14px;
+            font-family: var(--font-body);
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: var(--ink);
+        }
+        h1 em, h1 .em {
+            font-family: var(--font-display);
+            font-style: italic;
+            font-weight: 400;
+            color: var(--coral-deep);
+        }
+        .subtitle {
+            font-size: 12.5px;
+            color: var(--muted);
+            margin-top: 4px;
+            letter-spacing: 0.02em;
+        }
+
+        /* =============================================================
+           Beat row —— 马卡龙节拍灯
+           ============================================================= */
+        .beats-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 24px 0 18px;
+            min-height: 56px;
+        }
+        /* 当 beats 数 ≠ 4 时仍然均分 */
+        .beats-section:has(.beat:nth-child(2):last-child)   { grid-template-columns: repeat(2, 1fr); }
+        .beats-section:has(.beat:nth-child(3):last-child)   { grid-template-columns: repeat(3, 1fr); }
+        .beats-section:has(.beat:nth-child(5):last-child)   { grid-template-columns: repeat(5, 1fr); }
+        .beats-section:has(.beat:nth-child(6):last-child)   { grid-template-columns: repeat(6, 1fr); }
+        .beats-section:has(.beat:nth-child(7):last-child)   { grid-template-columns: repeat(7, 1fr); }
+        .beats-section:has(.beat:nth-child(n+8))            { grid-template-columns: repeat(8, 1fr); }
+
+        .beat {
+            aspect-ratio: 1 / 1;
+            border-radius: 18px;
+            background: var(--surface-2);
+            border: 1.5px solid oklch(100% 0 0 / 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-body);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--muted);
+            transition: all .14s ease;
+            box-shadow: 0 2px 4px oklch(20% 0.02 30 / 0.04);
+        }
+        /* 各音效模式的节拍底色（保留原 JS 用的 class） */
+        .beat.uniform     { color: var(--mint-deep);  background: linear-gradient(160deg, var(--mint-soft), oklch(94% 0.040 165)); border-color: oklch(85% 0.080 165); }
+        .beat.traditional { color: var(--lemon-deep); background: linear-gradient(160deg, var(--lemon),     oklch(86% 0.110 95));  border-color: oklch(80% 0.115 90); }
+        .beat.voice       { color: var(--lavender-deep); background: linear-gradient(160deg, var(--lavender-soft), oklch(94% 0.060 295)); border-color: oklch(85% 0.075 295); }
+        .beat.strong {
+            color: oklch(100% 0 0);
+            background: linear-gradient(160deg, oklch(82% 0.130 22), oklch(70% 0.180 22));
+            border-color: oklch(64% 0.190 22);
+            box-shadow: 0 8px 18px -6px oklch(58% 0.190 22 / 0.4);
+        }
+        /* 当前正在响的那一拍 —— 原 JS 的 .pop class */
+        .beat.pop {
+            transform: translateY(-3px) scale(1.06);
+            box-shadow:
+                0 0 0 4px oklch(95% 0.040 22 / 0.4),
+                0 12px 24px -6px oklch(74% 0.165 22 / 0.5);
+        }
+        .beat.uniform.pop     { box-shadow: 0 0 0 4px oklch(95% 0.030 165 / 0.5), 0 12px 24px -6px oklch(60% 0.130 165 / 0.5); }
+        .beat.traditional.pop { box-shadow: 0 0 0 4px oklch(95% 0.060 95 / 0.5),  0 12px 24px -6px oklch(60% 0.140 85 / 0.5);  }
+        .beat.voice.pop       { box-shadow: 0 0 0 4px oklch(96% 0.030 295 / 0.5), 0 12px 24px -6px oklch(48% 0.140 295 / 0.4); }
+        .beat.strong.pop      { box-shadow: 0 0 0 4px oklch(74% 0.165 22 / 0.25), 0 14px 28px -8px oklch(58% 0.190 22 / 0.6);   }
+
+        /* =============================================================
+           BPM display
+           ============================================================= */
+        .bpm-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4px 0 8px;
+        }
+        .bpm-display {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bpm-val {
+            font-family: var(--font-body);
+            font-size: clamp(72px, 22vw, 96px);
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -0.045em;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+            background: linear-gradient(180deg, var(--ink), oklch(40% 0.05 30));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bpm-unit {
+            margin-top: -2px;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--coral-deep);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            background: var(--coral-soft);
+            padding: 3px 10px;
+            border-radius: var(--r-pill);
+        }
+        .now-playing {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 5px 12px;
+            background: oklch(100% 0 0 / 0.7);
+            border: 1px solid var(--border);
+            border-radius: var(--r-pill);
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--fg-2);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 6px oklch(20% 0.02 30 / 0.04);
+        }
+        .np-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: oklch(86% 0.020 30);
+            transition: background .2s, box-shadow .2s;
+        }
+        .now-playing.playing .np-dot {
+            background: var(--coral);
+            box-shadow: 0 0 0 3px oklch(74% 0.165 22 / 0.3);
+            animation: npPulse 1s ease-in-out infinite;
+        }
+        @keyframes npPulse {
+            0%, 100% { box-shadow: 0 0 0 3px oklch(74% 0.165 22 / 0.3); }
+            50%      { box-shadow: 0 0 0 6px oklch(74% 0.165 22 / 0); }
+        }
+
+        /* =============================================================
+           Slider
+           ============================================================= */
+        .slider-wrap { padding: 8px 4px 0; }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bpm-btn.sm {
+            flex: 0 0 36px;
+            width: 36px; height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(160deg, oklch(95% 0.050 95), oklch(90% 0.090 90));
+            color: var(--lemon-deep);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            border: 0;
+            transition: transform .12s;
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.5),
+                0 2px 6px oklch(80% 0.110 95 / 0.25);
+        }
+        .bpm-btn.sm:hover  { background: linear-gradient(160deg, oklch(94% 0.060 95), oklch(88% 0.100 90)); }
+        .bpm-btn.sm:active { transform: scale(0.92); }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            width: 100%;
+            height: 10px;
+            border-radius: var(--r-pill);
+            background: linear-gradient(90deg, var(--mint) 0%, var(--lemon) 50%, var(--coral) 100%);
+            background-clip: padding-box;
+            opacity: 0.65;
+            cursor: grab;
+        }
+        input[type=range]:hover { opacity: 1; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: oklch(100% 0 0);
+            border: 2.5px solid var(--coral);
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.8),
+                0 4px 10px -2px oklch(74% 0.165 22 / 0.5);
+            cursor: grab;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: oklch(100% 0 0);
+            border: 2.5px solid var(--coral);
+            box-shadow: 0 4px 10px -2px oklch(74% 0.165 22 / 0.5);
+        }
+
+        /* =============================================================
+           Play button
+           ============================================================= */
+        .control {
+            padding: 22px 0 8px;
+            display: flex;
+            justify-content: center;
+        }
+        .play-btn {
+            width: 78px; height: 78px;
+            border-radius: 50%;
+            background: linear-gradient(160deg, oklch(85% 0.130 165), oklch(72% 0.150 165));
+            color: oklch(100% 0 0);
+            font-size: 30px;
+            border: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                inset 0 2px 0 oklch(100% 0 0 / 0.4),
+                0 0 0 8px oklch(85% 0.130 165 / 0.20),
+                0 16px 32px -10px oklch(60% 0.150 165 / 0.55);
+            transition: transform .15s, box-shadow .15s;
+        }
+        .play-btn:hover  { transform: translateY(-1px); }
+        .play-btn:active { transform: scale(0.96); }
+        .play-btn.running {
+            background: linear-gradient(160deg, var(--coral), var(--coral-deep));
+            box-shadow:
+                inset 0 2px 0 oklch(100% 0 0 / 0.4),
+                0 0 0 8px oklch(74% 0.165 22 / 0.18),
+                0 16px 32px -10px oklch(58% 0.190 22 / 0.6);
+        }
+
+        /* =============================================================
+           Settings card —— 折叠面板（保留 toggle/panel/open class）
+           ============================================================= */
+        .settings {
+            margin-top: 18px;
+            background: var(--surface);
+            border: 1px solid oklch(100% 0 0 / 0.8);
+            border-radius: var(--r-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.005em;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .toggle:hover { background: var(--surface-2); }
+        .toggle-arrow {
+            font-size: 11px;
+            background: var(--coral-soft);
+            color: var(--coral-deep);
+            border-radius: 50%;
+            width: 22px; height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .3s ease;
+        }
+        .toggle.open .toggle-arrow {
+            transform: rotate(180deg);
+            background: linear-gradient(160deg, var(--coral), var(--coral-deep));
+            color: oklch(100% 0 0);
+        }
+        .panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .35s ease;
+        }
+        .panel.open { max-height: 1600px; }
+        .panel-inner {
+            padding: 6px 18px 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--mint-deep);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 16px 0 10px;
+        }
+        .section-title::before {
+            content: '';
+            width: 14px; height: 3px;
+            border-radius: 2px;
+            background: var(--mint);
+        }
+        .section-title:first-child { margin-top: 4px; }
+        .section-title.lemon  { color: var(--lemon-deep); }
+        .section-title.lemon::before  { background: var(--lemon); }
+        .section-title.lav    { color: var(--lavender-deep); }
+        .section-title.lav::before    { background: var(--lavender); }
+        .section-title.coral  { color: var(--coral-deep); }
+        .section-title.coral::before  { background: var(--coral); }
+
+        /* 音效模式 */
+        .mode-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .mode-btn {
+            aspect-ratio: 1 / 1;
+            background: var(--surface-2);
+            border: 1.5px solid oklch(100% 0 0 / 0.6);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--fg-2);
+            cursor: pointer;
+            transition: all .15s;
+            box-shadow: 0 2px 4px oklch(20% 0.02 30 / 0.04);
+        }
+        .mode-btn:hover { transform: translateY(-1px); }
+        .mode-icon { font-size: 22px; line-height: 1; }
+        .mode-btn.active {
+            background: linear-gradient(160deg, oklch(95% 0.040 165), oklch(90% 0.080 165));
+            border-color: oklch(80% 0.115 165);
+            color: var(--mint-deep);
+            box-shadow: 0 8px 18px -6px oklch(80% 0.115 165 / 0.4);
+        }
+        .mode-btn.active .mode-icon { transform: scale(1.1); }
+
+        /* 拍号 */
+        .time-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .time-btn {
+            padding: 12px 6px 10px;
+            background: var(--surface-2);
+            border: 1.5px solid oklch(100% 0 0 / 0.6);
+            border-radius: 14px;
+            text-align: center;
+            color: var(--fg);
+            cursor: pointer;
+            transition: all .15s;
+            box-shadow: 0 2px 4px oklch(20% 0.02 30 / 0.03);
+            font-family: var(--font-body);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .time-btn:hover { transform: translateY(-1px); }
+        .time-btn small {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .time-btn.active {
+            background: linear-gradient(160deg, oklch(95% 0.060 95), oklch(90% 0.110 90));
+            border-color: oklch(80% 0.115 90);
+            color: var(--lemon-deep);
+        }
+        .time-btn.active small { color: oklch(50% 0.110 85); }
+
+        /* 自定义 */
+        .custom-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .custom-input {
+            width: 56px; height: 40px;
+            background: var(--surface-2);
+            border: 1.5px solid oklch(100% 0 0 / 0.6);
+            border-radius: 12px;
+            text-align: center;
+            font-family: var(--font-body);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .custom-input:focus {
+            outline: 2px solid var(--lavender);
+            outline-offset: 1px;
+        }
+        .custom-sep {
+            color: var(--muted);
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .apply-btn {
+            flex: 1;
+            height: 40px;
+            background: linear-gradient(160deg, var(--lavender), var(--lavender-deep));
+            color: oklch(100% 0 0);
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            border: 0;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            box-shadow:
+                inset 0 1px 0 oklch(100% 0 0 / 0.3),
+                0 8px 18px -8px oklch(78% 0.090 295 / 0.5);
+            transition: transform .12s;
+        }
+        .apply-btn:active { transform: scale(0.96); }
+
+        /* 投喂打赏 */
+        .donate-row {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px dashed var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .donate-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            background: linear-gradient(160deg, oklch(97% 0.040 22), oklch(96% 0.050 25));
+            border: 1px dashed oklch(84% 0.090 22);
+            border-radius: var(--r-pill);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--coral-deep);
+            letter-spacing: 0.02em;
+        }
+        .qr-pair {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .qr-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            max-width: 160px;
+            padding: 10px;
+            border-radius: 16px;
+        }
+        .qr-item.wechat {
+            background: linear-gradient(160deg, oklch(95% 0.040 145), oklch(93% 0.060 145));
+            border: 1.5px solid oklch(85% 0.080 145);
+        }
+        .qr-item.alipay {
+            background: linear-gradient(160deg, oklch(95% 0.050 235), oklch(92% 0.080 235));
+            border: 1.5px solid oklch(85% 0.090 235);
+        }
+        .qr-img {
+            width: 100%;
+            max-width: 130px;
+            aspect-ratio: 1 / 1;
+            border-radius: 10px;
+            object-fit: cover;
+            background: var(--surface);
+            box-shadow: 0 4px 12px oklch(20% 0.02 30 / 0.12);
+        }
+        .qr-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--fg-2);
+            letter-spacing: 0.02em;
+        }
+
+        /* meta + debug */
+        .meta-bar {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+        }
+        .debug {
+            margin: 8px 0 0;
+            padding: 8px 12px;
+            background: oklch(20% 0.02 30 / 0.92);
+            color: oklch(85% 0.130 165);
+            font-size: 10px;
+            font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+            max-height: 80px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border-radius: 10px;
+            display: none;
+        }
+        .debug.show { display: block; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         /* 键盘快捷键提示 */
-        .kb-hint{position:fixed;bottom:24px;left:50%;transform:translate(-50%,16px);padding:10px 18px;background:rgba(45,52,54,0.92);color:#fff;border-radius:20px;font-size:12px;font-weight:600;backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:all .3s ease;z-index:9999;cursor:pointer}
-        .kb-hint.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-        .kb-hint b{color:#ffeaa7;font-weight:800;padding:0 4px}
+        .kb-hint {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translate(-50%, 16px);
+            padding: 10px 18px;
+            background: oklch(20% 0.02 30 / 0.92);
+            color: oklch(100% 0 0);
+            border-radius: var(--r-pill);
+            font-size: 12px;
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all .3s ease;
+            z-index: 9999;
+            cursor: pointer;
+        }
+        .kb-hint.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            pointer-events: auto;
+        }
+        .kb-hint b {
+            color: var(--lemon);
+            font-weight: 800;
+            padding: 0 4px;
+        }
     </style>
 </head>
 <body>
-    <button id="share-btn" aria-label="分享" title="分享" style="position:fixed;top:12px;right:128px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 10px;border-radius:16px;font-size:14px;font-weight:700;border:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:32px;text-align:center;line-height:1;">📤</button>
-    <a href="/about/" aria-label="关于" style="position:fixed;top:12px;right:88px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 10px;border-radius:16px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:32px;text-align:center;">?</a>
-    <a href="/en/" lang="en" style="position:fixed;top:12px;right:12px;z-index:1000;background:rgba(255,255,255,0.85);color:#ff9a9e;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.1);">EN</a>
-<div class="container">
+    <!-- 右上角马卡龙豆子按钮 -->
+    <div class="bean-row">
+        <button id="share-btn" class="bean bean-share" aria-label="分享" title="分享">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="6" cy="12" r="2.5"/>
+                <circle cx="18" cy="6" r="2.5"/>
+                <circle cx="18" cy="18" r="2.5"/>
+                <path d="M8.2 10.8 15.8 7.2M8.2 13.2 15.8 16.8"/>
+            </svg>
+        </button>
+        <a href="/about/" class="bean bean-help" aria-label="关于" title="关于">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4"/>
+                <circle cx="12" cy="17" r=".8" fill="currentColor"/>
+            </svg>
+        </a>
+        <a href="/en/" class="bean bean-lang" lang="en" aria-label="切换到英文">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+            </svg>
+            EN
+        </a>
+    </div>
+
+    <div class="phone">
         <section class="sr-only" aria-label="关于小兔头节拍器">
             <h2>小兔头节拍器 - 免费在线网页节拍器</h2>
             <p>小兔头节拍器是一款免费、无需下载的在线网页节拍器，浏览器打开即可使用。支持 40 到 208 BPM，覆盖 4/4、3/4、2/4、6/8、5/4、7/8 等常见拍号，并支持自定义拍号。提供传统鼓点、均匀节拍、童音数数三种音效模式，适合钢琴、吉他、鼓、舞蹈、唱歌、跑步节奏训练和音乐教学使用。本工具完全在浏览器本地运行，无需注册，无广告打扰。</p>
@@ -142,34 +865,47 @@
             <h3>为什么选择小兔头节拍器</h3>
             <p>完全免费、无需登录、无需下载 APP、打开网页即用。提供传统、均匀、童音三种音效模式，可自定义 BPM 与拍号，所有设置自动保存在本地，无需重复调节。支持手机、平板、电脑多端访问，是练琴练舞的随身好工具。</p>
         </section>
-        <div class="header">
-            <img class="bunny" src="images/bunny.png" alt="🐰">
-            <h1>小兔头节拍器</h1>
-        </div>
-        <div class="beats-section" id="beats-container"></div>
 
-        <div class="bpm-section">
-            <div class="bpm-display">
-                <div class="bpm-val" id="bpm-display">120</div>
-                <div class="bpm-unit">BPM</div>
-                <div class="now-playing" id="now-playing" aria-live="polite">
-                    <span class="np-dot"></span>
-                    <span id="np-text">待开始 · 120 BPM · 4/4 · 均匀</span>
+        <div class="container">
+            <div class="header">
+                <div class="bunny-wrap">
+                    <img class="bunny" src="images/bunny.png" alt="🐰">
+                </div>
+                <h1>小兔头<em>节拍器</em></h1>
+                <p class="subtitle">网页端在线节拍器 · 永久免费</p>
+            </div>
+
+            <div class="beats-section" id="beats-container"></div>
+
+            <div class="bpm-section">
+                <div class="bpm-display">
+                    <div class="bpm-val" id="bpm-display">120</div>
+                    <div class="bpm-unit">BPM</div>
+                    <div class="now-playing" id="now-playing" aria-live="polite">
+                        <span class="np-dot"></span>
+                        <span id="np-text">待开始 · 120 BPM · 4/4 · 均匀</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="slider-wrap">
-            <div class="slider-row">
-                <button class="bpm-btn sm" id="bpm-minus">−</button>
-                <input type="range" min="40" max="208" value="120" id="bpm-slider">
-                <button class="bpm-btn sm" id="bpm-plus">+</button>
+
+            <div class="slider-wrap">
+                <div class="slider-row">
+                    <button class="bpm-btn sm" id="bpm-minus">−</button>
+                    <input type="range" min="40" max="208" value="120" id="bpm-slider">
+                    <button class="bpm-btn sm" id="bpm-plus">+</button>
+                </div>
+            </div>
+
+            <div class="control">
+                <button class="play-btn" id="play-btn">▶</button>
             </div>
         </div>
-        <div class="control">
-            <button class="play-btn" id="play-btn">▶</button>
-        </div>
+
         <div class="settings">
-            <button class="toggle" id="settings-toggle">设置 <span class="toggle-arrow">▼</span></button>
+            <button class="toggle" id="settings-toggle">
+                <span>设置</span>
+                <span class="toggle-arrow">▼</span>
+            </button>
             <div class="panel" id="settings-panel">
                 <div class="panel-inner">
                     <div class="section-title">音效模式</div>
@@ -178,7 +914,8 @@
                         <div class="mode-btn active" data-mode="uniform"><div class="mode-icon">🎵</div>均匀</div>
                         <div class="mode-btn" data-mode="voice"><div class="mode-icon">🗣️</div>童音</div>
                     </div>
-                    <div class="section-title">节拍</div>
+
+                    <div class="section-title lemon">节拍</div>
                     <div class="time-row">
                         <button class="time-btn active" data-sig="4/4">4/4<small>四拍</small></button>
                         <button class="time-btn" data-sig="3/4">3/4<small>圆舞曲</small></button>
@@ -187,21 +924,23 @@
                         <button class="time-btn" data-sig="5/4">5/4<small>复合拍</small></button>
                         <button class="time-btn" data-sig="7/8">7/8<small>现代</small></button>
                     </div>
-                    <div class="section-title">自定义</div>
+
+                    <div class="section-title lav">自定义</div>
                     <div class="custom-row">
                         <input type="number" id="custom-beats" class="custom-input" min="1" max="16" value="4">
                         <span class="custom-sep">/</span>
                         <input type="number" id="custom-unit" class="custom-input" min="1" max="16" value="4">
                         <button class="apply-btn" id="apply-btn">应用</button>
                     </div>
+
                     <div class="donate-row">
-                        <div class="donate-title">☕ 投喂打赏</div>
+                        <div class="donate-title">☕ 投喂打赏 · 持续更新动力</div>
                         <div class="qr-pair">
-                            <div class="qr-item">
+                            <div class="qr-item wechat">
                                 <img class="qr-img" src="images/qr-wechat.jpg" alt="微信打赏">
                                 <div class="qr-label">💚 微信</div>
                             </div>
-                            <div class="qr-item">
+                            <div class="qr-item alipay">
                                 <img class="qr-img" src="images/qr-alipay.jpg" alt="支付宝打赏">
                                 <div class="qr-label">💛 支付宝</div>
                             </div>
@@ -209,9 +948,12 @@
                     </div>
                 </div>
             </div>
-        <div class="debug" id="debug-log"></div>
-        
+            <div class="debug" id="debug-log"></div>
+        </div>
+
+        <p class="meta-bar">已支持 40-208 BPM · 4/4 · 7/8 · 3 种音效</p>
     </div>
+
 <script>
 (function(){
 var UMENG_ID='1281476758';
@@ -276,13 +1018,11 @@ updateBeats();
 // ===== UI 增强 v2.1：键盘快捷键 =====
 (function(){
   document.addEventListener("keydown",function(e){
-    // 输入框内不拦截
     if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"))return;
     if(e.code==="Space"){e.preventDefault();document.getElementById("play-btn").click();}
     else if(e.code==="ArrowUp"){e.preventDefault();setBpm(s.bpm+(e.shiftKey?5:1));}
     else if(e.code==="ArrowDown"){e.preventDefault();setBpm(s.bpm-(e.shiftKey?5:1));}
   });
-  // 首次访问提示
   if(!localStorage.getItem("metronome_kbhint_v1")){
     var hint=document.createElement("div");
     hint.className="kb-hint";
@@ -314,7 +1054,7 @@ updateBeats();
   });
   function showShareToast(msg){
     var t=document.createElement("div");
-    t.textContent=msg;t.style.cssText="position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(45,52,54,0.95);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s";
+    t.textContent=msg;t.style.cssText="position:fixed;top:60px;left:50%;transform:translateX(-50%);background:oklch(20% 0.02 30 / 0.92);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s";
     document.body.appendChild(t);
     requestAnimationFrame(function(){t.style.opacity="1";});
     setTimeout(function(){t.style.opacity="0";setTimeout(function(){document.body.removeChild(t);},200);},1500);
