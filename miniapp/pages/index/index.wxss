@@ -61,10 +61,12 @@
   transform: translateY(2rpx) scale(0.95);
 }
 .bean-icon {
-  font-size: 34rpx;
-  font-weight: 700;
-  line-height: 1;
+  width: 38rpx;
+  height: 38rpx;
   display: block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .bean.bean-share {
@@ -74,6 +76,10 @@
     inset 0 2rpx 0 rgba(255, 255, 255, 0.6),
     inset 0 -4rpx 8rpx rgba(245, 220, 152, 0.20),
     0 8rpx 24rpx -6rpx rgba(245, 220, 152, 0.40);
+}
+/* 分享豆子 SVG：三圆连线（跟 web 主程序 .bean.bean-share 同款） */
+.bean.bean-share .bean-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a67700' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='12' r='2.5'/><circle cx='18' cy='6' r='2.5'/><circle cx='18' cy='18' r='2.5'/><path d='M8.2 10.8 15.8 7.2M8.2 13.2 15.8 16.8'/></svg>");
 }
 /* 分享豆子左上角两个装饰小白点（仿 web 主程序的 sparkle） */
 .bean.bean-share::before {
@@ -96,16 +102,22 @@
     inset 0 -4rpx 8rpx rgba(110, 213, 171, 0.18),
     0 8rpx 24rpx -6rpx rgba(110, 213, 171, 0.40);
 }
+/* 帮助豆子 SVG：圆 + 问号（跟 web 同款） */
+.bean.bean-help .bean-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007950' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4'/><circle cx='12' cy='17' r='.9' fill='%23007950' stroke='none'/></svg>");
+}
 
 .bean.bean-about {
   background: linear-gradient(160deg, #f3eeff 0%, #d8c8f4 100%);
   color: #6549a3;
-  font-family: Georgia, serif;
-  font-style: italic;
   box-shadow:
     inset 0 2rpx 0 rgba(255, 255, 255, 0.55),
     inset 0 -4rpx 8rpx rgba(187, 172, 235, 0.18),
     0 8rpx 24rpx -6rpx rgba(187, 172, 235, 0.40);
+}
+/* 关于豆子 SVG：圆 + i 信息 icon（lucide info 风格） */
+.bean.bean-about .bean-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236549a3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 16v-4'/><circle cx='12' cy='8.5' r='.9' fill='%236549a3' stroke='none'/></svg>");
 }
 
 /* ============================================================

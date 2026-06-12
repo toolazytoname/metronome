@@ -6,14 +6,15 @@
       class="bean bean-share"
       open-type="share"
       hover-class="bean-hover"
+      aria-label="分享小兔头节拍器"
     >
-      <text class="bean-icon">🔗</text>
+      <view class="bean-icon"></view>
     </button>
-    <view class="bean bean-help" hover-class="bean-hover" bindtap="onHelp">
-      <text class="bean-icon">?</text>
+    <view class="bean bean-help" hover-class="bean-hover" bindtap="onHelp" aria-label="使用帮助">
+      <view class="bean-icon"></view>
     </view>
-    <view class="bean bean-about" hover-class="bean-hover" bindtap="onAbout">
-      <text class="bean-icon">i</text>
+    <view class="bean bean-about" hover-class="bean-hover" bindtap="onAbout" aria-label="关于">
+      <view class="bean-icon"></view>
     </view>
   </view>
 
