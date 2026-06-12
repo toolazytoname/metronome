@@ -12,7 +12,34 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), usb=(), payment=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=()" },
+        { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://hm.baidu.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://www.google-analytics.com https://hm.baidu.com; connect-src 'self' https://hm.baidu.com https://*.google-analytics.com https://*.analytics.google.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(woff|woff2|ttf|otf|ico)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(index|landing|en/index|en/landing).html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" }
       ]
     }
   ]

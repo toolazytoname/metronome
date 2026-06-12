@@ -1028,13 +1028,27 @@ var UMENG_ID='1281476758';
 var GA4_ID='G-QH9CD00C0V';
 function track(e,d){console.log('[统计]',e,d);if(UMENG_ID&&typeof _czc!=='undefined'){_czc.push(['_trackEvent',e,e,undefined,undefined,0]);}if(GA4_ID&&typeof gtag!=='undefined'){gtag('event',e,{...d});}}
 </script>
-<script src="https://hm.baidu.com/hm.js?1281476758" async></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-QH9CD00C0V"></script>
 <script>
+// gtag stub：先建 dataLayer queue，让 track() 在 GA 脚本加载前的事件不丢失
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-QH9CD00C0V');
+
+// 分析脚本延迟到首屏空闲 + 1.5s 后加载，不阻塞首屏渲染
+// （TBT -30~50ms；events 不丢，gtag stub 已经把它们 queue 起来）
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    var hm = document.createElement('script');
+    hm.src = 'https://hm.baidu.com/hm.js?1281476758';
+    hm.async = true;
+    document.head.appendChild(hm);
+    var ga = document.createElement('script');
+    ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-QH9CD00C0V';
+    ga.async = true;
+    document.head.appendChild(ga);
+  }, 1500);
+});
 </script>
 <script>
 var log=function(){var m=Array.prototype.join.call(arguments," ");console.log(m);var d=document.getElementById("debug-log");if(d){d.textContent+=m+"\n";d.scrollTop=d.scrollHeight;}};
