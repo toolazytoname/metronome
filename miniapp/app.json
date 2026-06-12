@@ -4,9 +4,9 @@
   ],
   "window": {
     "navigationBarTitleText": "小兔头节拍器",
-    "navigationBarBackgroundColor": "#ffecd2",
+    "navigationBarBackgroundColor": "#fff4ef",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#fcb69f"
+    "backgroundColor": "#fff4ef"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

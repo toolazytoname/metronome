@@ -111,6 +111,10 @@ Page({
     currentSig: '4/4',
     customBeats: '4',
     customUnit: '4',
+
+    // v2.2 UI 增强
+    nowPlayingText: '待开始 · 120 BPM · 4/4 · 均匀',
+    silentHintShow: false,
   },
 
   // ========================================================
@@ -119,6 +123,7 @@ Page({
   onLoad() {
     this._loadState();
     this._updateBeats();
+    this._refreshNowPlaying();
     console.log('[Metronome] Page loaded, bpm:', this.data.bpm);
   },
 
@@ -137,6 +142,10 @@ Page({
 
   onUnload() {
     this._stopTick();
+    if (this._silentHintTimer) {
+      clearTimeout(this._silentHintTimer);
+      this._silentHintTimer = null;
+    }
   },
 
 
@@ -210,7 +219,13 @@ Page({
       this._stop();
     } else {
       this._start();
+      // 首次播放后启发式提示 iOS 用户检查静音键
+      this._maybeShowSilentHint();
     }
+  },
+
+  onSilentHintClose() {
+    this._dismissSilentHint();
   },
 
   onBpmMinus() {
@@ -238,6 +253,7 @@ Page({
     this.setData({ soundMode: mode });
     this._updateBeats();
     this._saveState();
+    this._refreshNowPlaying();
     // 切换模式时如果正在播放，先停再启（重置 AudioContext）
     if (this.data.running) {
       this._stop();
@@ -256,6 +272,7 @@ Page({
     });
     this._updateBeats();
     this._saveState();
+    this._refreshNowPlaying();
     // 切换拍号时如果正在播放，重启
     if (this.data.running) {
       this._stop();
@@ -279,6 +296,7 @@ Page({
     this.setData({ currentSig: sig });
     this._updateBeats();
     this._saveState();
+    this._refreshNowPlaying();
     if (this.data.running) {
       this._stop();
       this._start();
@@ -300,6 +318,7 @@ Page({
 
     this.setData({ bpm: newBpm });
     this._saveState();
+    this._refreshNowPlaying();
 
     // 如果正在播放，重设定时器间隔
     if (this.data.running) {
@@ -321,6 +340,7 @@ Page({
     // 注意：setData 必须先于 _startTick——setTimeout 链的第一次同步调用
     // 会读 this.data.running 来判断要不要排下一拍，否则会被早退。
     this.setData({ running: true });
+    this._refreshNowPlaying(true);
     this._startTick();
     console.log('[Metronome] Started at', this.data.bpm, 'BPM');
   },
@@ -330,6 +350,7 @@ Page({
     // 重置所有节拍指示器
     const beats = this.data.beats.map(b => ({ ...b, active: false }));
     this.setData({ running: false, beats });
+    this._refreshNowPlaying(false);
     console.log('[Metronome] Stopped');
   },
 
@@ -406,6 +427,61 @@ Page({
     }
 
     this._currentBeat = (cb + 1) % bc;
+  },
+
+
+  // ========================================================
+  // Now-playing 状态条
+  // ========================================================
+  _refreshNowPlaying(runningOverride) {
+    const running = runningOverride === undefined ? this.data.running : runningOverride;
+    const bpm = this.data.bpm;
+    const sig = this.data.currentSig;
+    const smLabel = this.data.soundMode === 'traditional' ? '传统' : '均匀';
+    const text = running
+      ? `正在播放 · ${bpm} BPM · ${sig} · ${smLabel}`
+      : `待开始 · ${bpm} BPM · ${sig} · ${smLabel}`;
+    if (text !== this.data.nowPlayingText) {
+      this.setData({ nowPlayingText: text });
+    }
+  },
+
+
+  // ========================================================
+  // iOS 静音键启发式提示（小程序无 navigator.audioSession 可查）
+  // 触发：iOS 设备 + 首次按 Play + 之前没 dismiss 过
+  // 关闭：✕ 按钮 / 8 秒自动消失 → 写入 storage 永不再弹
+  // ========================================================
+  _maybeShowSilentHint() {
+    if (this._silentHintShown) return;
+    try {
+      if (wx.getStorageSync('metronome_silent_hint_v1')) return;
+      const sys = wx.getSystemInfoSync();
+      const isIOS = sys && (sys.platform === 'ios' || sys.system && sys.system.toLowerCase().indexOf('ios') === 0);
+      if (!isIOS) return;
+    } catch (e) {
+      return;
+    }
+    this._silentHintShown = true;
+    // 1.5s 后弹（让节拍器先响一拍，用户能判断是否听到）
+    setTimeout(() => {
+      this.setData({ silentHintShow: true });
+      // 8s 自动消失
+      this._silentHintTimer = setTimeout(() => this._dismissSilentHint(), 8000);
+    }, 1500);
+  },
+
+  _dismissSilentHint() {
+    this.setData({ silentHintShow: false });
+    if (this._silentHintTimer) {
+      clearTimeout(this._silentHintTimer);
+      this._silentHintTimer = null;
+    }
+    try {
+      wx.setStorageSync('metronome_silent_hint_v1', '1');
+    } catch (e) {
+      // ignore storage failure
+    }
   },
 
 });

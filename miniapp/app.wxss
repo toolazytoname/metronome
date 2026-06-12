@@ -1,6 +1,19 @@
-/* 全局样式 */
+/* 全局样式 —— 马卡龙背景（小程序 wxss 不支持 oklch，已转 hex） */
 page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffecd2 0%, #fcb69f 100%);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #fff4ef;
+  /* 多层径向渐变模拟 web 端的马卡龙色洗 */
+  background-image:
+    radial-gradient(900rpx 500rpx at 8% -5%,   rgba(255, 223, 221, 0.55), transparent 55%),
+    radial-gradient(700rpx 450rpx at 100% 6%,  rgba(255, 222, 240, 0.45), transparent 55%),
+    radial-gradient(800rpx 500rpx at 0% 60%,   rgba(212, 244, 229, 0.35), transparent 60%),
+    radial-gradient(700rpx 500rpx at 100% 80%, rgba(237, 229, 255, 0.35), transparent 60%),
+    radial-gradient(600rpx 400rpx at 50% 100%, rgba(254, 242, 197, 0.40), transparent 60%),
+    linear-gradient(180deg, #fff4ef 0%, #ffe5e3 100%);
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: #332522;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
 }

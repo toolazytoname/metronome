@@ -1,9 +1,12 @@
 <view class="container">
   <view class="card">
-    <!-- 顶部：兔兔图标 + 标题 -->
+    <!-- 顶部：兔兔图标（马卡龙圆锥彩虹环） + 标题 -->
     <view class="header">
-      <image class="bunny-img" src="/images/bunny.png" mode="aspectFit"></image>
+      <view class="bunny-ring">
+        <image class="bunny-img" src="/images/bunny.png" mode="aspectFit"></image>
+      </view>
       <text class="title">小兔头节拍器</text>
+      <text class="subtitle">微信小程序 · 永久免费</text>
     </view>
 
     <!-- 节拍指示器 -->
@@ -20,6 +23,10 @@
       <view class="bpm-display">
         <text class="bpm-val">{{bpm}}</text>
         <text class="bpm-unit">BPM</text>
+        <view class="now-playing {{running ? 'playing' : ''}}">
+          <view class="np-dot"></view>
+          <text>{{nowPlayingText}}</text>
+        </view>
       </view>
     </view>
 
@@ -33,9 +40,10 @@
           value="{{bpm}}"
           bindchange="onBpmChange"
           bindchanging="onBpmChanging"
-          backgroundColor="#ffeaa7"
-          selected-color="#ff9a9e"
-          block-size="26"
+          backgroundColor="#ddf5e9"
+          selected-color="#ff7b7b"
+          block-color="#ffffff"
+          block-size="28"
         />
         <view class="bpm-btn sm" bindtap="onBpmPlus">+</view>
       </view>
@@ -47,78 +55,88 @@
         {{running ? '⏸' : '▶'}}
       </view>
     </view>
+  </view>
 
-    <!-- 设置面板 -->
-    <view class="settings">
-      <view class="toggle {{settingsOpen ? 'open' : ''}}" bindtap="onToggleSettings">
-        <text>设置</text>
-        <text class="toggle-arrow">▼</text>
-      </view>
-      <view class="panel {{settingsOpen ? 'open' : ''}}">
-        <view class="panel-inner">
+  <!-- 设置面板 -->
+  <view class="settings">
+    <view class="toggle {{settingsOpen ? 'open' : ''}}" bindtap="onToggleSettings">
+      <text>设置</text>
+      <text class="toggle-arrow">▼</text>
+    </view>
+    <view class="panel {{settingsOpen ? 'open' : ''}}">
+      <view class="panel-inner">
 
-          <!-- 音效模式 -->
-          <view class="section-title">音效模式</view>
-          <view class="mode-row">
-            <view
-              class="mode-btn {{soundMode === 'traditional' ? 'active' : ''}}"
-              bindtap="onModeChange"
-              data-mode="traditional"
-            >
-              <text class="mode-icon">🥁</text>
-              <text>传统</text>
-            </view>
-            <view
-              class="mode-btn {{soundMode === 'uniform' ? 'active' : ''}}"
-              bindtap="onModeChange"
-              data-mode="uniform"
-            >
-              <text class="mode-icon">🎵</text>
-              <text>均匀</text>
-            </view>
-
+        <!-- 音效模式 -->
+        <view class="section-title">音效模式</view>
+        <view class="mode-row">
+          <view
+            class="mode-btn {{soundMode === 'traditional' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="traditional"
+          >
+            <text class="mode-icon">🥁</text>
+            <text>传统</text>
           </view>
-
-          <!-- 节拍预设 -->
-          <view class="section-title">节拍</view>
-          <view class="time-grid">
-            <view
-              wx:for="{{timeSigs}}"
-              wx:key="sig"
-              class="time-btn {{currentSig === item.sig ? 'active' : ''}}"
-              bindtap="onTimeSigChange"
-              data-sig="{{item.sig}}"
-            >
-              {{item.sig}}
-              <text class="time-label">{{item.label}}</text>
-            </view>
-          </view>
-
-          <!-- 自定义节拍 -->
-          <view class="section-title">自定义</view>
-          <view class="custom-row">
-            <input
-              type="number"
-              class="custom-input"
-              value="{{customBeats}}"
-              bindinput="onCustomBeatsInput"
-              min="1"
-              max="16"
-            />
-            <text class="custom-sep">/</text>
-            <input
-              type="number"
-              class="custom-input"
-              value="{{customUnit}}"
-              bindinput="onCustomUnitInput"
-              min="1"
-              max="16"
-            />
-            <view class="apply-btn" bindtap="onApplyCustom">应用</view>
+          <view
+            class="mode-btn {{soundMode === 'uniform' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="uniform"
+          >
+            <text class="mode-icon">🎵</text>
+            <text>均匀</text>
           </view>
 
         </view>
+
+        <!-- 节拍预设 -->
+        <view class="section-title lemon">节拍</view>
+        <view class="time-grid">
+          <view
+            wx:for="{{timeSigs}}"
+            wx:key="sig"
+            class="time-btn {{currentSig === item.sig ? 'active' : ''}}"
+            bindtap="onTimeSigChange"
+            data-sig="{{item.sig}}"
+          >
+            {{item.sig}}
+            <text class="time-label">{{item.label}}</text>
+          </view>
+        </view>
+
+        <!-- 自定义节拍 -->
+        <view class="section-title lav">自定义</view>
+        <view class="custom-row">
+          <input
+            type="number"
+            class="custom-input"
+            value="{{customBeats}}"
+            bindinput="onCustomBeatsInput"
+            min="1"
+            max="16"
+          />
+          <text class="custom-sep">/</text>
+          <input
+            type="number"
+            class="custom-input"
+            value="{{customUnit}}"
+            bindinput="onCustomUnitInput"
+            min="1"
+            max="16"
+          />
+          <view class="apply-btn" bindtap="onApplyCustom">应用</view>
+        </view>
+
       </view>
     </view>
   </view>
+</view>
+
+<!-- iOS 静音提示（启发式：iOS 用户首次播放后 1.5s 弹出，✕ / 8s 自动消失） -->
+<view class="silent-hint {{silentHintShow ? 'show' : ''}}">
+  <text class="silent-ico">🔇</text>
+  <view class="silent-body">
+    <text class="silent-title">听不到节拍？</text>
+    <text class="silent-msg">把 iPhone 侧边的<text class="em">静音开关</text>推上来，或调高音量</text>
+  </view>
+  <view class="silent-close" bindtap="onSilentHintClose">✕</view>
 </view>
