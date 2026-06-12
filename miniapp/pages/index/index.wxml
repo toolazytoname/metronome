@@ -82,7 +82,7 @@
   <view class="settings">
     <view class="toggle {{settingsOpen ? 'open' : ''}}" bindtap="onToggleSettings">
       <text>{{i18n.settings}}</text>
-      <text class="toggle-arrow">▼</text>
+      <view class="toggle-arrow">▼</view>
     </view>
     <view class="panel {{settingsOpen ? 'open' : ''}}">
       <view class="panel-inner">

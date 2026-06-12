@@ -445,13 +445,15 @@ slider {
 /* ============================================================
    设置面板 —— 折叠
    ============================================================ */
+/* 设置卡 —— border-radius 30rpx 跟 web 的 var(--r-xl) 对齐；
+   不能用 60rpx，否则右上角弧形会裁掉 toggle-arrow 圆圈 */
 .settings {
   width: 100%;
   max-width: 840rpx;
   margin-top: 32rpx;
   background: #fff;
   border: 1rpx solid rgba(255, 255, 255, 0.85);
-  border-radius: 60rpx;
+  border-radius: 30rpx;
   overflow: hidden;
   box-shadow: 0 4rpx 12rpx rgba(37, 22, 20, 0.04);
   box-sizing: border-box;
