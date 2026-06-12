@@ -35,14 +35,16 @@
     0 4rpx 8rpx rgba(37, 22, 20, 0.04);
 }
 
-/* 全 reset wx button 默认样式（border / padding / 灰底 / min-width / ::after 边框） */
+/* 全 reset wx button 默认样式（border / padding / 灰底 / min-width / ::after 边框）
+   注：wx <button> 的默认 width/padding/min-width 优先级很高，普通 CSS 抢不过，
+       必须用 !important 锁死。否则 button.bean 会比兄弟 view.bean 宽几倍。 */
 .bean {
-  width: 56rpx;
-  height: 56rpx;
-  min-width: 0;      /* wx <button> 默认有 min-width，必须强清 */
-  min-height: 0;
-  padding: 0;
-  margin: 0;
+  width: 56rpx !important;
+  height: 56rpx !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
   border-radius: 18rpx;
   display: flex;
   align-items: center;

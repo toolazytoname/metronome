@@ -6,6 +6,7 @@
       class="bean bean-share"
       open-type="share"
       hover-class="bean-hover"
+      size="mini"
       aria-label="Share"
     >
       <view class="bean-icon"></view>
