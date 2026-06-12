@@ -16,28 +16,32 @@
 
 /* ============================================================
    顶部豆子按钮区 —— 分享 / 帮助 / 关于
-   注意：微信原生胶囊（···⊙）占据系统级右上角不可覆盖；
-        这些豆子在 page 顶部的 toolbar 行里靠右排列。
+   微信原生胶囊（···⊙）占据系统级右上角不可覆盖，所以这些豆子
+   在 page 顶部用 pill 浮岛容器靠右排列，视觉接近 web 主程序
+   右上角的 36px 紧凑感。
    ============================================================ */
 .bean-row {
-  width: 100%;
-  max-width: 840rpx;
-  display: flex;
-  justify-content: flex-end;
+  align-self: flex-end;
+  display: inline-flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 8rpx;
+  padding: 8rpx;
   margin-bottom: 20rpx;
-  padding: 0 4rpx;
-  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.62);
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  border-radius: 28rpx;
+  box-shadow:
+    0 12rpx 32rpx -10rpx rgba(37, 22, 20, 0.10),
+    0 4rpx 8rpx rgba(37, 22, 20, 0.04);
 }
 
 /* 全 reset wx button 默认样式（border / padding / 灰底 / ::after 边框） */
 .bean {
-  width: 72rpx;
-  height: 72rpx;
+  width: 56rpx;
+  height: 56rpx;
   padding: 0;
   margin: 0;
-  border-radius: 24rpx;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,9 +52,9 @@
   border: 0;
   position: relative;
   box-shadow:
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.5),
-    inset 0 -2rpx 0 rgba(0, 0, 0, 0.04),
-    0 8rpx 20rpx -6rpx rgba(37, 22, 20, 0.18);
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1rpx 0 rgba(0, 0, 0, 0.04),
+    0 4rpx 10rpx -3rpx rgba(37, 22, 20, 0.15);
   transition: transform 0.15s, box-shadow 0.2s;
 }
 .bean::after {
@@ -58,11 +62,11 @@
   border: none;
 }
 .bean-hover {
-  transform: translateY(2rpx) scale(0.95);
+  transform: translateY(2rpx) scale(0.94);
 }
 .bean-icon {
-  width: 38rpx;
-  height: 38rpx;
+  width: 30rpx;
+  height: 30rpx;
   display: block;
   background-repeat: no-repeat;
   background-position: center;
@@ -73,9 +77,9 @@
   background: linear-gradient(160deg, #fef2c5 0%, #f5dc98 100%);
   color: #a67700;
   box-shadow:
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.6),
-    inset 0 -4rpx 8rpx rgba(245, 220, 152, 0.20),
-    0 8rpx 24rpx -6rpx rgba(245, 220, 152, 0.40);
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2rpx 4rpx rgba(245, 220, 152, 0.20),
+    0 4rpx 12rpx -3rpx rgba(245, 220, 152, 0.40);
 }
 /* 分享豆子 SVG：三圆连线（跟 web 主程序 .bean.bean-share 同款） */
 .bean.bean-share .bean-icon {
@@ -85,22 +89,22 @@
 .bean.bean-share::before {
   content: '';
   position: absolute;
-  top: 10rpx;
-  left: 10rpx;
-  width: 8rpx;
-  height: 8rpx;
+  top: 8rpx;
+  left: 8rpx;
+  width: 6rpx;
+  height: 6rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.85);
-  box-shadow: 24rpx 8rpx 0 rgba(255, 255, 255, 0.55);
+  box-shadow: 18rpx 6rpx 0 rgba(255, 255, 255, 0.55);
 }
 
 .bean.bean-help {
   background: linear-gradient(160deg, #ddf5e9 0%, #b9eacf 100%);
   color: #007950;
   box-shadow:
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.55),
-    inset 0 -4rpx 8rpx rgba(110, 213, 171, 0.18),
-    0 8rpx 24rpx -6rpx rgba(110, 213, 171, 0.40);
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2rpx 4rpx rgba(110, 213, 171, 0.18),
+    0 4rpx 12rpx -3rpx rgba(110, 213, 171, 0.40);
 }
 /* 帮助豆子 SVG：圆 + 问号（跟 web 同款） */
 .bean.bean-help .bean-icon {
@@ -111,9 +115,9 @@
   background: linear-gradient(160deg, #f3eeff 0%, #d8c8f4 100%);
   color: #6549a3;
   box-shadow:
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.55),
-    inset 0 -4rpx 8rpx rgba(187, 172, 235, 0.18),
-    0 8rpx 24rpx -6rpx rgba(187, 172, 235, 0.40);
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2rpx 4rpx rgba(187, 172, 235, 0.18),
+    0 4rpx 12rpx -3rpx rgba(187, 172, 235, 0.40);
 }
 /* 关于豆子 SVG：圆 + i 信息 icon（lucide info 风格） */
 .bean.bean-about .bean-icon {
