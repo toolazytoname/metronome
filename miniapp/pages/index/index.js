@@ -310,11 +310,24 @@ Page({
   },
 
   onBpmChange(e) {
-    this._setBpm(parseInt(e.detail.value));
+    // 松手时触发。**不能**走 _setBpm 因为 onBpmChanging 已经把
+    // this.data.bpm 同步到新值，_setBpm 里 newBpm===old 会 early return，
+    // 导致 tick 不被重启，听到的节奏不变。这里直接 clamp + 重启 tick。
+    const newBpm = Math.max(40, Math.min(208, parseInt(e.detail.value)));
+    if (newBpm !== this.data.bpm) {
+      this.setData({ bpm: newBpm });
+    }
+    this._saveState();
+    this._refreshNowPlaying();
+    if (this.data.running) {
+      this._stopTick();
+      this._startTick();
+    }
+    console.log('[Metronome] BPM (slider release):', newBpm);
   },
 
   onBpmChanging(e) {
-    // 实时跟随滑块拖动（松开时才保存状态）
+    // 实时跟随滑块拖动（松开时才重启 tick + 保存状态）
     this.setData({ bpm: parseInt(e.detail.value) });
   },
 
