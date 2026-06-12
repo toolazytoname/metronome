@@ -724,6 +724,65 @@
             pointer-events: auto;
         }
         .kb-hint b { color: var(--lemon); font-weight: 800; padding: 0 4px; }
+
+        /* iOS silent-mode hint — heuristic (iOS doesn't expose silent state) */
+        .silent-hint {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translate(-50%, 16px);
+            max-width: 320px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: linear-gradient(160deg, oklch(97% 0.040 22), oklch(94% 0.080 22));
+            border: 1.5px solid oklch(84% 0.110 22);
+            border-radius: 18px;
+            color: var(--coral-deep);
+            font-size: 13px;
+            line-height: 1.45;
+            box-shadow: 0 12px 28px -8px oklch(74% 0.165 22 / 0.35);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease, transform .3s ease;
+            z-index: 9999;
+        }
+        .silent-hint.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            pointer-events: auto;
+        }
+        .silent-hint .ico { flex: 0 0 22px; font-size: 18px; line-height: 1.2; }
+        .silent-hint .body { flex: 1; }
+        .silent-hint .body b {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: var(--coral-deep);
+        }
+        .silent-hint .body span {
+            display: block;
+            color: var(--fg-2);
+            font-size: 12px;
+        }
+        .silent-hint .close {
+            flex: 0 0 24px;
+            width: 24px;
+            height: 24px;
+            border: 0;
+            padding: 0;
+            border-radius: 50%;
+            background: oklch(100% 0 0 / 0.6);
+            color: var(--coral-deep);
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .silent-hint .close:hover { background: oklch(100% 0 0 / 0.9); }
     </style>
 </head>
 <body>
@@ -855,6 +914,16 @@
         <p class="meta-bar">40-208 BPM · 4/4 · 7/8 · 3 sound modes</p>
     </div>
 
+    <!-- iOS silent-mode hint -->
+    <div class="silent-hint" id="silent-hint" role="status" aria-live="polite">
+        <span class="ico" aria-hidden="true">🔇</span>
+        <div class="body">
+            <b>No sound?</b>
+            <span>Flip the <b style="display:inline;color:var(--coral-deep)">silent switch</b> on your iPhone, or turn up the volume</span>
+        </div>
+        <button class="close" id="silent-hint-close" type="button" aria-label="Dismiss hint">✕</button>
+    </div>
+
 <script>
 (function(){
 var UMENG_ID='1281476758';
@@ -960,6 +1029,39 @@ updateBeats();
     requestAnimationFrame(function(){t.style.opacity="1";});
     setTimeout(function(){t.style.opacity="0";setTimeout(function(){document.body.removeChild(t);},200);},1500);
   }
+})();
+
+// iOS silent-mode hint — heuristic (iOS doesn't expose silent state)
+(function(){
+  // Detect iOS incl. iPadOS 13+ (which reports MacIntel; differentiate by touch)
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if(!isIOS) return;
+  if(localStorage.getItem("metronome_silent_hint_v1")) return;
+
+  var hint = document.getElementById("silent-hint");
+  var close = document.getElementById("silent-hint-close");
+  if(!hint || !close) return;
+
+  var shown = false;
+  var dismissTimer = null;
+
+  function show(){
+    if(shown) return;
+    shown = true;
+    // Wait 1.5s so the user has heard (or not heard) a beat first
+    setTimeout(function(){ hint.classList.add("show"); }, 1500);
+    // Auto-dismiss after 8s
+    dismissTimer = setTimeout(dismiss, 8000);
+  }
+  function dismiss(){
+    hint.classList.remove("show");
+    if(dismissTimer){ clearTimeout(dismissTimer); dismissTimer = null; }
+    localStorage.setItem("metronome_silent_hint_v1","1");
+  }
+
+  close.addEventListener("click", dismiss);
+  document.getElementById("play-btn").addEventListener("click", show, { once: true });
 })();
 </script>
 </body>
