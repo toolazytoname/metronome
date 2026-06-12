@@ -13,9 +13,11 @@ global.wx = {
   }),
   getStorageSync: () => null,
   setStorageSync: () => {},
+  getSystemInfoSync: () => ({ language: 'zh_CN', platform: 'devtools' }),
 };
 global.Page = def => { RealPageDef = def; };
 require('../pages/index/index.js');
+const { getI18n } = require('../utils/i18n');
 
 const TIME_SIGS = [
   { sig: '4/4', label: '四拍' },
@@ -58,6 +60,7 @@ class AudioManager {
 
 function makePage() {
   const instance = Object.create(RealPageDef);
+  const i18nZh = getI18n('zh');
   const data = {
     bpm: DEFAULT_STATE.bpm,
     running: false,
@@ -68,6 +71,11 @@ function makePage() {
     currentSig: '4/4',
     customBeats: '4',
     customUnit: '4',
+    // v2.2 新增字段（_refreshNowPlaying / handlers 会读）
+    nowPlayingText: '',
+    silentHintShow: false,
+    lang: 'zh',
+    i18n: i18nZh,
   };
   instance.data = data;
   instance._currentBeat = 0;

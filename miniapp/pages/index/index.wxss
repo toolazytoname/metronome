@@ -35,27 +35,31 @@
     0 4rpx 8rpx rgba(37, 22, 20, 0.04);
 }
 
-/* 全 reset wx button 默认样式（border / padding / 灰底 / ::after 边框） */
+/* 全 reset wx button 默认样式（border / padding / 灰底 / min-width / ::after 边框） */
 .bean {
   width: 56rpx;
   height: 56rpx;
+  min-width: 0;      /* wx <button> 默认有 min-width，必须强清 */
+  min-height: 0;
   padding: 0;
   margin: 0;
   border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0; /* 子元素 .bean-icon 自己定 size */
+  font-size: 0; /* 子元素 .bean-icon / .bean-lang-text 自己定 size */
   line-height: 1;
   color: #251614;
   background: #fff;
   border: 0;
   position: relative;
+  overflow: hidden;
   box-shadow:
     inset 0 1rpx 0 rgba(255, 255, 255, 0.5),
     inset 0 -1rpx 0 rgba(0, 0, 0, 0.04),
     0 4rpx 10rpx -3rpx rgba(37, 22, 20, 0.15);
   transition: transform 0.15s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 .bean::after {
   /* wx <button> 默认用 ::after 画边框，必须 unset */
@@ -109,6 +113,36 @@
 /* 帮助豆子 SVG：圆 + 问号（跟 web 同款） */
 .bean.bean-help .bean-icon {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007950' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4'/><circle cx='12' cy='17' r='.9' fill='%23007950' stroke='none'/></svg>");
+}
+
+/* 信息豆子（合并原 help + about）—— 圆 + i info icon */
+.bean.bean-info {
+  background: linear-gradient(160deg, #ddf5e9 0%, #b9eacf 100%);
+  color: #007950;
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2rpx 4rpx rgba(110, 213, 171, 0.18),
+    0 4rpx 12rpx -3rpx rgba(110, 213, 171, 0.40);
+}
+.bean.bean-info .bean-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007950' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 16v-4'/><circle cx='12' cy='8.5' r='.9' fill='%23007950' stroke='none'/></svg>");
+}
+
+/* 语言切换豆子（薰衣草紫，显示文字 EN 或 中） */
+.bean.bean-lang {
+  background: linear-gradient(160deg, #f3eeff 0%, #d8c8f4 100%);
+  color: #6549a3;
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2rpx 4rpx rgba(187, 172, 235, 0.18),
+    0 4rpx 12rpx -3rpx rgba(187, 172, 235, 0.40);
+}
+.bean.bean-lang .bean-lang-text {
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+  color: #6549a3;
+  line-height: 1;
 }
 
 .bean.bean-about {

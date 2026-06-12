@@ -1,20 +1,20 @@
 <view class="container">
 
-  <!-- 顶部豆子按钮区：分享 / 帮助 / 关于 -->
+  <!-- 顶部豆子浮岛：分享 / 信息 / 中英切换（与 web 主程序一致） -->
   <view class="bean-row">
     <button
       class="bean bean-share"
       open-type="share"
       hover-class="bean-hover"
-      aria-label="分享小兔头节拍器"
+      aria-label="Share"
     >
       <view class="bean-icon"></view>
     </button>
-    <view class="bean bean-help" hover-class="bean-hover" bindtap="onHelp" aria-label="使用帮助">
+    <view class="bean bean-info" hover-class="bean-hover" bindtap="onInfo" aria-label="Info">
       <view class="bean-icon"></view>
     </view>
-    <view class="bean bean-about" hover-class="bean-hover" bindtap="onAbout" aria-label="关于">
-      <view class="bean-icon"></view>
+    <view class="bean bean-lang" hover-class="bean-hover" bindtap="onLangToggle" aria-label="Switch language">
+      <text class="bean-lang-text">{{i18n.lang_btn}}</text>
     </view>
   </view>
 
@@ -24,8 +24,8 @@
       <view class="bunny-ring">
         <image class="bunny-img" src="/images/bunny.png" mode="aspectFit"></image>
       </view>
-      <text class="title">小兔头节拍器</text>
-      <text class="subtitle">微信小程序 · 永久免费</text>
+      <text class="title">{{i18n.title}}</text>
+      <text class="subtitle">{{i18n.subtitle}}</text>
     </view>
 
     <!-- 节拍指示器 -->
@@ -41,7 +41,7 @@
     <view class="bpm-section">
       <view class="bpm-display">
         <text class="bpm-val">{{bpm}}</text>
-        <text class="bpm-unit">BPM</text>
+        <text class="bpm-unit">{{i18n.bpm}}</text>
         <view class="now-playing {{running ? 'playing' : ''}}">
           <view class="np-dot"></view>
           <text>{{nowPlayingText}}</text>
@@ -79,14 +79,14 @@
   <!-- 设置面板 -->
   <view class="settings">
     <view class="toggle {{settingsOpen ? 'open' : ''}}" bindtap="onToggleSettings">
-      <text>设置</text>
+      <text>{{i18n.settings}}</text>
       <text class="toggle-arrow">▼</text>
     </view>
     <view class="panel {{settingsOpen ? 'open' : ''}}">
       <view class="panel-inner">
 
         <!-- 音效模式 -->
-        <view class="section-title">音效模式</view>
+        <view class="section-title">{{i18n.section_sound}}</view>
         <view class="mode-row">
           <view
             class="mode-btn {{soundMode === 'traditional' ? 'active' : ''}}"
@@ -94,7 +94,7 @@
             data-mode="traditional"
           >
             <text class="mode-icon">🥁</text>
-            <text>传统</text>
+            <text>{{i18n.sm_traditional}}</text>
           </view>
           <view
             class="mode-btn {{soundMode === 'uniform' ? 'active' : ''}}"
@@ -102,13 +102,13 @@
             data-mode="uniform"
           >
             <text class="mode-icon">🎵</text>
-            <text>均匀</text>
+            <text>{{i18n.sm_uniform}}</text>
           </view>
 
         </view>
 
         <!-- 节拍预设 -->
-        <view class="section-title lemon">节拍</view>
+        <view class="section-title lemon">{{i18n.section_beat}}</view>
         <view class="time-grid">
           <view
             wx:for="{{timeSigs}}"
@@ -123,7 +123,7 @@
         </view>
 
         <!-- 自定义节拍 -->
-        <view class="section-title lav">自定义</view>
+        <view class="section-title lav">{{i18n.section_custom}}</view>
         <view class="custom-row">
           <input
             type="number"
@@ -142,7 +142,7 @@
             min="1"
             max="16"
           />
-          <view class="apply-btn" bindtap="onApplyCustom">应用</view>
+          <view class="apply-btn" bindtap="onApplyCustom">{{i18n.apply}}</view>
         </view>
 
       </view>
@@ -150,12 +150,12 @@
   </view>
 </view>
 
-<!-- iOS 静音提示（启发式：iOS 用户首次播放后 1.5s 弹出，✕ / 8s 自动消失） -->
+<!-- iOS 静音提示（启发式：iOS 首次播放后 1.5s 弹出，✕ / 8s 自动消失） -->
 <view class="silent-hint {{silentHintShow ? 'show' : ''}}">
   <text class="silent-ico">🔇</text>
   <view class="silent-body">
-    <text class="silent-title">听不到节拍？</text>
-    <text class="silent-msg">把 iPhone 侧边的<text class="em">静音开关</text>推上来，或调高音量</text>
+    <text class="silent-title">{{i18n.silent_title}}</text>
+    <text class="silent-msg">{{i18n.silent_msg_part1}}<text class="em">{{i18n.silent_msg_em}}</text>{{i18n.silent_msg_part2}}</text>
   </view>
   <view class="silent-close" bindtap="onSilentHintClose">✕</view>
 </view>

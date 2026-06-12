@@ -1,6 +1,8 @@
 // 小兔头节拍器 - 微信小程序
 // 移植自 https://jpq.weichao.studio/
 
+const { getI18n, detectDefaultLang } = require('../../utils/i18n');
+
 // ============================================================
 // 音频管理器（鼓点采样播放，无延迟）
 // ============================================================
@@ -80,14 +82,11 @@ const audioManager = new AudioManager();
 // ============================================================
 // 节拍器核心状态
 // ============================================================
-const TIME_SIGS = [
-  { sig: '4/4', label: '四拍' },
-  { sig: '3/4', label: '圆舞曲' },
-  { sig: '2/4', label: '进行曲' },
-  { sig: '6/8', label: '八六拍' },
-  { sig: '5/4', label: '复合拍' },
-  { sig: '7/8', label: '现代' },
-];
+const TIME_SIG_KEYS = ['4/4', '3/4', '2/4', '6/8', '5/4', '7/8'];
+
+function buildTimeSigs(i18n) {
+  return TIME_SIG_KEYS.map(sig => ({ sig, label: i18n.ts_labels[sig] }));
+}
 
 // 默认配置（与原版一致）
 const DEFAULT_STATE = {
@@ -96,6 +95,18 @@ const DEFAULT_STATE = {
   bu: 4,    // beat unit（分母）
   sm: 'uniform',  // sound mode
 };
+
+// 启动时读 lang（先 storage，没有就用系统语言）
+const initialLang = (function() {
+  try {
+    const stored = wx.getStorageSync('metronome_lang');
+    if (stored === 'zh' || stored === 'en') return stored;
+  } catch (e) {
+    // ignore storage failure
+  }
+  return detectDefaultLang();
+})();
+const initialI18n = getI18n(initialLang);
 
 Page({
   data: {
@@ -106,15 +117,19 @@ Page({
     soundMode: DEFAULT_STATE.sm,
     settingsOpen: false,
 
-    // 拍号
-    timeSigs: TIME_SIGS,
+    // 拍号 —— label 根据当前 lang 动态生成
+    timeSigs: buildTimeSigs(initialI18n),
     currentSig: '4/4',
     customBeats: '4',
     customUnit: '4',
 
     // v2.2 UI 增强
-    nowPlayingText: '待开始 · 120 BPM · 4/4 · 均匀',
+    nowPlayingText: '',  // _refreshNowPlaying 在 onLoad 里填
     silentHintShow: false,
+
+    // i18n
+    lang: initialLang,
+    i18n: initialI18n,
   },
 
   // ========================================================
@@ -158,57 +173,52 @@ Page({
   // ========================================================
   onShareAppMessage() {
     return {
-      title: '小兔头节拍器 · 练琴节奏稳了',
+      title: this.data.i18n.share_title,
       path: '/pages/index/index?from=share',
-      // imageUrl 不传 → 微信自动用当前页截屏（马卡龙节拍器很好看，
-      // 比专门做封面图更直观）
+      // imageUrl 不传 → 微信自动用当前页截屏
     };
   },
 
   onShareTimeline() {
     return {
-      title: '小兔头节拍器 · 在线练琴神器',
+      title: this.data.i18n.share_timeline,
       query: 'from=timeline',
     };
   },
 
 
   // ========================================================
-  // 帮助 / 关于 —— 顶部豆子 bindtap
+  // 信息豆子（合并原 帮助 + 关于）—— 使用提示 + 版本 + 网页版链接
   // ========================================================
-  onHelp() {
+  onInfo() {
+    const i18n = this.data.i18n;
     wx.showModal({
-      title: '使用提示',
-      content: [
-        '· 拖滑块或 ± 调节 BPM (40-208)',
-        '· 中央按钮开始 / 暂停',
-        '· 展开「设置」切换音效和拍号',
-        '',
-        '听不到声音？',
-        '检查 iPhone 侧边静音键，或调高音量',
-      ].join('\n'),
+      title: i18n.info_title,
+      content: i18n.info_content,
       showCancel: false,
-      confirmText: '知道了',
-      confirmColor: '#d33944',
+      confirmText: i18n.info_btn,
+      confirmColor: '#6549a3',
     });
   },
 
-  onAbout() {
-    wx.showModal({
-      title: '小兔头节拍器',
-      content: [
-        'v2.2 · 马卡龙版',
-        '2026 夏',
-        '',
-        '网页版同步开放：',
-        'jpq.weichao.studio',
-        '',
-        '永久免费 · MIT License',
-      ].join('\n'),
-      showCancel: false,
-      confirmText: '关闭',
-      confirmColor: '#6549a3',
+
+  // ========================================================
+  // 中英切换豆子
+  // ========================================================
+  onLangToggle() {
+    const newLang = this.data.lang === 'zh' ? 'en' : 'zh';
+    const newI18n = getI18n(newLang);
+    this.setData({
+      lang: newLang,
+      i18n: newI18n,
+      timeSigs: buildTimeSigs(newI18n),
     });
+    this._refreshNowPlaying();
+    try {
+      wx.setStorageSync('metronome_lang', newLang);
+    } catch (e) {
+      // ignore storage failure
+    }
   },
 
 
@@ -498,12 +508,12 @@ Page({
   // ========================================================
   _refreshNowPlaying(runningOverride) {
     const running = runningOverride === undefined ? this.data.running : runningOverride;
+    const i18n = this.data.i18n || getI18n('zh'); // 防御：测试 mock 可能缺
     const bpm = this.data.bpm;
     const sig = this.data.currentSig;
-    const smLabel = this.data.soundMode === 'traditional' ? '传统' : '均匀';
-    const text = running
-      ? `正在播放 · ${bpm} BPM · ${sig} · ${smLabel}`
-      : `待开始 · ${bpm} BPM · ${sig} · ${smLabel}`;
+    const smLabel = this.data.soundMode === 'traditional' ? i18n.sm_traditional : i18n.sm_uniform;
+    const statusLabel = running ? i18n.np_playing : i18n.np_idle;
+    const text = `${statusLabel} · ${bpm} ${i18n.bpm} · ${sig} · ${smLabel}`;
     if (text !== this.data.nowPlayingText) {
       this.setData({ nowPlayingText: text });
     }
