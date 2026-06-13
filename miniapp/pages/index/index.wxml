@@ -2,17 +2,16 @@
 
   <!-- 顶部豆子：分享 / 信息 / 中英切换（裸排，跟 web 主程序一致，无外层容器） -->
   <view class="bean-row">
-    <view class="bean bean-share" hover-class="bean-hover" aria-label="Share">
+    <!-- 分享豆子：button 自己当 .bean，!important 锁 padding 防止 button 默认样式把 SVG 顶歪 -->
+    <button
+      class="bean bean-share"
+      open-type="share"
+      hover-class="bean-hover"
+      size="mini"
+      aria-label="Share"
+    >
       <view class="bean-icon"></view>
-      <!-- wx button 即使 padding:0 !important 内部仍有偏移，导致 SVG 不居中。
-           方案：view 当视觉壳（SVG 完美居中），button 透明 absolute 覆盖只
-           负责触发原生分享。 -->
-      <button
-        class="bean-share-trigger"
-        open-type="share"
-        size="mini"
-      ></button>
-    </view>
+    </button>
     <view class="bean bean-info" hover-class="bean-hover" bindtap="onInfo" aria-label="Info">
       <view class="bean-icon"></view>
     </view>

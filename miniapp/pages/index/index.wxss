@@ -57,26 +57,50 @@
   background-size: contain;
 }
 
-/* 分享按钮的透明 button 触发器：absolute 全覆盖整个 .bean，opacity:0
-   只负责调起 open-type='share' 的微信原生分享面板，
-   视觉完全交给外层 view 控制，避免 wx button 内部 padding 把 SVG 顶歪 */
-.bean-share-trigger {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+/* 顶部豆子按钮区 —— 分享 / 信息 / 中英切换
+   微信原生胶囊（···⊙）占据系统级右上角不可覆盖，所以这些豆子
+   在 page 顶部用 pill 浮岛容器靠右排列，视觉接近 web 主程序
+   右上角的 36px 紧凑感。
+   ============================================================ */
+.bean {
+  width: 56rpx;
+  height: 56rpx;
+  /* !important：wx <button> 默认有 padding/min-width，会撑大
+     容器让 .bean 变 100%+padding 宽。锁死才能保持 56rpx 圆角方块。 */
   padding: 0 !important;
-  margin: 0;
+  margin: 0 !important;
   min-width: 0 !important;
   min-height: 0 !important;
-  background: transparent;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #251614;
+  background: #fff;
   border: 0;
-  opacity: 0;
-  z-index: 2;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1rpx 0 rgba(0, 0, 0, 0.04),
+    0 4rpx 10rpx -3rpx rgba(37, 22, 20, 0.15);
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
-.bean-share-trigger::after {
-  border: 0;
+.bean::after {
+  /* wx <button> 默认用 ::after 画 1px 边框，必须 unset */
+  border: none;
+}
+.bean-hover {
+  transform: translateY(2rpx) scale(0.94);
+}
+.bean-icon {
+  width: 30rpx;
+  height: 30rpx;
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .bean.bean-share {
