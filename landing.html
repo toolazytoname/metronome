@@ -668,6 +668,51 @@
         .share-hint b { font-weight: 700; }
 
         /* =============================================================
+           支持我们 —— 捐赠区（小程序跳这里）
+           ============================================================= */
+        .donate-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .donate-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 12px 14px;
+            background: var(--surface);
+            border: 1.5px solid oklch(100% 0 0 / 0.8);
+            border-radius: 22px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .donate-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12rpx 32rpx -10rpx oklch(20% 0.02 30 / 0.15);
+        }
+        .donate-qr {
+            width: 100%;
+            max-width: 160px;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #fff;
+        }
+        .donate-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .donate-note {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        /* =============================================================
            FAQ
            ============================================================= */
         .faq-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1050,6 +1095,26 @@
             </svg>
             <span>在微信里打开，点右上角 <b>「···」</b> → <b>「转发」</b>，最稳。</span>
         </div>
+    </section>
+
+    <!-- 支持我们 —— 捐赠区（小程序跳这里） -->
+    <section class="block tinted-warm" id="donate">
+        <div class="block-head">
+            <span class="eyebrow blush">Support us</span>
+            <h2 class="section-title">每杯<em>咖啡</em>都是更新动力</h2>
+            <p class="section-sub">如果你喜欢小兔头，欢迎扫码投喂</p>
+        </div>
+        <div class="donate-pair">
+            <a class="donate-tile" href="javascript:void(0)" id="donate-wechat" aria-label="微信打赏">
+                <img class="donate-qr" src="/images/qr-wechat.jpg" alt="微信收款码">
+                <div class="donate-label">微信</div>
+            </a>
+            <a class="donate-tile" href="javascript:void(0)" id="donate-alipay" aria-label="支付宝打赏">
+                <img class="donate-qr" src="/images/qr-alipay.jpg" alt="支付宝收款码">
+                <div class="donate-label">支付宝</div>
+            </a>
+        </div>
+        <p class="donate-note">每笔都是开发者真金白银的鼓励 ✕ 不接打赏税、不走代理</p>
     </section>
 
     <!-- FAQ -->

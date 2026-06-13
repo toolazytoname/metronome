@@ -389,6 +389,43 @@ Page({
     }
   },
 
+
+  // ========================================================
+  // 支持我们 —— 跳转 web-view 打开 web 端捐赠页
+  // 微信小程序禁止直接展示收款码，必须跳外部 web 页面
+  // ========================================================
+  onDonate() {
+    const donateUrl = 'https://jpq.weichao.studio/about#donate';
+    wx.navigateTo({
+      url: '/pages/webview/webview?url=' + encodeURIComponent(donateUrl),
+      fail: (err) => {
+        // 开发期业务域名未配时，web-view 会失败 —— 用 web 链接提示
+        wx.showModal({
+          title: this.data.i18n.donate_title,
+          content: donateUrl,
+          confirmText: this.data.i18n.donate_btn_copy,
+          success: (r) => {
+            if (r.confirm) this.onCopyUrl();
+          }
+        });
+      }
+    });
+  },
+
+  onCopyUrl() {
+    const url = 'https://jpq.weichao.studio/about#donate';
+    wx.setClipboardData({
+      data: url,
+      success: () => {
+        wx.showToast({
+          title: this.data.i18n.donate_copied,
+          icon: 'none',
+          duration: 2000,
+        });
+      }
+    });
+  },
+
   onToggleSettings() {
     this.setData({ settingsOpen: !this.data.settingsOpen });
   },

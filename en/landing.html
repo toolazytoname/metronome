@@ -624,6 +624,51 @@
         .share-hint svg { width: 16px; height: 16px; flex: 0 0 16px; }
         .share-hint b { font-weight: 700; }
 
+        /* =============================================================
+           Support us / Donate (mini-program jumps here)
+           ============================================================= */
+        .donate-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .donate-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 12px 14px;
+            background: var(--surface);
+            border: 1.5px solid oklch(100% 0 0 / 0.8);
+            border-radius: 22px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .donate-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12rpx 32rpx -10rpx oklch(20% 0.02 30 / 0.15);
+        }
+        .donate-qr {
+            width: 100%;
+            max-width: 160px;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #fff;
+        }
+        .donate-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .donate-note {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
         .faq-list { display: flex; flex-direction: column; gap: 10px; }
         .faq-item {
             background: oklch(100% 0 0 / 0.7);
@@ -987,6 +1032,26 @@
             </svg>
             <span>On mobile, tap <b>Share</b> to open your native sheet — works with Messages, WhatsApp, anything.</span>
         </div>
+    </section>
+
+    <!-- Support us / Donate (mini-program jumps here) -->
+    <section class="block tinted-warm" id="donate">
+        <div class="block-head">
+            <span class="eyebrow blush">Support us</span>
+            <h2 class="section-title">Buy me a <em>coffee</em></h2>
+            <p class="section-sub">If Little Rabbit helped your practice, scan to tip</p>
+        </div>
+        <div class="donate-pair">
+            <a class="donate-tile" href="javascript:void(0)" id="donate-wechat" aria-label="WeChat tip">
+                <img class="donate-qr" src="/images/qr-wechat.jpg" alt="WeChat QR">
+                <div class="donate-label">WeChat</div>
+            </a>
+            <a class="donate-tile" href="javascript:void(0)" id="donate-alipay" aria-label="Alipay tip">
+                <img class="donate-qr" src="/images/qr-alipay.jpg" alt="Alipay QR">
+                <div class="donate-label">Alipay</div>
+            </a>
+        </div>
+        <p class="donate-note">Every tip goes directly to the dev — no middleman, no platform tax</p>
     </section>
 
     <section class="block" id="faq">
