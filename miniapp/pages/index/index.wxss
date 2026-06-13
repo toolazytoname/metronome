@@ -471,6 +471,10 @@ slider {
   background: transparent;
   text-align: left;
   letter-spacing: -0.5rpx;
+  /* box-sizing: border-box 是关键！
+     之前没设 → padding 向外撑 72rpx → 整个 .toggle 超出 .settings
+     边界 → 右边 toggle-arrow 被 .settings 的 overflow:hidden 切掉一大半 */
+  box-sizing: border-box;
 }
 .toggle-arrow {
   font-size: 22rpx;
@@ -483,6 +487,7 @@ slider {
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, background 0.2s, color 0.2s;
+  flex-shrink: 0;  /* flex 容器里防止被压缩回 0 */
 }
 .toggle.open .toggle-arrow {
   transform: rotate(180deg);
