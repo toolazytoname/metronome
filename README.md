@@ -1,96 +1,376 @@
-# 🎵 小兔头节拍器
+<p align="center">
+  <img src="images/bunny.png" alt="小兔头节拍器" width="96">
+</p>
 
-> 一个高颜值的在线节拍器，支持童声语音引导，专为练琴、练鼓、练舞设计。
+<p align="center">
+  <strong>一个打开浏览器就能用的网页节拍器。</strong>
+  <br>
+  支持童声数拍、传统强/弱拍、多种拍号。练琴、练鼓、练舞都行。
+</p>
 
-**在线体验：** [jpq.weichao.studio](https://jpq.weichao.studio/)
+<p align="center">
+  <a href="https://jpq.weichao.studio">立即体验</a>
+  ·
+  <a href="#快速开始">快速开始</a>
+  ·
+  <a href="https://jpq.weichao.studio/landing.html">落地页</a>
+  ·
+  <a href="README.en.md">English docs</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/toolazytoname/metronome?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/version-2.x-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/stack-HTML%20%2B%20CSS%20%2B%20JS-orange?style=flat-square" alt="Stack">
+  <img src="https://img.shields.io/badge/audio-Web%20Audio%20API-green?style=flat-square" alt="Audio">
+  <img src="https://img.shields.io/badge/voice-Web%20Speech%20Synthesis-9cf?style=flat-square" alt="Voice">
+  <img src="https://img.shields.io/badge/build-none-lightgrey?style=flat-square" alt="Build">
+</p>
+
+<br>
+
+<p align="center">
+  <img src="assets/screenshots/app-default-zh.png" alt="小兔头节拍器主界面 —— 4 拍均匀模式 120 BPM" width="720">
+</p>
 
 ---
 
-## ✨ 功能特色
+## 先看效果
 
-### 🎶 三种音效模式
-| 模式 | 描述 |
-|------|------|
-| 🥁 **传统** | 强拍高音 + 弱拍低音，经典节拍器音效 |
-| 🎵 **均匀** | 每个拍子音高相同，适合稳定节奏练习 |
-| 🗣️ **童声** | 用稚嫩的童声念出节拍数字（1、2、3、4…），辅助数拍，超适合初学者 |
+练琴最怕两件事：**节拍不稳**，**数拍走神**。节拍器把这两件事都包了：默认节拍稳，童声模式帮你数拍。
+
+<p align="center">
+  <img src="assets/screenshots/app-playing-zh.png" alt="节拍器播放状态 —— 设置面板打开" width="720">
+</p>
+
+<p align="center">
+  <em>播放状态 —— 设置面板里切音效模式。</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="assets/screenshots/landing-zh.png" alt="落地页全景" width="720">
+</p>
+
+<p align="center">
+  <em>落地页 —— 「网页也能当节拍器」的全部理由。</em>
+</p>
+
+---
+
+## 一分钟版
+
+- 🥁 **三种音效** —— 传统强/弱拍、均匀同音、童声数拍（初学者神器）
+- 🎚️ **40 – 208 BPM** —— 滑块实时调节，无需停顿
+- ⏱️ **2/4 · 3/4 · 4/4 · 6/8** —— 预设拍号全开，自定义任意分子/分母
+- ⌨️ **键盘快捷键** —— Space 播放/暂停、↑↓ ±1 BPM、Shift+↑↓ ±5 BPM
+- 📱 **PWA** —— 加到主屏像 App 一样用
+- 🐰 **微信小程序** —— 不方便开浏览器？小程序也在
+- 💸 **完全免费** —— 没广告、没内购、没付费墙，自愿打赏
+
+---
+
+## 为什么是它？
+
+| 你想做的事 | 以前只能用… | 结果是… |
+|---|---|---|
+| 给钢琴课配个节拍器 | 手机 App | 要装、要登录、要被广告打扰 |
+| 给孩子数拍启蒙 | 节拍器 App | 数字读音冷冰冰，孩子不爱听 |
+| 练鼓找准速度 | 桌面软件 | 一台电脑锁死，手机用不了 |
+| 临时给一段曲子定拍 | 在线工具 | 要联网、要账号、过两天跑路 |
+
+小兔头节拍器 = **浏览器打开就有，童声数拍，钢琴鼓都能用，手机电脑都能开**。
+
+---
+
+## 功能
+
+### 🥁 三种音效模式
+
+每种都基于 Web Audio API，浏览器内合成，**没有音频文件要下载**。
+
+| 模式 | 怎么响 | 适合 |
+|---|---|---|
+| 🥁 **传统** | 强拍 880 Hz、弱拍 440 Hz | 钢琴、古典、鼓的基本功练习 |
+| 🎵 **均匀** | 每拍 660 Hz | 稳定节奏感训练，不被强/弱干扰 |
+| 🗣️ **童声** | 真童声念出 1、2、3、4… | 启蒙、儿童练琴、初学者数拍 |
+
+切换即时生效，播放中也能换。
 
 ### 🎚️ BPM 实时调节
-- 范围 **40 ~ 208 BPM**
-- 拖动滑块**实时响应**，无需停顿
-- 支持童声模式下流畅切换速度，不卡顿
 
-### ⏱️ 多种节拍类型
-- 预设：`2/4`、`3/4`、`4/4`、`6/8`
-- 自定义：任意分子/分母组合（右键「应用」进入调试模式）
+- 范围 **40 – 208 BPM**
+- 滑块拖动**边拖边变**，不用停下
+- 童声模式下语速自动跟着 BPM 走（不会因为 BPM 快了声音糊在一起）
 
-### 🎨 高颜值界面
-- 渐变色节拍球 + 动画反馈
-- 响应式设计，手机/平板/桌面均可使用
-- 轻柔粉暖色调，专注不刺眼
+### ⏱️ 多种拍号
 
-### 📊 数据统计
-- **友盟统计**（国内）
-- **Google Analytics 4**（海外）
-- 追踪：播放/暂停、BPM变化、音效切换、节拍切换
+预设：`2/4` `3/4` `4/4` `6/8`
 
-### ☕ 打赏支持
-设置面板底部内置微信/支付宝收款码，如果你觉得好用，欢迎投喂 🙏
+自定义：任意分子/分母组合 —— 5/4、7/8、12/8 都行（设置面板右键「应用」进调试模式）。
+
+### ⌨️ 键盘快捷键
+
+不想动鼠标？记住这三个：
+
+```
+Space          播放 / 暂停
+↑ ↓            BPM ±1
+Shift + ↑ ↓    BPM ±5
+```
+
+不用看屏幕，调速盲操都够用。
+
+### 📱 PWA + 小程序
+
+- **PWA**：`manifest.json` + Service Worker，加到手机主屏像原生 App
+- **微信小程序**：搜索「小兔头节拍器」，不想开浏览器就用小程序
+- **响应式**：手机 / 平板 / 桌面，同一套代码自适应
+
+### 🍎 iPhone 静音提醒（启发式）
+
+iOS 不让网页读静音开关，所以节拍器会在用户首次播放时弹出提示：
+
+> **手机开了静音吗？** 开了的话你听不到，先关掉再继续。
+
+这是**启发式** —— 我们不知道你手机到底什么状态，只能提醒一下。不想看到这个提示可以关掉。
+
+<p align="center">
+  <img src="assets/screenshots/silent-hint-zh.png" alt="iPhone 静音模式启发式提醒" width="360">
+</p>
 
 ---
 
-## 🛠️ 技术栈
+## 快速开始
 
-| 层次 | 技术 |
-|------|------|
-| 前端 | 原生 HTML + CSS + JavaScript（零依赖） |
-| 音频 | Web Audio API（双振荡器叠加增益） |
-| 语音 | Web Speech Synthesis API |
-| 统计 | 友盟统计 + GA4 |
-| 部署 | Vercel / GitHub Pages |
-| 域名 | jpq.weichao.studio |
+三种方式，挑一个顺手的。
 
----
+### A. 直接用线上版 —— 零配置
 
-## 🚀 快速开始
+👉 **<https://jpq.weichao.studio>**
 
-**方式一：直接访问**
-```
-https://jpq.weichao.studio/
-```
+所有现代浏览器都行：macOS / Windows / Linux / iPhone / iPad / Android。
 
-**方式二：本地运行**
+### B. Clone 后双击打开 —— 不需要服务器
+
 ```bash
 git clone https://github.com/toolazytoname/metronome.git
 cd metronome
-python3 -m http.server 8080
-# 打开 http://localhost:8080
+open index.html           # macOS
+xdg-open index.html       # Linux
+start index.html          # Windows
+```
+
+`file://` 协议下 Web Audio API 和 Web Speech API 都正常工作，唯一注意的是 Chrome 在 `file://` 下对部分 Web API 有警告，不影响使用。
+
+### C. 自托管到你自己的域名
+
+```bash
+# Vercel（零配置，免费 HTTPS）
+npx vercel --prod
+
+# GitHub Pages
+# Settings → Pages → Deploy from branch → main / root
+
+# Cloudflare Pages
+# Connect repo → Build command 留空 → Output dir 留根目录
+```
+
+完整流程见 **[DEPLOY.md](DEPLOY.md)**。
+
+---
+
+## 工作原理
+
+```
+   ┌──────────────────────────────────────────────────────┐
+   │  index.html       （单文件 App，所有 CSS/JS 内联，    │
+   │                    零依赖，无构建步骤）               │
+   └─────────────────┬────────────────────────────────────┘
+                     │
+                     │  纯前端运行
+                     ▼
+   ┌──────────────────────────────────────────────────────┐
+   │  Web Audio API    合成三种音效                       │
+   │  Web Speech API   童声数拍                           │
+   │  localStorage     记住 BPM / 拍号 / 音效偏好         │
+   └─────────────────┬────────────────────────────────────┘
+                     │
+                     │  可选
+                     ▼
+   ┌──────────────────────────────────────────────────────┐
+   │  友盟统计 + GA4    匿名事件统计（播放/暂停/调节）    │
+   │  Service Worker    离线缓存                          │
+   │  manifest.json     PWA 安装                          │
+   └──────────────────────────────────────────────────────┘
+```
+
+**每个 tick，在浏览器里：**
+
+1. 用 `setInterval` 按 BPM 间隔触发 tick
+2. tick 触发时根据当前音效模式播放一个音（Web Audio API）或念一个数字（Web Speech API）
+3. 节拍球 UI 同步闪烁 / 弹动
+4. 切换 BPM、拍号、音效时调整对应参数
+
+没别的步骤。没有后端。没有账号体系。
+
+---
+
+## 技术栈
+
+| 层次 | 技术 | 备注 |
+|---|---|---|
+| 前端 | 原生 HTML + CSS + JS | 零依赖，无构建步骤 |
+| 音频合成 | Web Audio API | 双振荡器叠加 + GainNode 包络 |
+| 童声念拍 | Web Speech Synthesis API | 语速跟随 BPM 自适应 |
+| PWA | manifest.json + Service Worker | 加到主屏像原生 App |
+| 国内统计 | 友盟 CNZZ（site ID 1281476758） | 仅埋点，不收集个人数据 |
+| 海外统计 | Google Analytics 4（G-QH9CD00C0V） | 同上 |
+| 微信小程序 | 原生小程序（`miniapp/` 目录） | 复用同一套 UI 逻辑 |
+| 部署 | Vercel | 域名 `jpq.weichao.studio` |
+
+所有代码都在仓库里可读 —— 没有黑盒、没有 SaaS 依赖。
+
+---
+
+## 数据格式（`localStorage`）
+
+节拍器把偏好存在 `localStorage` 一个 key 下：
+
+```jsonc
+// localStorage key: "metronome"
+{
+  "bpm": 120,         // 40 - 208
+  "bc": 4,            // 拍号分子（beats per measure）
+  "bu": 4,            // 拍号分母（beat unit）
+  "sm": "uniform"     // "traditional" | "uniform" | "voice"
+}
+```
+
+就这点东西。换个浏览器就重置，没有任何云同步 —— 这就是「打开即用」的代价，也是它的简单。
+
+---
+
+## 隐私
+
+| 维度 | 做法 |
+|---|---|
+| 用户输入 | 没有账号、没有表单、不收集任何身份信息 |
+| 本地存储 | 只存 BPM / 拍号 / 音效偏好（4 个字段） |
+| 网络请求 | 仅友盟 + GA4 统计（埋点，不带个人信息） |
+| 第三方追踪 | 无 |
+| 数据出售 | 无 |
+
+如果连埋点都不想要，浏览器装个 uBlock / AdGuard 一刀切就完事。
+
+---
+
+## 不在范围内
+
+节拍器明确**不**做：
+
+- **多轨 / 复合节奏**（比如 4 拍里加三连音） —— 太复杂，网页做意义有限
+- **谱例跟随** —— 不做 MIDI / MusicXML 解析
+- **云端同步偏好** —— 故意不做，浏览器之间没必要同步这点配置
+- **录课 / 回放** —— 不录、不存、不上传你的练习音频
+- **社交功能** —— 不做排行榜、不做打卡、不做好友
+
+以上是硬需求的话你不是目标用户 —— 这没问题。节拍器服务的是「想练琴/练鼓，需要一个靠谱的拍子，不要被 App 绑架」的人。
+
+---
+
+## 常见问题
+
+**iPhone 上没声音？**
+检查静音开关。Web 端没法读静音状态，第一次播放会弹出提示问一次。Apple Watch 的话同样确认手表没静音。
+
+**童声模式声音怪怪的？**
+Web Speech API 用的是系统自带 TTS 引擎。macOS / Windows / iOS / Android 默认音色不一样 —— 这不是 bug，是 API 设计。
+
+**BPM 调到极限会卡吗？**
+208 BPM 极限测试过没问题。再往上浏览器 `setInterval` 抖动会变明显，所以上限卡 208。
+
+**能离线用吗？**
+能（Service Worker 缓存了所有静态资源）。首次打开后断网也能用。
+
+**有小程序版吗？**
+有。微信搜「小兔头节拍器」。功能跟网页版一致，UI 适配小程序组件。
+
+**能跟着曲子定拍吗？**
+不能。没有 MIDI 输入、没有音频分析。要这种功能建议用专门的 DAW（Logic、Reaper、Ableton）。
+
+---
+
+## 路线图
+
+- [x] 三种音效模式（传统 / 均匀 / 童声）
+- [x] BPM 40 – 208 实时调节
+- [x] 2/4 · 3/4 · 4/4 · 6/8 拍号
+- [x] 自定义分子/分母
+- [x] 键盘快捷键
+- [x] iOS 静音启发式提示
+- [x] PWA + 加到主屏
+- [x] 微信小程序
+- [x] 中英双语（`/en/` 目录 + hreflang）
+- [ ] 节拍器练习课程（与某钢琴教育账号合作中）
+- [ ] 自定义音效（上传你自己的音色）
+
+有想法？[开个 issue](https://github.com/toolazytoname/metronome/issues)。
+
+---
+
+## 开发
+
+```bash
+git clone https://github.com/toolazytoname/metronome.git
+cd metronome
+python3 -m http.server 8000
+# 打开 http://localhost:8000
+```
+
+**改 App** —— 任何文本编辑器打开 `index.html`。`<style>` 和 `<script>` 在文件底部；想拆分维护就抽出来。
+
+**目录结构**
+
+```
+index.html               中文版主应用（默认）
+en/index.html            英文版主应用
+landing.html             中文落地页
+en/landing.html          英文落地页
+manifest.json            PWA 配置
+vercel.json              部署配置（重定向 + 缓存策略）
+scripts/                 Playwright 截图与 SEO 体检脚本
+docs/                    设计文档、改版记录
+miniapp/                 微信小程序源码
+images/                  Logo、二维码、favicon
+assets/screenshots/      README 截图素材
+DEPLOY.md                部署流程
+robots.txt / sitemap.xml 站点地图
+LICENSE                  MIT
 ```
 
 ---
 
-## 📱 使用技巧
+## 贡献
 
-- **调节速度**：拖动 BPM 滑块或点击 ± 按钮
-- **切换音效**：点击「童音」模式，边练琴边听"1234"数拍
-- **自定义节拍**：节拍区块下方输入分子/分母，右键「应用」
-- **打开调试日志**：长按「应用」按钮 2 秒
+欢迎小而专注的 PR。提 PR 之前：
 
----
+1. 搜一下已有 issue / PR
+2. 超过 typo 范围的，先开个 issue 对齐方向
+3. 守住「单文件、零依赖」承诺 —— 不加框架、不加构建工具，除非真有必要
 
-## 📈 数据统计
-
-上线后可在以下平台查看访问数据：
-
-- 友盟统计：https://tongji.baidu.com/（申请后接入）
-- GA4 后台：https://analytics.google.com/ → G-QH9CD00C0V
+安全问题**别**开公开 issue —— 邮件 <lazywc@gmail.com>。
 
 ---
 
-## 📝 License
+## License
 
-MIT © [toolazytoname](https://github.com/toolazytoname)
+[MIT](LICENSE)
 
 ---
 
-*如果你觉得这个小工具好用，欢迎 ⭐ Star，你的支持是我持续维护的动力！*
+<p align="center">
+  Built by <a href="https://github.com/toolazytoname">@toolazytoname</a>
+  · <a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a>
+</p>
