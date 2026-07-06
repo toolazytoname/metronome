@@ -37,3 +37,6 @@ index-playing.png
 
 # Playwright cache
 .playwright-mcp/
+
+# Claude worktree working copies (abandoned miniapp worktrees from 2026-05)
+.claude/worktrees/
