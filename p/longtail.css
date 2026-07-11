@@ -1,0 +1,82 @@
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f5f5f7;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-tertiary: #86868b;
+  --border: #d2d2d7;
+  --action: #0071e3;
+  --action-bright: #2997ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --bg-alt: #0a0a0c;
+    --text: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #86868b;
+    --border: #424245;
+    --action: #2997ff;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  padding: 80px 24px 60px;
+}
+.container { max-width: 720px; margin: 0 auto; }
+.nav {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--text-secondary);
+  text-decoration: none; margin-bottom: 32px;
+}
+.nav:hover { color: var(--text); }
+h1 {
+  font-size: clamp(32px, 5vw, 44px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+  font-size: 13px; color: var(--text-secondary);
+}
+.chip strong { color: var(--text); font-weight: 600; }
+.narrative {
+  font-size: 18px; line-height: 1.7;
+  color: var(--text);
+  margin: 24px 0 32px;
+}
+.narrative p { margin-bottom: 16px; }
+.cta {
+  display: inline-block;
+  padding: 14px 28px; border-radius: 999px;
+  background: var(--action); color: #fff;
+  font-size: 17px; font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.cta:hover { opacity: 0.85; transform: translateY(-1px); }
+.fallback {
+  margin-top: 24px; font-size: 14px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+footer {
+  margin-top: 64px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--text-tertiary);
+  display: flex; gap: 24px; flex-wrap: wrap;
+}
+footer a { color: var(--text-secondary); text-decoration: none; }
+footer a:hover { color: var(--text); }

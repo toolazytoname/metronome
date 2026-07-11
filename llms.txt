@@ -27,6 +27,34 @@ Intended for:
 - [Chinese — landing](https://jpq.weichao.studio/landing.html)
 - [English — landing](https://jpq.weichao.studio/en/landing.html)
 
+### Long-tail entry points (BPM / time signature / mode pre-set)
+
+Each page below opens the main app with ?bpm=&sig=&mode= already set, so users land on the right tempo without manual adjustment.
+
+中文 (pre-set for a specific scenario):
+- [钢琴练习节拍器 (80 BPM, 4/4, 传统鼓点)](https://jpq.weichao.studio/p/piano-practice.html)
+- [鼓手慢练 60 BPM (60, 4/4, 传统鼓点)](https://jpq.weichao.studio/p/drum-slow-60.html)
+- [跑步配速 180 BPM (180, 4/4, 均匀节拍)](https://jpq.weichao.studio/p/running-cadence-180.html)
+- [6/8 拍节拍器 / jig 与爱尔兰民谣 (90, 6/8, 传统鼓点)](https://jpq.weichao.studio/p/six-eight-time.html)
+- [华尔兹 3/4 拍节拍器 (100, 3/4, 传统鼓点)](https://jpq.weichao.studio/p/waltz-three-four.html)
+- [儿童学琴数拍子 / 童音模式 (70, 4/4, 童音)](https://jpq.weichao.studio/p/kids-piano-count.html)
+- [吉他练习节拍器 (100, 4/4, 均匀节拍)](https://jpq.weichao.studio/p/guitar-practice.html)
+- [舞蹈课节拍器 (120, 4/4, 均匀节拍)](https://jpq.weichao.studio/p/dance-class.html)
+- [民乐练习节拍器 / 2/4 拍 (90, 2/4, 传统鼓点)](https://jpq.weichao.studio/p/chinese-music.html)
+- [40 BPM 极慢练 (40, 4/4, 童音)](https://jpq.weichao.studio/p/ultra-slow-40.html)
+
+English:
+- [Piano Practice (80 BPM, 4/4, traditional)](https://jpq.weichao.studio/en/p/piano-practice.html)
+- [60 BPM Drum Slow-Practice (60, 4/4, traditional)](https://jpq.weichao.studio/en/p/drum-slow-60.html)
+- [180 BPM Running Cadence (180, 4/4, uniform)](https://jpq.weichao.studio/en/p/running-cadence-180.html)
+- [6/8 Time / Jig (90, 6/8, traditional)](https://jpq.weichao.studio/en/p/six-eight-time.html)
+- [Waltz 3/4 Time (100, 3/4, traditional)](https://jpq.weichao.studio/en/p/waltz-three-four.html)
+- [Kids Piano Counting / Voice Mode (70, 4/4, voice)](https://jpq.weichao.studio/en/p/kids-piano-count.html)
+- [Guitar Practice (100, 4/4, uniform)](https://jpq.weichao.studio/en/p/guitar-practice.html)
+- [Dance Class (120, 4/4, uniform)](https://jpq.weichao.studio/en/p/dance-class.html)
+- [Chinese Music / 2/4 (90, 2/4, traditional)](https://jpq.weichao.studio/en/p/chinese-music.html)
+- [40 BPM Ultra-Slow Practice (40, 4/4, voice)](https://jpq.weichao.studio/en/p/ultra-slow-40.html)
+
 ## Repository
 
 https://github.com/toolazytoname/metronome
