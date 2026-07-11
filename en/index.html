@@ -1085,5 +1085,37 @@ updateBeats();
   document.getElementById("play-btn").addEventListener("click", show, { once: true });
 })();
 </script>
+<!-- made-by-lazy: cross-product footer (metronome EN — skips self link) -->
+<style>
+  .made-by-lazy {
+    margin: 32px auto 16px;
+    padding: 16px 20px;
+    max-width: 980px;
+    border-top: 1px solid rgba(127,127,127,.18);
+    font: 12px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: rgba(110,110,110,1);
+    text-align: center;
+  }
+  .made-by-lazy a { color: inherit; text-decoration: none; }
+  .made-by-lazy a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .made-by-lazy .mbl-brand { font-weight: 600; color: rgba(60,60,67,.85); }
+  .made-by-lazy .mbl-tag { display: block; margin-top: 2px; font-size: 11px; opacity: .75; }
+  .made-by-lazy nav { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; margin-top: 8px; font-size: 12px; }
+  @media (prefers-color-scheme: dark) {
+    .made-by-lazy { border-top-color: rgba(255,255,255,.08); color: rgba(180,180,185,1); }
+    .made-by-lazy .mbl-brand { color: rgba(230,230,235,.9); }
+  }
+</style>
+<footer class="made-by-lazy" aria-label="Cross-product footer">
+  <div>
+    <span class="mbl-brand">Made by <a href="https://github.com/toolazytoname">lazy</a> · 懒得起名</span>
+    <span class="mbl-tag">Indie dev · building tools I actually use, with AI</span>
+  </div>
+  <nav aria-label="Other products by lazy">
+    <a href="https://beta.gridgo.weichao.studio">📅 GridGo</a>
+    <a href="https://lodge.weichao.studio">🏔️ Lodge</a>
+    <a href="https://weichao.ren">✍️ Blog</a>
+  </nav>
+</footer>
 </body>
 </html>
