@@ -1,0 +1,36 @@
+# 小兔头节拍器 / Bunny Metronome
+
+> A free browser metronome for piano, drums, dance practice, and running cadence. Bilingual, no install, no account, no telemetry.
+
+## About
+
+A web-only metronome with three sound modes and six time signatures. Open the URL in any browser and it just works — desktop, mobile, iOS, Android.
+
+Features:
+- BPM range 40–208
+- 6 time signatures: 4/4, 3/4, 2/4, 6/8, 5/4, 7/8
+- 3 sound modes: classic drum (strong/weak beats), uniform click, child-voice counting (Web Speech Synthesis)
+- Bilingual UI (中文 / English)
+- iOS silent-mode heuristic — warns once if the ringer is off
+- Static HTML — no backend, no auth, no tracking
+
+Intended for:
+- Piano / guitar / drum practice
+- Dance rehearsal across time signatures
+- Running cadence training
+- Music teaching (the voice mode helps young students keep count)
+
+## Pages
+
+- [Chinese — main app](https://jpq.weichao.studio/)
+- [English — main app](https://jpq.weichao.studio/en/)
+- [Chinese — landing](https://jpq.weichao.studio/landing.html)
+- [English — landing](https://jpq.weichao.studio/en/landing.html)
+
+## Repository
+
+https://github.com/toolazytoname/metronome
+
+## License
+
+MIT. Free.
