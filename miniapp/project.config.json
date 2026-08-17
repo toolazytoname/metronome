@@ -4,7 +4,31 @@
     "ignore": [
       {
         "type": "folder",
-        "value": "node_modules/umtrack-wx/node_modules/"
+        "value": "node_modules"
+      },
+      {
+        "type": "folder",
+        "value": "tests"
+      },
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "folder",
+        "value": "coverage"
+      },
+      {
+        "type": "folder",
+        "value": ".automator-out"
+      },
+      {
+        "type": "file",
+        "value": "vitest.config.js"
+      },
+      {
+        "type": "file",
+        "value": "package-lock.json"
       }
     ],
     "include": []
