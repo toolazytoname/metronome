@@ -1,17 +1,11 @@
 <view class="container">
 
-  <!-- 顶部豆子：分享 / 信息 / 中英切换（裸排，跟 web 主程序一致，无外层容器） -->
+  <!-- 三颗同尺寸方块；分享用透明 button 覆盖，避免原生 button 默认高把行撑歪 -->
   <view class="bean-row">
-    <!-- 分享豆子：button 自己当 .bean，!important 锁 padding 防止 button 默认样式把 SVG 顶歪 -->
-    <button
-      class="bean bean-share"
-      open-type="share"
-      hover-class="bean-hover"
-      size="mini"
-      aria-label="Share"
-    >
+    <view class="bean bean-share" hover-class="bean-hover" aria-label="Share">
+      <button class="bean-hit" open-type="share" hover-class="none"></button>
       <view class="bean-icon"></view>
-    </button>
+    </view>
     <view class="bean bean-info" hover-class="bean-hover" bindtap="onInfo" aria-label="Info">
       <view class="bean-icon"></view>
     </view>
@@ -105,6 +99,14 @@
             <text class="mode-icon">🎵</text>
             <text>{{i18n.sm_uniform}}</text>
           </view>
+          <view
+            class="mode-btn {{soundMode === 'voice' ? 'active' : ''}}"
+            bindtap="onModeChange"
+            data-mode="voice"
+          >
+            <text class="mode-icon">🗣️</text>
+            <text>{{i18n.sm_voice}}</text>
+          </view>
 
         </view>
 
@@ -144,6 +146,23 @@
             max="16"
           />
           <view class="apply-btn" bindtap="onApplyCustom">{{i18n.apply}}</view>
+        </view>
+
+        <view class="section-title coral">{{i18n.section_volume}}</view>
+        <view class="vol-row">
+          <text class="vol-ico">🔊</text>
+          <slider
+            min="10"
+            max="100"
+            value="{{vol}}"
+            bindchange="onVolChange"
+            bindchanging="onVolChanging"
+            backgroundColor="#ffe5e1"
+            selected-color="#ff7b7b"
+            block-color="#ffffff"
+            block-size="24"
+          />
+          <text class="vol-val">{{vol}}</text>
         </view>
 
         <!-- 支持我们 —— 跳转 web-view 看捐赠页（小程序不允许直接扫码支付） -->

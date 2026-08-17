@@ -88,13 +88,13 @@
 
 ### 🥁 三种音效模式
 
-每种都基于 Web Audio API，浏览器内合成，**没有音频文件要下载**。
+鼓点是短促的木鱼式采样（不是软正弦），童音是预先渲好的「一、二、三…」采样，用 Web Audio 按拍点预约播放。
 
 | 模式 | 怎么响 | 适合 |
 |---|---|---|
-| 🥁 **传统** | 强拍 880 Hz、弱拍 440 Hz | 钢琴、古典、鼓的基本功练习 |
-| 🎵 **均匀** | 每拍 660 Hz | 稳定节奏感训练，不被强/弱干扰 |
-| 🗣️ **童声** | 真童声念出 1、2、3、4… | 启蒙、儿童练琴、初学者数拍 |
+| 🥁 **传统** | 强拍 / 弱拍两套短 click | 钢琴、古典、鼓的基本功练习 |
+| 🎵 **均匀** | 每拍同一声 click | 稳定节奏感训练，不被强/弱干扰 |
+| 🗣️ **童音** | 预渲染采样念出「一、二、三、四…」 | 启蒙、儿童练琴、初学者数拍 |
 
 切换即时生效，播放中也能换。
 
@@ -102,7 +102,8 @@
 
 - 范围 **40 – 208 BPM**
 - 滑块拖动**边拖边变**，不用停下
-- 童声模式下语速自动跟着 BPM 走（不会因为 BPM 快了声音糊在一起）
+- 设置里有总音量，10–100%，会记住
+- 童音是预渲染采样，和鼓点走同一套音频时钟，不会越念越晚
 
 ### ⏱️ 多种拍号
 
@@ -162,7 +163,7 @@ xdg-open index.html       # Linux
 start index.html          # Windows
 ```
 
-`file://` 协议下 Web Audio API 和 Web Speech API 都正常工作，唯一注意的是 Chrome 在 `file://` 下对部分 Web API 有警告，不影响使用。
+本地请用 `python3 -m http.server` 打开。采样要走 HTTP，`file://` 下 fetch 音频可能失败（引擎会回退到合成 click）。
 
 ### C. 自托管到你自己的域名
 
@@ -185,16 +186,15 @@ npx vercel --prod
 
 ```
    ┌──────────────────────────────────────────────────────┐
-   │  index.html       （单文件 App，所有 CSS/JS 内联，    │
-   │                    零依赖，无构建步骤）               │
+   │  index.html + js/engine.js   （零依赖，无构建步骤）   │
    └─────────────────┬────────────────────────────────────┘
                      │
                      │  纯前端运行
                      ▼
    ┌──────────────────────────────────────────────────────┐
-   │  Web Audio API    合成三种音效                       │
-   │  Web Speech API   童声数拍                           │
-   │  localStorage     记住 BPM / 拍号 / 音效偏好         │
+   │  Web Audio API    lookahead 预约下一拍               │
+   │  采样 click + 预渲染数拍                             │
+   │  localStorage     记住 BPM / 拍号 / 音效 / 音量      │
    └─────────────────┬────────────────────────────────────┘
                      │
                      │  可选
@@ -208,10 +208,10 @@ npx vercel --prod
 
 **每个 tick，在浏览器里：**
 
-1. 用 `setInterval` 按 BPM 间隔触发 tick
-2. tick 触发时根据当前音效模式播放一个音（Web Audio API）或念一个数字（Web Speech API）
-3. 节拍球 UI 同步闪烁 / 弹动
-4. 切换 BPM、拍号、音效时调整对应参数
+1. 用 `AudioContext.currentTime` 提前约 100ms 预约下一拍（lookahead scheduler）
+2. 到点播放对应采样（强/弱/均匀 click，或「一」到「十六」）
+3. 节拍球 UI 按同一时刻闪烁
+4. 拖 BPM 只改下一拍间隔，不会额外打一拍
 
 没别的步骤。没有后端。没有账号体系。
 
@@ -222,9 +222,9 @@ npx vercel --prod
 | 层次 | 技术 | 备注 |
 |---|---|---|
 | 前端 | 原生 HTML + CSS + JS | 零依赖，无构建步骤 |
-| 音频合成 | Web Audio API | 双振荡器叠加 + GainNode 包络 |
-| 童声念拍 | Web Speech Synthesis API | 语速跟随 BPM 自适应 |
-| PWA | manifest.json + Service Worker | 加到主屏像原生 App |
+| 音频 | Web Audio API + 短采样 | lookahead 预约；采样失败时回退合成 click |
+| 童音 | 预渲染中文/英文数拍采样 | 晓伊 / Ana 神经音色离线渲好，不走系统 TTS |
+| PWA | manifest.json + `sw.js` | 加到主屏，静态资源离线可开 |
 | 国内统计 | 友盟 CNZZ（site ID 1281476758） | 仅埋点，不收集个人数据 |
 | 海外统计 | Google Analytics 4（G-QH9CD00C0V） | 同上 |
 | 微信小程序 | 原生小程序（`miniapp/` 目录） | 复用同一套 UI 逻辑 |
@@ -244,7 +244,8 @@ npx vercel --prod
   "bpm": 120,         // 40 - 208
   "bc": 4,            // 拍号分子（beats per measure）
   "bu": 4,            // 拍号分母（beat unit）
-  "sm": "uniform"     // "traditional" | "uniform" | "voice"
+  "sm": "uniform",    // "traditional" | "uniform" | "voice"
+  "vol": 85           // 10 - 100
 }
 ```
 
@@ -285,11 +286,11 @@ npx vercel --prod
 **iPhone 上没声音？**
 检查静音开关。Web 端没法读静音状态，第一次播放会弹出提示问一次。Apple Watch 的话同样确认手表没静音。
 
-**童声模式声音怪怪的？**
-Web Speech API 用的是系统自带 TTS 引擎。macOS / Windows / iOS / Android 默认音色不一样 —— 这不是 bug，是 API 设计。
+**童音模式是真人吗？**
+不是现场录音。数拍是离线渲好的固定采样（中文「一、二、三…」，英文 one, two, three…），所以各系统听起来一样，也不会越念越晚。想换声线可以重跑 `tools/gen-sounds.py`。
 
 **BPM 调到极限会卡吗？**
-208 BPM 极限测试过没问题。再往上浏览器 `setInterval` 抖动会变明显，所以上限卡 208。
+208 BPM 极限测试过没问题。再往上即使按音频时钟预约，拍点也会糊进下一拍，所以上限卡 208。
 
 **能离线用吗？**
 能（Service Worker 缓存了所有静态资源）。首次打开后断网也能用。
@@ -334,13 +335,16 @@ python3 -m http.server 8000
 **目录结构**
 
 ```
-index.html               中文版主应用（默认）
+index.html               中文版主应用
 en/index.html            英文版主应用
+js/engine.js             音频引擎（lookahead + 采样播放）
+sw.js                    Service Worker
+assets/sounds/           click + 中/英数拍采样
 landing.html             中文落地页
 en/landing.html          英文落地页
 manifest.json            PWA 配置
 vercel.json              部署配置（重定向 + 缓存策略）
-scripts/                 Playwright 截图与 SEO 体检脚本
+scripts/                 本地体检脚本
 docs/                    设计文档、改版记录
 miniapp/                 微信小程序源码
 images/                  Logo、二维码、favicon

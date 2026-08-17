@@ -15,6 +15,7 @@ node_modules/
 
 # WeChat mini-program build outputs (if any)
 # miniapp/dist/
+miniapp/.automator-out/
 
 # Editor
 .vscode/

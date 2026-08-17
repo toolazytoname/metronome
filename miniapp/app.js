@@ -7,9 +7,7 @@
 import 'umtrack-wx';
 
 App({
-  onLaunch() {
-    console.log('[Metronome] App launched');
-  },
+  onLaunch() {},
   /**
    * 友盟 umengConfig：友盟 SDK 读取此字段完成初始化
    * 字段名 / 拼写必须严格按官方文档，SDK 不会警告错误
@@ -19,7 +17,7 @@ App({
     // 使用 Openid 统计更准；需要后台配置 appId+secret 才能开启
     useOpenid: false,
     autoGetOpenid: false,
-    debug: true,
+    debug: false,
     // 上传用户画像用于后台用户分析（需要隐私协议）
     uploadUserInfo: false,
   },

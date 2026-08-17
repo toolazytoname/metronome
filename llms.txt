@@ -9,7 +9,7 @@ A web-only metronome with three sound modes and six time signatures. Open the UR
 Features:
 - BPM range 40–208
 - 6 time signatures: 4/4, 3/4, 2/4, 6/8, 5/4, 7/8
-- 3 sound modes: classic drum (strong/weak beats), uniform click, child-voice counting (Web Speech Synthesis)
+- 3 sound modes: classic drum (strong/weak clicks), uniform click, pre-rendered count samples (zh 一–十六 / en one–sixteen)
 - Bilingual UI (中文 / English)
 - iOS silent-mode heuristic — warns once if the ringer is off
 - Static HTML — no backend, no auth, no tracking

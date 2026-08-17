@@ -88,13 +88,13 @@ Bunny Metronome = **opens in a browser, counts beats out loud, works for piano a
 
 ### 🥁 Three sound modes
 
-Every sound is synthesized in-browser via Web Audio API — **no audio files to download**.
+Clicks are short woodblock-style samples (not soft sines). Counts are pre-rendered “one, two, three…” buffers, scheduled on the Web Audio clock.
 
 | Mode | Sound | Best for |
 |---|---|---|
-| 🥁 **Traditional** | Strong beat 880 Hz, weak beats 440 Hz | Piano, classical, drum fundamentals |
-| 🎵 **Uniform** | Every beat 660 Hz | Pure tempo work, no accent bias |
-| 🗣️ **Voice** | Real voice counts "1, 2, 3, 4…" | Kids, beginners, anyone losing count |
+| 🥁 **Traditional** | Strong / weak short clicks | Piano, classical, drum fundamentals |
+| 🎵 **Uniform** | The same click every beat | Pure tempo work, no accent bias |
+| 🗣️ **Voice** | Pre-rendered “one, two, three…” | Kids, beginners, anyone losing count |
 
 Switching takes effect immediately, even mid-playback.
 
@@ -102,7 +102,8 @@ Switching takes effect immediately, even mid-playback.
 
 - Range **40 – 208 BPM**
 - Slider responds **as you drag** — no need to stop
-- Voice mode rate scales with BPM so the TTS doesn't slur at high tempos
+- Master volume in Settings, 10–100%, remembered
+- Voice samples share the same audio clock as the clicks — they don't drift late
 
 ### ⏱️ Multiple time signatures
 
@@ -158,7 +159,7 @@ xdg-open en/index.html  # Linux
 start en\index.html     # Windows
 ```
 
-Web Audio API and Web Speech API both work over `file://`. Chrome may warn about some APIs on `file://`; it doesn't affect playback.
+Serve it over HTTP (`python3 -m http.server`). Sample files need a real origin — `file://` may fail to fetch audio (the engine falls back to a synthesized click).
 
 ### C. Self-host on your own URL
 
@@ -181,16 +182,15 @@ Full walkthrough in **[DEPLOY.md](DEPLOY.md)**.
 
 ```
    ┌──────────────────────────────────────────────────────┐
-   │  index.html       (single file, all CSS/JS inlined,  │
-   │                    zero dependencies, no build step)  │
+   │  index.html + js/engine.js   (zero deps, no build)   │
    └─────────────────┬────────────────────────────────────┘
                      │
                      │  runs entirely client-side
                      ▼
    ┌──────────────────────────────────────────────────────┐
-   │  Web Audio API    synthesizes three sounds           │
-   │  Web Speech API   voice counting                     │
-   │  localStorage     remembers BPM / sig / sound mode   │
+   │  Web Audio API    lookahead scheduler                │
+   │  Click samples + pre-rendered counts                 │
+   │  localStorage     BPM / meter / sound / volume       │
    └─────────────────┬────────────────────────────────────┘
                      │
                      │  optional
@@ -204,10 +204,10 @@ Full walkthrough in **[DEPLOY.md](DEPLOY.md)**.
 
 **Every tick, in the browser:**
 
-1. `setInterval` fires at the BPM interval
-2. The tick handler plays a tone (Web Audio API) or speaks a number (Web Speech API) based on the active sound mode
-3. The beat ball UI flashes / pops in sync
-4. BPM / signature / mode changes adjust the relevant parameters on the fly
+1. A lookahead scheduler books the next beat ~100ms ahead on `AudioContext.currentTime`
+2. At that time it plays the matching sample (strong/weak/uniform click, or one–sixteen)
+3. The beat-ball UI pops on the same timestamp
+4. Dragging BPM only changes the next interval — it does not fire an extra click
 
 No other steps. No backend. No account system.
 
@@ -218,9 +218,9 @@ No other steps. No backend. No account system.
 | Layer | Tech | Notes |
 |---|---|---|
 | Frontend | Vanilla HTML + CSS + JS | Zero deps, no build step |
-| Audio | Web Audio API | Two-oscillator + GainNode envelope |
-| Voice | Web Speech Synthesis API | Speech rate scales with BPM |
-| PWA | manifest.json + Service Worker | Home-screen install |
+| Audio | Web Audio API + short samples | Lookahead scheduling; synth click fallback |
+| Voice | Pre-rendered zh/en count samples | Offline Xiaoyi / Ana renders, not live OS TTS |
+| PWA | manifest.json + `sw.js` | Home-screen install + offline cache |
 | CN analytics | Umeng CNZZ (site ID 1281476758) | Anonymous events only |
 | Global analytics | Google Analytics 4 (G-QH9CD00C0V) | Same |
 | WeChat Mini Program | Native mini-program (`miniapp/`) | Shares UI logic with web |
@@ -240,7 +240,8 @@ The app stashes its preferences under a single `localStorage` key:
   "bpm": 120,         // 40 - 208
   "bc": 4,            // beats per measure
   "bu": 4,            // beat unit
-  "sm": "uniform"     // "traditional" | "uniform" | "voice"
+  "sm": "uniform",    // "traditional" | "uniform" | "voice"
+  "vol": 85           // 10 - 100
 }
 ```
 
@@ -281,11 +282,11 @@ If any of those are dealbreakers, you're not the audience — and that's fine. T
 **No sound on iPhone?**
 Check the ringer switch. Web pages can't read the silent state — first playback pops a prompt. Same on Apple Watch.
 
-**Voice mode sounds weird.**
-Web Speech API uses whatever TTS engine your OS ships with. macOS, Windows, iOS, and Android all default to different voices — this is API behavior, not a bug.
+**Is the voice mode a real child?**
+No live recording. Counts are pre-rendered samples (Chinese 一、二、三… / English one, two, three…), so every OS sounds the same and they stay on the beat. Re-run `tools/gen-sounds.py` to swap the voice.
 
 **Does it lag at high BPM?**
-208 BPM has been stress-tested. Above that, `setInterval` jitter becomes audible, so 208 is the hard cap.
+208 BPM has been stress-tested. The hard cap stays at 208 — above that, even a scheduled click starts to smear into the next beat. The beat clock is a lookahead scheduler, not `setInterval`.
 
 **Can I use it offline?**
 Yes (Service Worker caches all static assets). First load online, then it works offline.
@@ -330,8 +331,11 @@ python3 -m http.server 8000
 **Project layout**
 
 ```
-index.html               Chinese main app (default)
+index.html               Chinese main app
 en/index.html            English main app
+js/engine.js             Audio engine (lookahead + samples)
+sw.js                    Service Worker
+assets/sounds/           Clicks + zh/en count samples
 landing.html             Chinese landing page
 en/landing.html          English landing page
 manifest.json            PWA config

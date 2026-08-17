@@ -36,7 +36,7 @@ jobs:
 
       - name: Check audio files exist
         run: |
-          for f in beat-strong.mp3 beat-weak.mp3 beat-uniform.mp3; do
+          for f in click-strong.mp3 click-weak.mp3 click-uniform.mp3 voice/zh/01.mp3 voice/en/01.mp3; do
             if [ ! -f "miniapp/assets/sounds/$f" ]; then
               echo "MISSING: $f"
               exit 1
@@ -48,22 +48,33 @@ jobs:
             fi
             echo "  ✅ $f ($size bytes)"
           done
+          zh_count=$(ls miniapp/assets/sounds/voice/zh/*.mp3 | wc -l)
+          en_count=$(ls miniapp/assets/sounds/voice/en/*.mp3 | wc -l)
+          if [ "$zh_count" -lt 16 ] || [ "$en_count" -lt 16 ]; then
+            echo "❌ expected 16 voice samples per language, got zh=$zh_count en=$en_count"
+            exit 1
+          fi
+          echo "✅ voice samples zh=$zh_count en=$en_count"
 
-      - name: Check for dead code (voice mode remnants)
+      - name: Check web audio + engine
         run: |
-          # Verify voice files are deleted
-          if ls miniapp/assets/sounds/voice-*.mp3 1>/dev/null 2>&1; then
-            echo "❌ voice-*.mp3 files should be deleted"
-            exit 1
-          fi
-          echo "✅ No voice-*.mp3 files present"
+          for f in assets/sounds/click-strong.mp3 js/engine.js sw.js; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+            echo "  ✅ $f"
+          done
+          node --check js/engine.js
+          node --check sw.js
 
-          # Verify playNumber is removed
-          if grep -q "playNumber" miniapp/pages/index/index.js; then
-            echo "❌ playNumber() should be removed"
+      - name: Check leftover speechSynthesis is gone
+        run: |
+          if grep -q "speechSynthesis" index.html en/index.html js/engine.js; then
+            echo "❌ speechSynthesis should not be used for the beat clock"
             exit 1
           fi
-          echo "✅ No playNumber() in code"
+          echo "✅ no speechSynthesis on the beat path"
 
       - name: Verify miniapp structure
         run: |
@@ -76,9 +87,9 @@ jobs:
             "miniapp/pages/index/index.wxml"
             "miniapp/pages/index/index.wxss"
             "miniapp/pages/index/index.json"
-            "miniapp/assets/sounds/beat-strong.mp3"
-            "miniapp/assets/sounds/beat-weak.mp3"
-            "miniapp/assets/sounds/beat-uniform.mp3"
+            "miniapp/assets/sounds/click-strong.mp3"
+            "miniapp/assets/sounds/click-weak.mp3"
+            "miniapp/assets/sounds/click-uniform.mp3"
           )
           for f in "${required_files[@]}"; do
             if [ ! -f "$f" ]; then

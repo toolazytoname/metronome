@@ -4,7 +4,8 @@
 
 ## 功能
 
-- 🎵 **两种音效模式**：传统（强/弱）、均匀
+- 🎵 **三种音效模式**：传统（强/弱）、均匀、童音数拍（预渲染采样）
+- 🔊 **音量**：10–100%，和 BPM / 拍号一起记住
 - 🎼 **节拍预设**：4/4、3/4、2/4、6/8、5/4、7/8 + 自定义
 - 📊 **BPM 范围**：40 - 208，滑块 + 步进调节
 - 💾 **配置持久化**：BPM、拍号、音效模式自动记忆
@@ -16,9 +17,8 @@
 miniapp/
 ├── app.js / app.json / app.wxss     # 全局入口
 ├── assets/sounds/                    # 音频文件（本地打包）
-│   ├── beat-strong.mp3               # 强拍（880Hz）
-│   ├── beat-weak.mp3                  # 弱拍（440Hz）
-│   └── beat-uniform.mp3               # 均匀拍（660Hz）
+│   ├── click-strong.mp3 / click-weak.mp3 / click-uniform.mp3
+│   └── voice/zh|en/01.mp3 … 16.mp3   # 数拍采样
 └── pages/index/                      # 主页面
     ├── index.wxml                    # 页面结构
     ├── index.wxss                    # 页面样式
@@ -37,17 +37,16 @@ miniapp/
 
 **音频路径：**
 - `assets/sounds/` 中的音频在开发者工具和真机上都可用
-- 微信小程序音频相对路径相对于**小程序包根目录**
-- `pages/index/` 引用 `../../assets/sounds/beat-strong.mp3` 正确
+- 微信小程序音频路径相对于**小程序包根目录**
+- 代码里用 `/assets/sounds/click-strong.mp3` 以及 `/assets/sounds/voice/{zh|en}/01.mp3`
 
 **包体积：**
-- 7 个音频文件总计约 13KB，远低于 2MB 限制
+- click 3 条 + 中英数拍 32 条，总计约 80KB，远低于 2MB 限制
 - 无需 CDN，完全本地打包
 
 **计时精度：**
-- 使用 `setInterval`（与原版网页一致）
+- 绝对时间 `setTimeout` 链（按目标时刻排下一拍，不是 `setInterval`）
 - 微信切后台会暂停计时，这是平台限制，无法绕过
-- 如需更高精度，可后续迁移到 `wx.createWorker` 或 `AudioContext`
 
 ## 相关
 

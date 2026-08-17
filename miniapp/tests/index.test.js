@@ -9,7 +9,7 @@ global.wx = {
   createInnerAudioContext: () => ({
     src: '', volume: 0.8, autoplay: false, loop: false,
     onError() {}, onCanplay() {}, onPlay() {}, onPause() {}, onStop() {}, onEnded() {}, onWaiting() {},
-    play() {}, seek() {}, stop() {}, pause() {},
+    play() {}, seek() {}, stop() {}, pause() {}, destroy() {},
   }),
   getStorageSync: () => null,
   setStorageSync: () => {},
@@ -66,6 +66,7 @@ function makePage() {
     running: false,
     beats: [],
     soundMode: DEFAULT_STATE.sm,
+    vol: 85,
     settingsOpen: false,
     timeSigs: TIME_SIGS,
     currentSig: '4/4',
@@ -205,13 +206,23 @@ describe('Event Handlers', () => {
   it('onBpmPlus increases BPM by 1', () => { const p = makePage(); p.data.bpm = 100; p.onBpmPlus(); expect(p.data.bpm).toBe(101); });
   it('onBpmChange parses event detail', () => { const p = makePage(); p.data.bpm = 120; p.onBpmChange({ detail: { value: '80' } }); expect(p.data.bpm).toBe(80); });
   it('onBpmChanging updates bpm in real-time', () => { const p = makePage(); p.data.bpm = 120; p.onBpmChanging({ detail: { value: '85' } }); expect(p.data.bpm).toBe(85); });
-  it('onModeChange blocks voice mode', () => { const p = makePage(); p.data.soundMode = 'uniform'; p.onModeChange({ currentTarget: { dataset: { mode: 'voice' } } }); expect(p.data.soundMode).toBe('uniform'); });
+  it('onModeChange switches to voice mode', () => { const p = makePage(); p.data.soundMode = 'uniform'; p.onModeChange({ currentTarget: { dataset: { mode: 'voice' } } }); expect(p.data.soundMode).toBe('voice'); });
   it('onModeChange switches to traditional', () => { const p = makePage(); p.data.soundMode = 'uniform'; p.data.running = true; p.onModeChange({ currentTarget: { dataset: { mode: 'traditional' } } }); expect(p.data.soundMode).toBe('traditional'); });
   it('onTimeSigChange parses sig and updates fields', () => { const p = makePage(); p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onTimeSigChange({ currentTarget: { dataset: { sig: '3/4' } } }); expect(p.data.currentSig).toBe('3/4'); expect(p.data.customBeats).toBe('3'); expect(p.data.customUnit).toBe('4'); });
   it('onCustomBeatsInput updates customBeats', () => { const p = makePage(); p.onCustomBeatsInput({ detail: { value: '6' } }); expect(p.data.customBeats).toBe('6'); });
   it('onCustomUnitInput updates customUnit', () => { const p = makePage(); p.onCustomUnitInput({ detail: { value: '8' } }); expect(p.data.customUnit).toBe('8'); });
   it('onApplyCustom builds sig and calls _updateBeats', () => { const p = makePage(); p.data.customBeats = '5'; p.data.customUnit = '4'; p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onApplyCustom(); expect(p.data.currentSig).toBe('5/4'); });
   it('onToggleSettings flips boolean', () => { const p = makePage(); p.data.settingsOpen = false; p.onToggleSettings(); expect(p.data.settingsOpen).toBe(true); p.onToggleSettings(); expect(p.data.settingsOpen).toBe(false); });
+  it('onVolChange clamps and persists volume', () => {
+    const p = makePage();
+    let saved = null;
+    global.wx.setStorageSync = (k, v) => { saved = v; };
+    p.onVolChange({ detail: { value: '250' } });
+    expect(p.data.vol).toBe(100);
+    expect(saved.vol).toBe(100);
+    p.onVolChange({ detail: { value: '1' } });
+    expect(p.data.vol).toBe(10);
+  });
 });
 
 // ============================================================
@@ -219,26 +230,30 @@ describe('Event Handlers', () => {
 // ============================================================
 describe('State Persistence', () => {
   it('_loadState uses defaults on null storage', () => { const p = makePage(); global.wx.getStorageSync = () => null; p._loadState(); expect(p.data.bpm).toBe(120); expect(p.data.soundMode).toBe('uniform'); });
-  it('_loadState falls back to uniform for invalid soundMode', () => { const p = makePage(); global.wx.getStorageSync = () => ({ bpm: 100, bc: 4, bu: 4, sm: 'voice' }); p._loadState(); expect(p.data.soundMode).toBe('uniform'); });
-  it('_saveState stores bpm, bc, bu, sm', () => {
+  it('_loadState keeps voice soundMode', () => { const p = makePage(); global.wx.getStorageSync = () => ({ bpm: 100, bc: 4, bu: 4, sm: 'voice', vol: 70 }); p._loadState(); expect(p.data.soundMode).toBe('voice'); expect(p.data.vol).toBe(70); });
+  it('_loadState falls back to uniform for invalid soundMode', () => { const p = makePage(); global.wx.getStorageSync = () => ({ bpm: 100, bc: 4, bu: 4, sm: 'laser' }); p._loadState(); expect(p.data.soundMode).toBe('uniform'); });
+  it('_saveState stores bpm, bc, bu, sm, vol', () => {
     const p = makePage();
     p.data.customBeats = '6'; p.data.customUnit = '8';
-    p.data.bpm = 150; p.data.soundMode = 'traditional';
+    p.data.bpm = 150; p.data.soundMode = 'traditional'; p.data.vol = 40;
     let saved = null;
     global.wx.setStorageSync = (k, v) => { saved = v; };
     p._saveState();
-    expect(saved.bpm).toBe(150); expect(saved.bc).toBe(6); expect(saved.bu).toBe(8); expect(saved.sm).toBe('traditional');
+    expect(saved.bpm).toBe(150); expect(saved.bc).toBe(6); expect(saved.bu).toBe(8);
+    expect(saved.sm).toBe('traditional'); expect(saved.vol).toBe(40);
   });
-  it('_saveState and _loadState roundtrip correctly', () => {
+  it('_saveState and _loadState roundtrip voice + volume', () => {
     let storage = {};
     global.wx.getStorageSync = k => storage[k];
     global.wx.setStorageSync = (k, v) => { storage[k] = v; };
     const p = makePage();
-    p.data.bpm = 150; p.data.customBeats = '7'; p.data.customUnit = '8'; p.data.soundMode = 'traditional';
+    p.data.bpm = 150; p.data.customBeats = '7'; p.data.customUnit = '8';
+    p.data.soundMode = 'voice'; p.data.vol = 62;
     p._saveState();
     const p2 = makePage();
     p2._loadState();
-    expect(p2.data.bpm).toBe(150); expect(p2.data.customBeats).toBe('7'); expect(p2.data.soundMode).toBe('traditional');
+    expect(p2.data.bpm).toBe(150); expect(p2.data.customBeats).toBe('7');
+    expect(p2.data.soundMode).toBe('voice'); expect(p2.data.vol).toBe(62);
   });
 });
 

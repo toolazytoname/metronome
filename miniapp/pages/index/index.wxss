@@ -15,92 +15,70 @@
 }
 
 /* ============================================================
-   顶部豆子按钮区 —— 分享 / 信息 / 中英切换
-   裸排 3 颗豆子，靠右对齐，无外层容器（跟 web 主程序一致）。
-   微信原生胶囊（···⊙）占据系统级右上角不可覆盖。
+   顶部豆子：三颗同样大的圆角方块，靠右排在胶囊下方。
    ============================================================ */
 .bean-row {
   align-self: flex-end;
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: flex-end;
+  height: 64rpx;
   gap: 12rpx;
-  margin-bottom: 20rpx;
+  margin: 4rpx 4rpx 24rpx 0;
+  box-sizing: border-box;
 }
 
 .bean {
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 18rpx;
+  flex: 0 0 64rpx;
+  width: 64rpx;
+  height: 64rpx;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #251614;
-  background: #fff;
   position: relative;
   overflow: hidden;
-  box-shadow:
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1rpx 0 rgba(0, 0, 0, 0.04),
-    0 4rpx 10rpx -3rpx rgba(37, 22, 20, 0.15);
-  transition: transform 0.15s, box-shadow 0.2s;
   box-sizing: border-box;
 }
-.bean-hover {
-  transform: translateY(2rpx) scale(0.94);
-}
-.bean-icon {
-  width: 30rpx;
-  height: 30rpx;
-  display: block;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
 
-/* 顶部豆子按钮区 —— 分享 / 信息 / 中英切换
-   微信原生胶囊（···⊙）占据系统级右上角不可覆盖，所以这些豆子
-   在 page 顶部用 pill 浮岛容器靠右排列，视觉接近 web 主程序
-   右上角的 36px 紧凑感。
-   ============================================================ */
-.bean {
-  width: 56rpx;
-  height: 56rpx;
-  /* !important：wx <button> 默认有 padding/min-width，会撑大
-     容器让 .bean 变 100%+padding 宽。锁死才能保持 56rpx 圆角方块。 */
-  padding: 0 !important;
-  margin: 0 !important;
+/* 分享：整颗豆子上盖一层透明原生 button，只为 open-type="share" */
+.bean-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 64rpx !important;
+  height: 64rpx !important;
   min-width: 0 !important;
   min-height: 0 !important;
-  border-radius: 18rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #251614;
-  background: #fff;
-  border: 0;
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1rpx 0 rgba(0, 0, 0, 0.04),
-    0 4rpx 10rpx -3rpx rgba(37, 22, 20, 0.15);
-  transition: transform 0.15s, box-shadow 0.2s;
-  box-sizing: border-box;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 64rpx !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 20rpx;
+  opacity: 0;
 }
-.bean::after {
-  /* wx <button> 默认用 ::after 画 1px 边框，必须 unset */
+.bean-hit::after {
   border: none;
 }
+
 .bean-hover {
   transform: translateY(2rpx) scale(0.94);
 }
 .bean-icon {
-  width: 30rpx;
-  height: 30rpx;
+  width: 32rpx;
+  height: 32rpx;
+  flex: 0 0 32rpx;
   display: block;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
+  background-size: 32rpx 32rpx;
 }
 
 .bean.bean-share {
@@ -166,9 +144,10 @@
 .bean.bean-lang .bean-lang-text {
   font-size: 22rpx;
   font-weight: 800;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   color: #6549a3;
   line-height: 1;
+  display: block;
 }
 
 .bean.bean-about {
@@ -566,6 +545,28 @@ slider {
 }
 .section-title.lav::before {
   background: #bbaceb;
+}
+.section-title.coral {
+  color: #d33944;
+}
+.section-title.coral::before {
+  background: #ffa19e;
+}
+.vol-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.vol-ico {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+.vol-val {
+  min-width: 56rpx;
+  text-align: right;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #d33944;
 }
 
 /* 音效模式 */

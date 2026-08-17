@@ -62,6 +62,8 @@ def test_js_syntax():
     js_files = [
         "miniapp/pages/index/index.js",
         "miniapp/app.js",
+        "js/engine.js",
+        "sw.js",
     ]
     for f in js_files:
         path = PROJECT_ROOT / f
@@ -108,9 +110,11 @@ def test_file_structure():
         "miniapp/pages/index/index.wxml",
         "miniapp/pages/index/index.wxss",
         "miniapp/pages/index/index.json",
-        "miniapp/assets/sounds/beat-strong.mp3",
-        "miniapp/assets/sounds/beat-weak.mp3",
-        "miniapp/assets/sounds/beat-uniform.mp3",
+        "miniapp/assets/sounds/click-strong.mp3",
+        "miniapp/assets/sounds/click-weak.mp3",
+        "miniapp/assets/sounds/click-uniform.mp3",
+        "js/engine.js",
+        "sw.js",
     ]
     for f in required:
         check(f"  {f}", (PROJECT_ROOT / f).exists(), f"Missing: {f}")
@@ -127,12 +131,11 @@ def test_audio_files():
     mp3_files = list(sounds_dir.glob("*.mp3"))
     total_size = sum(f.stat().st_size for f in mp3_files)
 
-    # Check no voice files
-    voice_files = list(sounds_dir.glob("voice-*.mp3"))
+    voice_zh = list((sounds_dir / "voice" / "zh").glob("*.mp3"))
     check(
-        "  No voice-*.mp3 files",
-        len(voice_files) == 0,
-        f"Found {len(voice_files)} voice files (should be deleted)"
+        f"  {len(voice_zh)} zh voice samples",
+        len(voice_zh) >= 16,
+        f"Expected 16 zh voice samples, found {len(voice_zh)}"
     )
 
     # Check file sizes
@@ -160,11 +163,57 @@ def test_dead_code():
         "playNumber" not in content,
         "playNumber() should be removed from index.js"
     )
+    check(
+        "  voice mode is live",
+        "ensureVoice" in content and "sm === 'voice'" in content,
+        "voice playback path missing from index.js"
+    )
 
-    # Check voice mode guard is still present (safe — prevents edge cases)
-    # This is a WARNING, not a failure
-    if "voice" in content and "onModeChange" in content:
-        log_warn("  voice mode guard found in onModeChange (OK - prevents edge cases)")
+    app_js = (PROJECT_ROOT / "miniapp/app.js").read_text()
+    check(
+        "  umeng debug is off",
+        "debug: false" in app_js and "debug: true" not in app_js,
+        "miniapp/app.js must ship with umeng debug: false",
+    )
+
+    webview = (PROJECT_ROOT / "miniapp/pages/webview/webview.js").read_text()
+    check(
+        "  donate titles have distinct zh/en keys",
+        "about#donate" in webview
+        and "about/en#donate" in webview
+        and "支持我们" in webview
+        and "Support us" in webview,
+        "webview donate title map must have distinct zh and en keys",
+    )
+
+    for rel in ("index.html", "en/index.html", "js/engine.js"):
+        src = (PROJECT_ROOT / rel).read_text()
+        check(
+            f"  no speechSynthesis in {rel}",
+            "speechSynthesis" not in src,
+            f"{rel} still mentions speechSynthesis",
+        )
+        check(
+            f"  no setInterval beat clock in {rel}",
+            "setInterval(tick" not in src and "setInterval(tick," not in src,
+            f"{rel} still uses setInterval(tick)",
+        )
+
+    engine_src = (PROJECT_ROOT / "js/engine.js").read_text()
+    check(
+        "  engine start arms playing before init",
+        "this.playing = true" in engine_src
+        and engine_src.find("this._starting = true") < engine_src.find("this.init()"),
+        "start() must set playing/_starting before init()",
+    )
+    for rel in ("index.html", "en/index.html"):
+        body = (PROJECT_ROOT / rel).read_text()
+        start = body.split("function start(){", 1)[1].split("function stop()", 1)[0]
+        check(
+            f"  {rel} sets s.r before engine.start",
+            start.find("s.r=true") < start.find("engine.start("),
+            f"{rel} still flips s.r only after engine.start resolves",
+        )
 
 
 def test_wxml_buttons():
@@ -177,6 +226,8 @@ def test_wxml_buttons():
 
     content = wxml.read_text()
     required_bindings = [
+        ("class=\"bean-hit\"", "Share overlay button"),
+        ("open-type=\"share\"", "Share open-type"),
         ("bindtap=\"onPlay\"", "Play button"),
         ("bindtap=\"onBpmMinus\"", "BPM- button"),
         ("bindtap=\"onBpmPlus\"", "BPM+ button"),
@@ -185,9 +236,30 @@ def test_wxml_buttons():
         ("bindtap=\"onTimeSigChange\"", "Time signature change"),
         ("bindtap=\"onApplyCustom\"", "Custom apply"),
         ("bindchanging=\"onBpmChanging\"", "BPM slider changing (real-time feedback)"),
+        ("bindchange=\"onVolChange\"", "Volume slider"),
+        ("data-mode=\"voice\"", "Voice mode button"),
     ]
     for binding, desc in required_bindings:
         check(f"  {desc}", binding in content, f"Missing: {binding}")
+
+
+def test_web_app_hooks():
+    log("Web app hooks")
+    log("-" * 40)
+    for rel in ("index.html", "en/index.html"):
+        src = (PROJECT_ROOT / rel).read_text()
+        check(f"  {rel} loads MetronomeEngine", "MetronomeEngine" in src and 'src="/js/engine.js"' in src)
+        check(f"  {rel} has #vol-slider", 'id="vol-slider"' in src)
+        check(f"  {rel} registers service worker", "serviceWorker.register" in src)
+        check(f"  {rel} has play button", 'id="play-btn"' in src)
+        for mode in ("traditional", "uniform", "voice"):
+                check(f"  {rel} exposes {mode}", f'data-mode="{mode}"' in src)
+    en_html = (PROJECT_ROOT / "en/index.html").read_text()
+    check(
+        "  en footer has no leaked CSS",
+        "</style> 0.06)" not in en_html and "border-top-color: rgba(255, 255, 255, 0.1)" not in en_html,
+        "en/index.html still leaks broken footer CSS into the page",
+    )
 
 
 def test_miniapp_config():
@@ -223,6 +295,8 @@ def main():
     test_dead_code()
     print()
     test_wxml_buttons()
+    print()
+    test_web_app_hooks()
     print()
     test_miniapp_config()
     print()

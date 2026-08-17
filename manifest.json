@@ -11,14 +11,20 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/images/bunny.png",
-      "sizes": "256x256",
+      "src": "/images/bunny-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/bunny.png",
-      "sizes": "256x256",
+      "src": "/images/bunny-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/bunny-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }

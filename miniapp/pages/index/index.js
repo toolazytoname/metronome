@@ -9,69 +9,92 @@ const { getI18n, detectDefaultLang } = require('../../utils/i18n');
 class AudioManager {
   constructor() {
     this._inited = false;
-    // 预载的采样（用于鼓点）
-    this._pool = { strong: [], weak: [], uniform: [] };
-    this._ready = { strong: false, weak: false, uniform: false };
-    this._index = { strong: 0, weak: 0, uniform: 0 };
+    this._vol = 0.85;
+    this._pool = {};
+    this._ready = {};
+    this._index = {};
+    this._voiceLang = null;
     this.POOL_SIZE = 3;
+    this.VOICE_POOL = 2;
   }
 
   init() {
     if (this._inited) return;
     this._inited = true;
-
-    // 预加载鼓点采样 + 监听 onCanplay 标记就绪状态。
-    // 不预热（之前试过 play+stop 预热，会泄漏残响 + 反复触发 onCanplay 反而坏事）。
-    const base = '/assets/sounds';
     const files = {
-      strong: 'beat-strong.mp3',
-      weak: 'beat-weak.mp3',
-      uniform: 'beat-uniform.mp3',
+      strong: '/assets/sounds/click-strong.mp3',
+      weak: '/assets/sounds/click-weak.mp3',
+      uniform: '/assets/sounds/click-uniform.mp3',
     };
-    for (const [key, file] of Object.entries(files)) {
-      for (let i = 0; i < this.POOL_SIZE; i++) {
-        const ctx = wx.createInnerAudioContext();
-        ctx.src = `${base}/${file}`;
-        ctx.volume = 0.8;
-        ctx.autoplay = false;
-        ctx.loop = false;
-        ctx.onError((err) => console.warn(`[Audio] ${key}[${i}] error:`, err));
-        ctx.onCanplay(() => {
-          this._ready[key] = true;
-          console.log(`[Audio] ${key} ready (ctx ${i})`);
-        });
-        this._pool[key].push(ctx);
-      }
+    Object.keys(files).forEach((key) => this._makePool(key, files[key], this.POOL_SIZE));
+  }
+
+  _makePool(key, src, size) {
+    this._pool[key] = [];
+    this._ready[key] = false;
+    this._index[key] = 0;
+    for (let i = 0; i < size; i++) {
+      const ctx = wx.createInnerAudioContext();
+      ctx.src = src;
+      ctx.volume = this._vol;
+      ctx.autoplay = false;
+      ctx.loop = false;
+      ctx.onError(() => {});
+      ctx.onCanplay(() => { this._ready[key] = true; });
+      this._pool[key].push(ctx);
     }
-    console.log(`[Audio] Initialized (pool size ${this.POOL_SIZE} per sound)`);
+  }
+
+  _destroyPool(key) {
+    const ctxs = this._pool[key];
+    if (!ctxs) return;
+    ctxs.forEach((ctx) => {
+      try { ctx.destroy(); } catch (e) { /* ignore */ }
+    });
+    delete this._pool[key];
+    delete this._ready[key];
+    delete this._index[key];
+  }
+
+  ensureVoice(lang) {
+    const next = lang === 'en' ? 'en' : 'zh';
+    if (this._voiceLang === next && this._pool.v1) return;
+    if (this._voiceLang && this._voiceLang !== next) {
+      for (let i = 1; i <= 16; i++) this._destroyPool('v' + i);
+    }
+    this._voiceLang = next;
+    for (let i = 1; i <= 16; i++) {
+      const id = i < 10 ? '0' + i : String(i);
+      this._makePool('v' + i, `/assets/sounds/voice/${next}/${id}.mp3`, this.VOICE_POOL);
+    }
+  }
+
+  setVolume(v) {
+    this._vol = Math.max(0.05, Math.min(1, v));
+    Object.keys(this._pool).forEach((key) => {
+      this._pool[key].forEach((ctx) => { ctx.volume = this._vol; });
+    });
   }
 
   play(key) {
     const ctxs = this._pool[key];
     if (!ctxs || ctxs.length === 0) return;
     if (!this._ready[key]) {
-      console.log(`[DIAG] play() key=${key} t=${Date.now()} NOT-READY → retry (up to 3s)`);
-      this._retryPlay(key, 60);
+      this._retryPlay(key, 40);
       return;
     }
     const idx = this._index[key];
     const ctx = ctxs[idx];
     this._index[key] = (idx + 1) % ctxs.length;
-    console.log(`[DIAG] play() key=${key} ctx#${idx} t=${Date.now()}`);
     ctx.seek(0);
     ctx.play();
   }
+
   _retryPlay(key, attemptsLeft) {
-    if (attemptsLeft <= 0) {
-      console.warn(`[Audio] ${key} never became ready after 3s, dropping tick`);
-      return;
-    }
+    if (attemptsLeft <= 0) return;
     setTimeout(() => {
-      if (this._ready[key]) {
-        this.play(key);
-      } else {
-        this._retryPlay(key, attemptsLeft - 1);
-      }
+      if (this._ready[key]) this.play(key);
+      else this._retryPlay(key, attemptsLeft - 1);
     }, 50);
   }
 }
@@ -94,6 +117,7 @@ const DEFAULT_STATE = {
   bc: 4,    // beats count（分子）
   bu: 4,    // beat unit（分母）
   sm: 'uniform',  // sound mode
+  vol: 85,
 };
 
 // 启动时读 lang（先 storage，没有就用系统语言）
@@ -115,6 +139,7 @@ Page({
     running: false,
     beats: [],         // 节拍圆点数据
     soundMode: DEFAULT_STATE.sm,
+    vol: DEFAULT_STATE.vol,
     settingsOpen: false,
 
     // 拍号 —— label 根据当前 lang 动态生成
@@ -139,7 +164,6 @@ Page({
     this._loadState();
     this._updateBeats();
     this._refreshNowPlaying();
-    console.log('[Metronome] Page loaded, bpm:', this.data.bpm);
   },
 
   onShow() {
@@ -152,7 +176,6 @@ Page({
     if (this.data.running) {
       this._stop();
     }
-    console.log('[Metronome] Page hidden, stopped');
   },
 
   onUnload() {
@@ -213,6 +236,7 @@ Page({
       i18n: newI18n,
       timeSigs: buildTimeSigs(newI18n),
     });
+    if (this.data.soundMode === 'voice') audioManager.ensureVoice(newLang);
     this._refreshNowPlaying();
     try {
       wx.setStorageSync('metronome_lang', newLang);
@@ -232,21 +256,25 @@ Page({
         const bpm = saved.bpm || DEFAULT_STATE.bpm;
         const bc = saved.bc || DEFAULT_STATE.bc;
         const bu = saved.bu || DEFAULT_STATE.bu;
-        const sm = (saved.sm === 'traditional' || saved.sm === 'uniform')
-          ? saved.sm  // voice mode hidden, fallback to uniform
+        const sm = (saved.sm === 'traditional' || saved.sm === 'uniform' || saved.sm === 'voice')
+          ? saved.sm
           : DEFAULT_STATE.sm;
+        const vol = typeof saved.vol === 'number'
+          ? Math.max(10, Math.min(100, saved.vol))
+          : DEFAULT_STATE.vol;
         const sig = `${bc}/${bu}`;
         this.setData({
           bpm,
           soundMode: sm,
+          vol,
           currentSig: sig,
           customBeats: String(bc),
           customUnit: String(bu),
         });
-        console.log('[Metronome] Loaded state:', saved);
+        audioManager.setVolume(vol / 100);
       }
     } catch (e) {
-      console.warn('[Metronome] Failed to load state:', e);
+      // ignore corrupt storage
     }
   },
 
@@ -256,9 +284,10 @@ Page({
       const bc = this._getBeatCount();
       const bu = parseInt(this.data.customUnit) || 4;
       const soundMode = this.data.soundMode;
-      wx.setStorageSync('metronome', { bpm, bc, bu, sm: soundMode });
+      const vol = this.data.vol;
+      wx.setStorageSync('metronome', { bpm, bc, bu, sm: soundMode, vol });
     } catch (e) {
-      console.warn('[Metronome] Failed to save state:', e);
+      // ignore storage failure
     }
   },
 
@@ -266,7 +295,8 @@ Page({
   // 节拍圆点 UI
   // ========================================================
   _getBeatCount() {
-    return parseInt(this.data.customBeats) || 4;
+    const n = parseInt(this.data.customBeats, 10) || 4;
+    return Math.max(1, Math.min(16, n));
   },
 
   _updateBeats() {
@@ -323,7 +353,6 @@ Page({
       this._stopTick();
       this._startTick();
     }
-    console.log('[Metronome] BPM (slider release):', newBpm);
   },
 
   onBpmChanging(e) {
@@ -333,19 +362,15 @@ Page({
 
   onModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
-    // voice mode permanently hidden (synthesized sounds not natural)
-    if (mode === 'voice') return;
-    const prev = this.data.soundMode;
+    if (mode !== 'traditional' && mode !== 'uniform' && mode !== 'voice') return;
     this.setData({ soundMode: mode });
+    if (mode === 'voice') audioManager.ensureVoice(this.data.lang);
     this._updateBeats();
     this._saveState();
     this._refreshNowPlaying();
-    // 切换模式时如果正在播放，先停再启（重置 AudioContext）
     if (this.data.running) {
-      this._stop();
-      this._start();
+      this._currentBeat = 0;
     }
-    console.log('[Metronome] Mode changed:', prev, '->', mode);
   },
 
   onTimeSigChange(e) {
@@ -364,7 +389,6 @@ Page({
       this._stop();
       this._start();
     }
-    console.log('[Metronome] Time sig changed to:', sig);
   },
 
   onCustomBeatsInput(e) {
@@ -395,7 +419,9 @@ Page({
   // 微信小程序禁止直接展示收款码，必须跳外部 web 页面
   // ========================================================
   onDonate() {
-    const donateUrl = 'https://jpq.weichao.studio/about#donate';
+    const donateUrl = this.data.lang === 'en'
+      ? 'https://jpq.weichao.studio/about/en#donate'
+      : 'https://jpq.weichao.studio/about#donate';
     wx.navigateTo({
       url: '/pages/webview/webview?url=' + encodeURIComponent(donateUrl),
       fail: (err) => {
@@ -413,7 +439,9 @@ Page({
   },
 
   onCopyUrl() {
-    const url = 'https://jpq.weichao.studio/about#donate';
+    const url = this.data.lang === 'en'
+      ? 'https://jpq.weichao.studio/about/en#donate'
+      : 'https://jpq.weichao.studio/about#donate';
     wx.setClipboardData({
       data: url,
       success: () => {
@@ -428,6 +456,18 @@ Page({
 
   onToggleSettings() {
     this.setData({ settingsOpen: !this.data.settingsOpen });
+  },
+
+  onVolChanging(e) {
+    this.setData({ vol: parseInt(e.detail.value, 10) });
+    audioManager.setVolume(this.data.vol / 100);
+  },
+
+  onVolChange(e) {
+    const vol = Math.max(10, Math.min(100, parseInt(e.detail.value, 10)));
+    this.setData({ vol });
+    audioManager.setVolume(vol / 100);
+    this._saveState();
   },
 
 
@@ -449,7 +489,6 @@ Page({
       // _startTick 内部已通过 _scheduleNextTick 立即触发一次 _tick
       this._startTick();
     }
-    console.log('[Metronome] BPM:', old, '->', newBpm);
   },
 
 
@@ -459,13 +498,14 @@ Page({
   _start() {
     // 首次启动时初始化音频（必须在用户点击后调用，避免被系统拦截）
     audioManager.init();
+    audioManager.setVolume(this.data.vol / 100);
+    if (this.data.soundMode === 'voice') audioManager.ensureVoice(this.data.lang);
     this._currentBeat = 0;
     // 注意：setData 必须先于 _startTick——setTimeout 链的第一次同步调用
     // 会读 this.data.running 来判断要不要排下一拍，否则会被早退。
     this.setData({ running: true });
     this._refreshNowPlaying(true);
     this._startTick();
-    console.log('[Metronome] Started at', this.data.bpm, 'BPM');
   },
 
   _stop() {
@@ -474,7 +514,6 @@ Page({
     const beats = this.data.beats.map(b => ({ ...b, active: false }));
     this.setData({ running: false, beats });
     this._refreshNowPlaying(false);
-    console.log('[Metronome] Stopped');
   },
 
   _startTick() {
@@ -484,7 +523,6 @@ Page({
     this._prevActive = undefined;
     this._driftMax = 0;
     this._driftSum = 0;
-    console.log(`[DIAG] _startTick bpm=${this.data.bpm} interval=${interval.toFixed(1)}ms base=${this._tickBase}`);
     this._scheduleNextTick(interval);
   },
 
@@ -494,7 +532,6 @@ Page({
     this._tickCount += 1;
     const target = this._tickBase + this._tickCount * interval;
     const delay = Math.max(0, target - Date.now());
-    console.log(`[DIAG] _scheduleNextTick #${this._tickCount} target=${target} delay=${delay.toFixed(0)}ms now=${Date.now()}`);
     this._timer = setTimeout(() => this._scheduleNextTick(interval), delay);
   },
 
@@ -510,44 +547,23 @@ Page({
   // 每拍触发
   // ========================================================
   _tick() {
-    const tStart = Date.now();
     const sm = this.data.soundMode;
     const bc = this._getBeatCount();
     const cb = this._currentBeat;
 
-    // 1. 音频先
     if (sm === 'traditional') {
       audioManager.play(cb === 0 ? 'strong' : 'weak');
     } else if (sm === 'uniform') {
       audioManager.play('uniform');
+    } else if (sm === 'voice') {
+      audioManager.play('v' + (cb + 1));
     }
-    const tAudioRequested = Date.now();
 
-    // 2. UI（稳妥写法：完整 beats 数组重渲，避路径式 setData 在某些 WeChat
-    //    版本上抛错导致整个 _tick 中断的坑。4 元素数组开销可忽略。）
     const beats = this.data.beats.map((b, i) => ({
       ...b,
       active: i === cb,
     }));
     this.setData({ beats });
-    const tSetData = Date.now();
-
-    // 诊断：报告本拍从 start 到 audio 调用的间隔 + setData 完成的间隔
-    const audioGap = tAudioRequested - tStart;
-    const setDataGap = tSetData - tStart;
-    console.log(`[DIAG] _tick beat=${cb} start=${tStart} audioReq→${audioGap}ms setData→${setDataGap}ms`);
-
-    // 漂移跟踪：相对目标时刻的偏差
-    if (this._tickCount > 0) {
-      const expected = this._tickBase + this._tickCount * (60000 / this.data.bpm);
-      const drift = tStart - expected;
-      this._driftMax = Math.max(this._driftMax, Math.abs(drift));
-      this._driftSum += drift;
-      if (this._tickCount % 10 === 0) {
-        const avg = (this._driftSum / this._tickCount).toFixed(1);
-        console.log(`[DIAG] drift report #${this._tickCount} max=${this._driftMax.toFixed(0)}ms avg=${avg}ms`);
-      }
-    }
 
     this._currentBeat = (cb + 1) % bc;
   },
@@ -561,7 +577,11 @@ Page({
     const i18n = this.data.i18n || getI18n('zh'); // 防御：测试 mock 可能缺
     const bpm = this.data.bpm;
     const sig = this.data.currentSig;
-    const smLabel = this.data.soundMode === 'traditional' ? i18n.sm_traditional : i18n.sm_uniform;
+    const smLabel = this.data.soundMode === 'traditional'
+      ? i18n.sm_traditional
+      : this.data.soundMode === 'voice'
+        ? i18n.sm_voice
+        : i18n.sm_uniform;
     const statusLabel = running ? i18n.np_playing : i18n.np_idle;
     const text = `${statusLabel} · ${bpm} ${i18n.bpm} · ${sig} · ${smLabel}`;
     if (text !== this.data.nowPlayingText) {
