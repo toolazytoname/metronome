@@ -4,7 +4,15 @@
     { "source": "/about", "destination": "/landing.html" },
     { "source": "/about/", "destination": "/landing.html" },
     { "source": "/about/en", "destination": "/en/landing.html" },
-    { "source": "/about/en/", "destination": "/en/landing.html" }
+    { "source": "/about/en/", "destination": "/en/landing.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/privacy/", "destination": "/privacy.html" },
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/support/", "destination": "/support.html" },
+    { "source": "/en/privacy", "destination": "/en/privacy.html" },
+    { "source": "/en/privacy/", "destination": "/en/privacy.html" },
+    { "source": "/en/support", "destination": "/en/support.html" },
+    { "source": "/en/support/", "destination": "/en/support.html" }
   ],
   "headers": [
     {

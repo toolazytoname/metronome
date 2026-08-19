@@ -76,6 +76,63 @@ jobs:
           fi
           echo "✅ no speechSynthesis on the beat path"
 
+      - name: Check AGENTS.md still matches the repo
+        run: |
+          for needle in js/engine.js miniapp/pages/index/index.js metronome studio.weichao.jpq.soundpack playback; do
+            if ! grep -q "$needle" AGENTS.md; then
+              echo "❌ AGENTS.md missing required mention: $needle"
+              exit 1
+            fi
+          done
+          if grep -E -n 'category\s*=\s*\.?playAndRecord|AVAudioSessionCategoryPlayAndRecord' AGENTS.md docs/engine-contract.md docs/architecture.md; then
+            echo "❌ do not prescribe an iOS recording audio session"
+            exit 1
+          fi
+          if grep -n "无内购" README.md landing.html index.html; then
+            echo "❌ public copy still claims 无内购"
+            exit 1
+          fi
+          if grep -n "no in-app purchases" README.en.md en/landing.html en/index.html; then
+            echo "❌ public copy still claims no in-app purchases"
+            exit 1
+          fi
+          echo "✅ agent docs + public copy checks ok"
+
+      - name: Check legal pages
+        run: |
+          for f in privacy.html support.html en/privacy.html en/support.html; do
+            test -f "$f" || { echo "MISSING $f"; exit 1; }
+          done
+          for needle in "无账号" "音色工坊" "恢复购买" "lazywc@gmail.com"; do
+            grep -q "$needle" privacy.html support.html || { echo "zh legal missing $needle"; exit 1; }
+          done
+          for needle in "no-account" "Sound Workshop" "Restore purchases" "lazywc@gmail.com"; do
+            grep -q "$needle" en/privacy.html en/support.html || { echo "en legal missing $needle"; exit 1; }
+          done
+          echo "✅ legal pages ok"
+
+      - name: Check native sources exist
+        run: |
+          for f in \
+            ios/BunnyMetronome/Engine/MetronomePolicy.swift \
+            ios/BunnyMetronome/Engine/BeatScheduler.swift \
+            ios/BunnyMetronome/Engine/MetronomeAudioEngine.swift \
+            ios/BunnyMetronome/BunnyMetronomeApp.swift \
+            ios/BunnyMetronome/Store/StoreAdapter.swift \
+            android/policy/src/main/kotlin/studio/weichao/jpq/policy/MetronomePolicy.kt \
+            android/app/src/main/java/studio/weichao/jpq/audio/AudioTrackClock.kt \
+            android/app/src/main/java/studio/weichao/jpq/audio/MetronomeService.kt \
+            android/app/src/main/java/studio/weichao/jpq/MainActivity.kt \
+            android/app/src/main/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt \
+            privacy.html support.html
+          do
+            test -f "$f" || { echo "MISSING $f"; exit 1; }
+          done
+          test -d assets/sounds/pack/click-stick
+          test -d assets/sounds/pack/click-kick
+          test -d assets/sounds/pack/click-tip
+          echo "✅ native sources + pack clicks present"
+
       - name: Verify miniapp structure
         run: |
           required_files=(

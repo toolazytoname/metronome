@@ -124,4 +124,24 @@
     <lastmod>2026-07-11</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://jpq.weichao.studio/privacy</loc>
+    <lastmod>2026-08-19</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://jpq.weichao.studio/en/privacy</loc>
+    <lastmod>2026-08-19</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://jpq.weichao.studio/support</loc>
+    <lastmod>2026-08-19</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://jpq.weichao.studio/en/support</loc>
+    <lastmod>2026-08-19</lastmod>
+    <priority>0.5</priority>
+  </url>
 </urlset>

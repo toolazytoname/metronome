@@ -1,0 +1,21 @@
+{
+  "app_name": "Bunny Metronome",
+  "bpm": "BPM",
+  "play": "Play",
+  "pause": "Pause",
+  "settings": "Settings",
+  "sound_traditional": "Traditional",
+  "sound_uniform": "Uniform",
+  "sound_voice": "Voice",
+  "volume": "Volume",
+  "time_signature": "Time signature",
+  "language": "Language",
+  "haptic": "Haptic ticks",
+  "keep_awake": "Keep screen on while playing",
+  "sound_workshop": "Sound Workshop",
+  "sound_workshop_blurb": "One-time unlock for extra clicks and voices. Default counting stays free.",
+  "buy": "Unlock",
+  "restore": "Restore purchases",
+  "owned": "Unlocked",
+  "support": "Support us"
+}

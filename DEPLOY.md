@@ -83,18 +83,17 @@ python3 -m http.server 8080
 
 ```
 metronome/
-├── index.html              # 网页版入口
+├── index.html              # 网页版入口（留在仓库根）
 ├── vercel.json             # Vercel 部署配置
-├── miniapp/                # 微信小程序
-│   ├── app.js              # 全局入口
-│   ├── app.json            # 全局配置
-│   ├── project.config.json # 开发者工具配置（需填入 AppID）
-│   └── pages/index/        # 主页面
-│       ├── index.js        # 核心逻辑（计时器、音频）
-│       ├── index.wxml      # 页面结构
-│       └── index.wxss      # 页面样式
-└── assets/sounds/          # （仅供网页版使用）
+├── assets/sounds/          # 采样唯一来源（Web / 小程序 / 日后原生共用）
+├── miniapp/                # 微信小程序（Vercel 忽略）
+├── ios/                    # SwiftUI App（建设中，Vercel 忽略）
+├── android/                # Compose App（iOS 冻结后，Vercel 忽略）
+├── AGENTS.md               # 多端规则
+└── docs/                   # 架构与契约
 ```
+
+网页版变更才应触发 Vercel。Dashboard → Settings → Git → Ignored Paths 建议包含：`miniapp/**`、`ios/**`、`android/**`、`docs/**`。
 
 ---
 

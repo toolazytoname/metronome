@@ -20,7 +20,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_OUT = ROOT / "assets" / "sounds"
-MINI_OUT = ROOT / "miniapp" / "assets" / "sounds"
 
 SR = 44100
 ZH_VOICE = "zh-CN-XiaoyiNeural"
@@ -178,34 +177,94 @@ def render_count(text: str, voice: str, dest_mp3: Path, max_ms: float) -> None:
         to_mp3(out_wav, dest_mp3, "64k")
 
 
-def copy_tree_to_miniapp() -> None:
-    MINI_OUT.mkdir(parents=True, exist_ok=True)
-    for name in ("click-strong.mp3", "click-weak.mp3", "click-uniform.mp3"):
-        shutil.copy2(WEB_OUT / name, MINI_OUT / name)
-        # keep old names as aliases so leftover docs/tools don't 404
-        alias = {
-            "click-strong.mp3": "beat-strong.mp3",
-            "click-weak.mp3": "beat-weak.mp3",
-            "click-uniform.mp3": "beat-uniform.mp3",
-        }[name]
-        shutil.copy2(WEB_OUT / name, MINI_OUT / alias)
-    for lang in ("zh", "en"):
-        src = WEB_OUT / "voice" / lang
-        dst = MINI_OUT / "voice" / lang
-        if dst.exists():
-            shutil.rmtree(dst)
-        shutil.copytree(src, dst)
+def sync_to_consumers() -> None:
+    script = ROOT / "tools" / "sync-sounds.sh"
+    subprocess.run(["bash", str(script)], check=True)
+
+
+def write_pack_click(bank: str, name: str, samples) -> Path:
+    tmp = Path(tempfile.mkdtemp()) / f"{name}.wav"
+    write_wav(tmp, samples)
+    dest = WEB_OUT / "pack" / bank / f"{name}.mp3"
+    to_mp3(tmp, dest, "96k")
+    return dest
+
+
+def generate_pack_clicks() -> None:
+    print("== pack clicks ==")
+    banks = {
+        "click-stick": {
+            "click-strong": synth_click([1860, 2740, 4100], decay=0.009, noise_ms=1.8,
+                                        tick_hz=5200, peak_db=-3.0, length_ms=32),
+            "click-weak": synth_click([2400, 3600], decay=0.007, noise_ms=1.4,
+                                      tick_hz=5800, peak_db=-4.5, length_ms=24),
+            "click-uniform": synth_click([2100, 3150, 4400], decay=0.008, noise_ms=1.6,
+                                         tick_hz=5400, peak_db=-3.5, length_ms=28),
+        },
+        "click-kick": {
+            "click-strong": synth_click([72, 110, 180], decay=0.055, noise_ms=6.0,
+                                        tick_hz=90, peak_db=-3.0, length_ms=90),
+            "click-weak": synth_click([90, 140], decay=0.040, noise_ms=4.0,
+                                      tick_hz=120, peak_db=-4.5, length_ms=70),
+            "click-uniform": synth_click([80, 125, 190], decay=0.048, noise_ms=5.0,
+                                         tick_hz=100, peak_db=-3.5, length_ms=80),
+        },
+        "click-tip": {
+            "click-strong": synth_click([3200, 4800], decay=0.006, noise_ms=1.2,
+                                        tick_hz=7000, peak_db=-3.0, length_ms=22),
+            "click-weak": synth_click([3800, 5600], decay=0.005, noise_ms=0.9,
+                                      tick_hz=7600, peak_db=-4.5, length_ms=18),
+            "click-uniform": synth_click([3500, 5200], decay=0.0055, noise_ms=1.0,
+                                         tick_hz=7300, peak_db=-3.5, length_ms=20),
+        },
+    }
+    for bank, clicks in banks.items():
+        for name, samples in clicks.items():
+            dest = write_pack_click(bank, name, samples)
+            print(f"  {dest.relative_to(ROOT)}  {dest.stat().st_size}B")
+
+
+def generate_pack_voices() -> None:
+    if not shutil.which("edge-tts"):
+        print("skip pack voices: edge-tts missing", file=sys.stderr)
+        return
+    jobs = [
+        ("voice-zh-yunxi", ZH, "zh-CN-YunxiNeural", 0),
+        ("voice-zh-soft", ZH, "zh-CN-XiaoxiaoNeural", 8),
+        ("voice-en-deep", EN, "en-US-GuyNeural", 0),
+    ]
+    for bank, words, voice, pitch_extra in jobs:
+        print(f"== pack voice {bank} ({voice}) ==")
+        for i, text in enumerate(words, start=1):
+            max_ms = 230 if i <= 10 else 270
+            dest = WEB_OUT / "pack" / bank / f"{i:02d}.mp3"
+            try:
+                render_count(text, voice, dest, max_ms)
+                print(f"  {text:10} -> {dest.relative_to(ROOT)}  {dest.stat().st_size}B")
+            except Exception as exc:
+                print(f"  drop {bank}/{i:02d}: {exc}", file=sys.stderr)
+        _ = pitch_extra
 
 
 def main() -> int:
+    pack_only = "--pack-only" in sys.argv
     if not shutil.which("ffmpeg"):
         print("ffmpeg is required", file=sys.stderr)
         return 1
+
+    WEB_OUT.mkdir(parents=True, exist_ok=True)
+
+    if pack_only:
+        generate_pack_clicks()
+        generate_pack_voices()
+        print("== sync to consumers ==")
+        sync_to_consumers()
+        print("done")
+        return 0
+
     if not shutil.which("edge-tts"):
         print("edge-tts is required (pip install edge-tts)", file=sys.stderr)
         return 1
-
-    WEB_OUT.mkdir(parents=True, exist_ok=True)
 
     print("== clicks ==")
     strong = synth_click([980, 1490, 2380], decay=0.016, noise_ms=3.2,
@@ -236,8 +295,11 @@ def main() -> int:
         render_count(text, EN_VOICE, dest, max_ms)
         print(f"  {text:10} -> {dest.relative_to(ROOT)}  {dest.stat().st_size}B")
 
-    print("== copy to miniapp ==")
-    copy_tree_to_miniapp()
+    generate_pack_clicks()
+    generate_pack_voices()
+
+    print("== sync to consumers ==")
+    sync_to_consumers()
     print("done")
     return 0
 

@@ -67,7 +67,7 @@ Two things ruin practice: **unstable tempo** and **losing count**. This app hand
 - ⌨️ **Keyboard shortcuts** — Space to play/pause, ↑↓ ±1 BPM, Shift+↑↓ ±5 BPM
 - 📱 **PWA** — install to home screen, behaves like a native app
 - 🐰 **WeChat Mini Program** — also available if you'd rather not open a browser
-- 💸 **Free forever** — no ads, no in-app purchases, no paywall; voluntary donations
+- 💸 **Core free forever** — no ads, no paywall, default voice counting stays free; web tips plus an optional one-time sound pack on iOS / Android
 
 ---
 
@@ -310,8 +310,9 @@ No. No MIDI input, no audio analysis. For that, use a DAW (Logic, Reaper, Ableto
 - [x] PWA + home-screen install
 - [x] WeChat Mini Program
 - [x] English + Chinese (`/en/` with hreflang)
+- [ ] Native iOS / Android (SwiftUI + Compose, iOS first)
+- [ ] One-time store sound pack (default voice stays free)
 - [ ] Practice course collab (partnering with a piano education account)
-- [ ] Custom sound uploads (bring your own samples)
 
 Have an idea? [Open an issue](https://github.com/toolazytoname/metronome/issues).
 
@@ -326,25 +327,30 @@ python3 -m http.server 8000
 # open http://localhost:8000/en/
 ```
 
-**Editing the app** — open `index.html` (Chinese) or `en/index.html` (English) in any editor. The `<style>` and `<script>` blocks are at the bottom; extract them into separate files if you prefer to maintain them that way.
+**Editing the app** — open `index.html` (Chinese) or `en/index.html` (English) in any editor. The `<style>` and `<script>` blocks are at the bottom; extract them into separate files if you prefer to maintain them that way. Multi-platform rules live in [AGENTS.md](AGENTS.md).
 
 **Project layout**
 
 ```
-index.html               Chinese main app
+index.html               Chinese main app (stays at repo root — do not move)
 en/index.html            English main app
 js/engine.js             Audio engine (lookahead + samples)
 sw.js                    Service Worker
-assets/sounds/           Clicks + zh/en count samples
+assets/sounds/           Clicks + zh/en count samples (single source)
 landing.html             Chinese landing page
 en/landing.html          English landing page
 manifest.json            PWA config
 vercel.json              Deploy config (redirects + cache policy)
 scripts/                 Playwright capture + SEO audit scripts
-docs/                    Design docs, redesign notes
+docs/                    Architecture, engine contract, IAP, product
 miniapp/                 WeChat Mini Program source
+ios/                     SwiftUI + AVAudioEngine (in progress)
+android/                 Compose + AudioTrack (after iOS freezes)
+packages/strings/        Native UI copy
 images/                  Logo, QR codes, favicon
 assets/screenshots/      README screenshot assets
+AGENTS.md                Agent source of truth
+CLAUDE.md                Points at AGENTS.md
 DEPLOY.md                Deploy walkthrough
 robots.txt / sitemap.xml Sitemap
 LICENSE                  MIT
@@ -358,7 +364,7 @@ PRs welcome for small, focused improvements. Before opening a PR:
 
 1. Search existing issues / PRs
 2. For anything beyond a typo, open an issue first to align on direction
-3. Keep the single-file, zero-dep promise — no frameworks, no build tools, unless absolutely necessary
+3. Keep the web app zero-dep / no-build. Multi-platform rules live in [AGENTS.md](AGENTS.md)
 
 For security issues, **don't** open a public issue — email <lazywc@gmail.com>.
 

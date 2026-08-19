@@ -39,7 +39,7 @@ class AudioManager {
     if (this._inited) return;
     this._inited = true;
     const base = '../../assets/sounds';
-    const files = { strong: 'beat-strong.mp3', weak: 'beat-weak.mp3', uniform: 'beat-uniform.mp3' };
+    const files = { strong: 'click-strong.mp3', weak: 'click-weak.mp3', uniform: 'click-uniform.mp3' };
     for (const [key, file] of Object.entries(files)) {
       const ctx = wx.createInnerAudioContext();
       ctx.src = base + '/' + file;

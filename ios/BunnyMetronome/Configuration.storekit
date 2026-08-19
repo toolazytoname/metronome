@@ -1,0 +1,29 @@
+{
+  "identifier" : "studio.weichao.jpq.storekit",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "soundpack1",
+      "localizations" : [
+        {
+          "description" : "Extra clicks and counting voices. Default voice stays free.",
+          "displayName" : "Sound Workshop",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "额外 click 与数拍声线。默认童声仍然免费。",
+          "displayName" : "音色工坊",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "studio.weichao.jpq.soundpack",
+      "referenceName" : "Sound Workshop",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : { "_failTransactionsEnabled" : false },
+  "subscriptionGroups" : [],
+  "version" : { "major" : 3, "minor" : 0 }
+}

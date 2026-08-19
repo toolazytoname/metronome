@@ -13,9 +13,9 @@ __pycache__/
 # Node (if added later)
 node_modules/
 
-# WeChat mini-program build outputs (if any)
-# miniapp/dist/
+# WeChat mini-program build outputs
 miniapp/.automator-out/
+miniapp/coverage/
 
 # Editor
 .vscode/
@@ -23,21 +23,43 @@ miniapp/.automator-out/
 *.swp
 *.swo
 *~
+*.bak
 
 # Local development artifacts
-*.bakminiapp/coverage/
 .vercel
 
-# UI 验证截图
+# UI 验证截图（历史过程图，不要进仓库根）
 *-after*.png
 landing-v*.png
 index-v*.png
 index-real.png
 index-playing.png
-.bunny-after.png
+bunny-after.png
+seo-after.png
 
 # Playwright cache
 .playwright-mcp/
 
-# Claude worktree working copies (abandoned miniapp worktrees from 2026-05)
+# Claude worktree working copies
 .claude/worktrees/
+
+# iOS
+ios/.build/
+ios/.swiftpm/
+ios/DerivedData/
+ios/*.xcuserstate
+ios/**/xcuserdata/
+ios/**/Secrets.xcconfig
+*.p8
+*.mobileprovision
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/policy/build/
+android/local.properties
+*.jks
+*.keystore
+google-services.json
+play-service-account.json

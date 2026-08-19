@@ -67,7 +67,7 @@
 - ⌨️ **键盘快捷键** —— Space 播放/暂停、↑↓ ±1 BPM、Shift+↑↓ ±5 BPM
 - 📱 **PWA** —— 加到主屏像 App 一样用
 - 🐰 **微信小程序** —— 不方便开浏览器？小程序也在
-- 💸 **完全免费** —— 没广告、没内购、没付费墙，自愿打赏
+- 💸 **核心永远免费** —— 没广告、没付费墙、默认童声可用；网页自愿打赏，iOS / Android 可选一次买断的额外音色
 
 ---
 
@@ -314,8 +314,9 @@ npx vercel --prod
 - [x] PWA + 加到主屏
 - [x] 微信小程序
 - [x] 中英双语（`/en/` 目录 + hreflang）
+- [ ] iOS / Android 双原生（SwiftUI + Compose，先 iOS）
+- [ ] 商店一次性音色包（默认童声仍免费）
 - [ ] 节拍器练习课程（与某钢琴教育账号合作中）
-- [ ] 自定义音效（上传你自己的音色）
 
 有想法？[开个 issue](https://github.com/toolazytoname/metronome/issues)。
 
@@ -330,25 +331,30 @@ python3 -m http.server 8000
 # 打开 http://localhost:8000
 ```
 
-**改 App** —— 任何文本编辑器打开 `index.html`。`<style>` 和 `<script>` 在文件底部；想拆分维护就抽出来。
+**改 App** —— 任何文本编辑器打开 `index.html`。`<style>` 和 `<script>` 在文件底部；想拆分维护就抽出来。多端规则见 [AGENTS.md](AGENTS.md)。
 
 **目录结构**
 
 ```
-index.html               中文版主应用
+index.html               中文版主应用（Web 留在仓库根，不要搬家）
 en/index.html            英文版主应用
 js/engine.js             音频引擎（lookahead + 采样播放）
 sw.js                    Service Worker
-assets/sounds/           click + 中/英数拍采样
+assets/sounds/           click + 中/英数拍采样（各端唯一来源）
 landing.html             中文落地页
 en/landing.html          英文落地页
 manifest.json            PWA 配置
 vercel.json              部署配置（重定向 + 缓存策略）
 scripts/                 本地体检脚本
-docs/                    设计文档、改版记录
+docs/                    架构、引擎契约、IAP、产品说明
 miniapp/                 微信小程序源码
+ios/                     SwiftUI + AVAudioEngine（建设中）
+android/                 Compose + AudioTrack（iOS 冻结后）
+packages/strings/        原生 UI 文案表
 images/                  Logo、二维码、favicon
 assets/screenshots/      README 截图素材
+AGENTS.md                Agent 真相源
+CLAUDE.md                指向 AGENTS.md
 DEPLOY.md                部署流程
 robots.txt / sitemap.xml 站点地图
 LICENSE                  MIT
@@ -362,7 +368,7 @@ LICENSE                  MIT
 
 1. 搜一下已有 issue / PR
 2. 超过 typo 范围的，先开个 issue 对齐方向
-3. 守住「单文件、零依赖」承诺 —— 不加框架、不加构建工具，除非真有必要
+3. Web 守住「零依赖、无构建」—— 不加框架。多端规则以 [AGENTS.md](AGENTS.md) 为准
 
 安全问题**别**开公开 issue —— 邮件 <lazywc@gmail.com>。
 

@@ -1,0 +1,303 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+		APP1 /* BunnyMetronome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BunnyMetronome.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		TST1 /* BunnyMetronomeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BunnyMetronomeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		S01 /* BunnyMetronomeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunnyMetronomeApp.swift; sourceTree = "<group>"; };
+		S02 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		S03 /* MetronomeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomeModel.swift; sourceTree = "<group>"; };
+		S04 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		S05 /* MetronomePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomePolicy.swift; sourceTree = "<group>"; };
+		S06 /* BeatScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatScheduler.swift; sourceTree = "<group>"; };
+		S07 /* MetronomeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomeAudioEngine.swift; sourceTree = "<group>"; };
+		S12 /* BufferGain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BufferGain.swift; sourceTree = "<group>"; };
+		S08 /* StoreAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreAdapter.swift; sourceTree = "<group>"; };
+		S09 /* PrefsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefsStore.swift; sourceTree = "<group>"; };
+		S11 /* UnlockStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockStore.swift; sourceTree = "<group>"; };
+		S10 /* MetronomePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomePolicyTests.swift; sourceTree = "<group>"; };
+		AS1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		SD1 /* Sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sounds; sourceTree = "<group>"; };
+		J1 /* zh.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = zh.json; sourceTree = "<group>"; };
+		J2 /* en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = en.json; sourceTree = "<group>"; };
+		SK1 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
+
+		B01 /* BunnyMetronomeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S01 /* BunnyMetronomeApp.swift */; };
+		B02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S02 /* ContentView.swift */; };
+		B03 /* MetronomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = S03 /* MetronomeModel.swift */; };
+		B04 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S04 /* Haptics.swift */; };
+		B05 /* MetronomePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = S05 /* MetronomePolicy.swift */; };
+		B06 /* BeatScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = S06 /* BeatScheduler.swift */; };
+		B07 /* MetronomeAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = S07 /* MetronomeAudioEngine.swift */; };
+		B12 /* BufferGain.swift in Sources */ = {isa = PBXBuildFile; fileRef = S12 /* BufferGain.swift */; };
+		B08 /* StoreAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = S08 /* StoreAdapter.swift */; };
+		B09 /* PrefsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S09 /* PrefsStore.swift */; };
+		B11 /* UnlockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S11 /* UnlockStore.swift */; };
+		B10 /* MetronomePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10 /* MetronomePolicyTests.swift */; };
+		BA1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AS1 /* Assets.xcassets */; };
+		BSD /* Sounds in Resources */ = {isa = PBXBuildFile; fileRef = SD1 /* Sounds */; };
+		BJ1 /* zh.json in Resources */ = {isa = PBXBuildFile; fileRef = J1 /* zh.json */; };
+		BJ2 /* en.json in Resources */ = {isa = PBXBuildFile; fileRef = J2 /* en.json */; };
+
+		G0 = {
+			isa = PBXGroup;
+			children = (
+				GAPP /* BunnyMetronome */,
+				GTST /* BunnyMetronomeTests */,
+				GPROD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		GPROD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				APP1 /* BunnyMetronome.app */,
+				TST1 /* BunnyMetronomeTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		GAPP /* BunnyMetronome */ = {
+			isa = PBXGroup;
+			children = (
+				S01 /* BunnyMetronomeApp.swift */,
+				S02 /* ContentView.swift */,
+				S03 /* MetronomeModel.swift */,
+				S04 /* Haptics.swift */,
+				GENG /* Engine */,
+				GSTO /* Store */,
+				GSTR /* Strings */,
+				AS1 /* Assets.xcassets */,
+				SD1 /* Sounds */,
+				SK1 /* Configuration.storekit */,
+			);
+			path = BunnyMetronome;
+			sourceTree = "<group>";
+		};
+		GENG /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				S05 /* MetronomePolicy.swift */,
+				S06 /* BeatScheduler.swift */,
+				S07 /* MetronomeAudioEngine.swift */,
+				S12 /* BufferGain.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		GSTO /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				S08 /* StoreAdapter.swift */,
+				S09 /* PrefsStore.swift */,
+				S11 /* UnlockStore.swift */,
+			);
+			path = Store;
+			sourceTree = "<group>";
+		};
+		GSTR /* Strings */ = {
+			isa = PBXGroup;
+			children = (
+				J1 /* zh.json */,
+				J2 /* en.json */,
+			);
+			path = Strings;
+			sourceTree = "<group>";
+		};
+		GTST /* BunnyMetronomeTests */ = {
+			isa = PBXGroup;
+			children = (
+				S10 /* MetronomePolicyTests.swift */,
+			);
+			path = BunnyMetronomeTests;
+			sourceTree = "<group>";
+		};
+
+		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12,); runOnlyForDeploymentPostprocessing = 0; };
+		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10,); runOnlyForDeploymentPostprocessing = 0; };
+		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2,); runOnlyForDeploymentPostprocessing = 0; };
+		RTST /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		FAPP /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		FTST /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+
+		PX1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = PJ /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = TAPP;
+			remoteInfo = BunnyMetronome;
+		};
+		DEP1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = TAPP /* BunnyMetronome */;
+			targetProxy = PX1 /* PBXContainerItemProxy */;
+		};
+
+		TAPP /* BunnyMetronome */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CLAPP;
+			buildPhases = (
+				PAPP,
+				FAPP,
+				RAPP,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BunnyMetronome;
+			productName = BunnyMetronome;
+			productReference = APP1;
+			productType = "com.apple.product-type.application";
+		};
+		TTST /* BunnyMetronomeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CLTST;
+			buildPhases = (
+				PTST,
+				FTST,
+				RTST,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DEP1,
+			);
+			name = BunnyMetronomeTests;
+			productName = BunnyMetronomeTests;
+			productReference = TST1;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+
+		PJ /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+			};
+			buildConfigurationList = CLPRJ;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = G0;
+			productRefGroup = GPROD;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				TAPP /* BunnyMetronome */,
+				TTST /* BunnyMetronomeTests */,
+			);
+		};
+
+		CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_TESTABILITY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		CR /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BunnyMetronome;
+				INFOPLIST_KEY_UIBackgroundModes = audio;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.weichao.jpq;
+				PRODUCT_NAME = BunnyMetronome;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AR /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BunnyMetronome;
+				INFOPLIST_KEY_UIBackgroundModes = audio;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.weichao.jpq;
+				PRODUCT_NAME = BunnyMetronome;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		TD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.weichao.jpq.tests;
+				PRODUCT_NAME = BunnyMetronomeTests;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BunnyMetronome.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BunnyMetronome";
+			};
+			name = Debug;
+		};
+		TR /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.weichao.jpq.tests;
+				PRODUCT_NAME = BunnyMetronomeTests;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BunnyMetronome.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BunnyMetronome";
+			};
+			name = Release;
+		};
+
+		CLPRJ = {isa = XCConfigurationList; buildConfigurations = (CD, CR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLAPP = {isa = XCConfigurationList; buildConfigurations = (AD, AR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLTST = {isa = XCConfigurationList; buildConfigurations = (TD, TR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+	};
+	rootObject = PJ /* Project object */;
+}
