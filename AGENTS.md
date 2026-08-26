@@ -139,24 +139,37 @@ cd android && ./gradlew assembleDebug
 
 ---
 
-## 原生现状（2026-08-25）
+## 原生现状（2026-08-26）
 
-源码 2026-08-19 进仓库。2026-08-25 做到**代码上线阻断齐、模拟器能练**。还差你本机签名、真机 60 秒、Connect / Play 账号。
+源码 2026-08-19 进仓库。2026-08-25 代码上线阻断齐、模拟器能练。2026-08-26 真机：iPhone 11（UDID `00008030-0001252111FA802E`）+ OnePlus 8T（`5c9a424d`）。GitHub `v2.1.1` Native packages 绿。
 
 已有：
 
-- iOS：马卡龙练琴屏（bunny、大 BPM、豆子、珊瑚播放）、设置 sheet、AVAudioEngine、`.playback`、中断/路由、StoreKit 2 价/购买态/Restore、1024 图标、显示名「小兔头节拍器」、`PrivacyInfo.xcprivacy`、模拟器 iPhone 17 编过并截过图
-- Android：Compose 练琴屏 + 设置（含数拍 bank、文案表、商店价、Restore、亮屏）、AudioTrack + 前台 Service + 音频焦点、自适应图标、`assembleDebug` 绿、`:policy:test` 绿
+- iOS：马卡龙练琴屏、设置 sheet、AVAudioEngine、`.playback`、中断/路由、StoreKit 2、1024 图标（兔子铺满、无浅色圆垫）、显示名、「只竖屏」、`PrivacyInfo.xcprivacy`
+- iOS 真机曾无声：`scheduleBuffer` 误用 render time，已改 `playerTime(forNodeTime:)`；Development 签名能装
+- Android：Compose 练琴屏 + 设置、AudioTrack + 前台 Service、自适应图标、`screenOrientation=portrait`、旁路装不送包、`:policy:test` 绿
 - 包名 `studio.weichao.jpq`；SKU `studio.weichao.jpq.soundpack`
-- pack 57 条采样时长都压在 208 BPM 间隔内（click ≤90ms，数拍 ≤270ms）
-- 中文商店截图草稿：`docs/store/screenshots/`
+- pack 57 条时长闸门通过；中文截图草稿 `docs/store/screenshots/`
+- 打 `v*` → GitHub Release（Android debug APK + iOS **unsigned** IPA）。不传商店
 
 上线还缺（必须你来）：
 
-- 本机 Team 签名 → TestFlight
-- 真机 N1.25–N1.30 / N2.16
-- App Store Connect 建 App + IAP；Play Console 内测
-- 真机听一遍 pack 音色（自动闸门已过，主观好听与否你定）
+- 本机 **发行证书** → TestFlight（Development 只能装你的机）
+- 真机勾 N1.25–N1.30 / N2.16（静音键、锁屏、40/208、Sandbox 买/Restore）
+- App Store Connect 建 App + IAP；Play Console 内测 + 本地 keystore
+- pack 人耳听一遍
+
+**不要补统计。** 原生 v1 不上 SDK 是故意的：隐私页、`PrivacyInfo`、Play Data safety 都写了无跟踪。Web / 小程序才有友盟 / GA4。加进来要改隐私营养，第一版过不了。
+
+提审前容易漏（不是新功能）：
+
+- iOS 工程曾 `TARGETED_DEVICE_FAMILY = 1,2`，Connect 会当 iPad App 要 iPad 截图。v1 **只发 iPhone**（`1`）
+- `privacy.html` / 落地页仍写「即将上线」（N5.10 / N5.9，上线后改口）
+- App `MARKETING_VERSION` 还是 1.0.0，git tag 已是 2.1.1，提审前对齐
+- bunny 源图带「豆包AI生成」水印：图标已裁，练琴屏图还在
+- Connect 付费协议 + 税务银行；个人 Play 账号上生产轨要 12 人 × 14 天封闭测试
+- 第一个 IAP 必须跟一版 App 一起送审
+- 截图按 Connect 强制尺寸重出（草稿是模拟器）
 
 ---
 
@@ -203,6 +216,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - 能看清 BPM；有豆子或等价拍位；播放 / 暂停；BPM 滑块或 ±，范围 40–208，播放中可改、不插拍
    - 暖米 + 珊瑚即可；**小兔头摆上练琴屏 = 上线应当，不是阻断**（图标里有兔子就够过审）
    - **只竖屏**。横过来不转（iOS `UIInterfaceOrientationPortrait`，Android `screenOrientation=portrait`）。v1 不做横屏布局
+   - **只发 iPhone**（`TARGETED_DEVICE_FAMILY = 1`）。不要带 iPad，否则 Connect 要 iPad 截图
 2. **设置（上线必须）**
    - 音效：传统 / 均匀 / 童声
    - 拍号预设：4/4、3/4、2/4、6/8、5/4、7/8；自定义 `bc` 1–16（`bu` 可只随预设，自定义分母 = 上线应当）
