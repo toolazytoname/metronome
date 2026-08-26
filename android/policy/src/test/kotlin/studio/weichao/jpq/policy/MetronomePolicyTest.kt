@@ -50,6 +50,14 @@ class MetronomePolicyTest {
     }
 
     @Test
+    fun bankLabelKeys() {
+        assertEquals("click_default", MetronomePolicy.bankLabelKey("default", false))
+        assertEquals("voice_default", MetronomePolicy.bankLabelKey("default", true))
+        assertEquals("click_stick", MetronomePolicy.bankLabelKey("click-stick", false))
+        assertEquals("voice_zh_yunxi", MetronomePolicy.bankLabelKey("voice-zh-yunxi", true))
+    }
+
+    @Test
     fun unpaidPathCanStartDefaultVoice() {
         assertTrue(MetronomePolicy.canStartDefaultVoice(false))
         assertTrue(MetronomePolicy.canUsePackBank("default", false))
@@ -77,12 +85,55 @@ class MetronomePolicyTest {
         val fake = FakeStoreAdapter(unlocked = false)
         assertFalse(fake.currentEntitlement())
         assertFalse(MetronomePolicy.canUsePackBank("click-stick", fake.currentEntitlement()))
+        assertEquals("¥12.00", fake.productPrice())
         fake.purchase()
         assertEquals(1, fake.purchaseCalls)
         assertTrue(fake.currentEntitlement())
         assertTrue(MetronomePolicy.canUsePackBank("click-stick", fake.currentEntitlement()))
         fake.restore()
         assertEquals(1, fake.restoreCalls)
+    }
+
+    @Test
+    fun unpaidHapticStaysEveryBeatStandardPulse() {
+        assertFalse(MetronomePolicy.canUseHapticPattern(MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, false))
+        assertFalse(MetronomePolicy.canUseHapticFeel(MetronomePolicy.HAPTIC_FEEL_HEAVY, false))
+        assertTrue(MetronomePolicy.canUseHapticPattern(MetronomePolicy.HAPTIC_PATTERN_ALL, false))
+        assertTrue(MetronomePolicy.canUseHapticFeel(MetronomePolicy.HAPTIC_FEEL_STANDARD, false))
+        assertEquals(
+            MetronomePolicy.HAPTIC_PATTERN_ALL,
+            MetronomePolicy.resolveHapticPattern(MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, false)
+        )
+        assertEquals(
+            MetronomePolicy.HAPTIC_FEEL_STANDARD,
+            MetronomePolicy.resolveHapticFeel(MetronomePolicy.HAPTIC_FEEL_LIGHT, false)
+        )
+        assertTrue(MetronomePolicy.shouldHapticTick(false, MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, false))
+        val unpaid = MetronomePolicy.hapticPulse(true, MetronomePolicy.HAPTIC_FEEL_HEAVY, false)
+        assertEquals(12, unpaid.durationMs)
+        assertEquals(0.38, unpaid.intensity, 1e-9)
+        val weak = MetronomePolicy.hapticPulse(false, MetronomePolicy.HAPTIC_FEEL_HEAVY, false)
+        assertEquals(unpaid, weak)
+    }
+
+    @Test
+    fun paidHapticDownbeatAndFeel() {
+        assertTrue(MetronomePolicy.canUseHapticPattern(MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, true))
+        assertEquals(
+            MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT,
+            MetronomePolicy.resolveHapticPattern(MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, true)
+        )
+        assertFalse(MetronomePolicy.shouldHapticTick(false, MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, true))
+        assertTrue(MetronomePolicy.shouldHapticTick(true, MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT, true))
+        val heavy = MetronomePolicy.hapticPulse(true, MetronomePolicy.HAPTIC_FEEL_HEAVY, true)
+        assertEquals(36, heavy.durationMs)
+        val lightWeak = MetronomePolicy.hapticPulse(false, MetronomePolicy.HAPTIC_FEEL_LIGHT, true)
+        assertEquals(8, lightWeak.durationMs)
+        val prefs = MetronomePrefs.from(
+            mapOf("hapticPattern" to "downbeat", "hapticFeel" to "heavy")
+        )
+        assertEquals("downbeat", prefs.hapticPattern)
+        assertEquals("heavy", prefs.hapticFeel)
     }
 }
 

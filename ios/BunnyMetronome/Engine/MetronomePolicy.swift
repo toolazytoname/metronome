@@ -94,6 +94,57 @@ enum MetronomePolicy {
         }
         return "pack/\(bank)/\(file)"
     }
+
+    static func bankLabelKey(_ bank: String, voice: Bool) -> String {
+        if bank == defaultBank || bank.isEmpty {
+            return voice ? "voice_default" : "click_default"
+        }
+        return bank.replacingOccurrences(of: "-", with: "_")
+    }
+
+    static let hapticPatternAll = "all"
+    static let hapticPatternDownbeat = "downbeat"
+    static let hapticFeelLight = "light"
+    static let hapticFeelStandard = "standard"
+    static let hapticFeelHeavy = "heavy"
+
+    static func canUseHapticPattern(_ pattern: String, unlocked: Bool) -> Bool {
+        if pattern == hapticPatternAll || pattern.isEmpty { return true }
+        return unlocked && pattern == hapticPatternDownbeat
+    }
+
+    static func canUseHapticFeel(_ feel: String, unlocked: Bool) -> Bool {
+        if feel == hapticFeelStandard || feel.isEmpty { return true }
+        return unlocked && (feel == hapticFeelLight || feel == hapticFeelHeavy)
+    }
+
+    static func resolveHapticPattern(requested: String, unlocked: Bool) -> String {
+        canUseHapticPattern(requested, unlocked: unlocked) ? (requested.isEmpty ? hapticPatternAll : requested) : hapticPatternAll
+    }
+
+    static func resolveHapticFeel(requested: String, unlocked: Bool) -> String {
+        canUseHapticFeel(requested, unlocked: unlocked) ? (requested.isEmpty ? hapticFeelStandard : requested) : hapticFeelStandard
+    }
+
+    static func shouldHapticTick(strong: Bool, pattern: String, unlocked: Bool) -> Bool {
+        resolveHapticPattern(requested: pattern, unlocked: unlocked) == hapticPatternDownbeat ? strong : true
+    }
+
+    /// intensity/sharpness 0...1 for Core Haptics; durationMs for Android one-shots.
+    /// Unpaid is one short pulse on every beat. Pack feel may accent the downbeat.
+    static func hapticPulse(strong: Bool, feel: String, unlocked: Bool) -> (intensity: Double, sharpness: Double, durationMs: Int) {
+        if !unlocked {
+            return (0.38, 0.42, 12)
+        }
+        switch resolveHapticFeel(requested: feel, unlocked: true) {
+        case hapticFeelLight:
+            return strong ? (0.45, 0.45, 14) : (0.22, 0.30, 8)
+        case hapticFeelHeavy:
+            return strong ? (1.0, 0.90, 36) : (0.55, 0.50, 18)
+        default:
+            return strong ? (0.92, 0.75, 28) : (0.42, 0.40, 12)
+        }
+    }
 }
 
 struct MetronomePrefs: Equatable, Codable {
@@ -107,11 +158,15 @@ struct MetronomePrefs: Equatable, Codable {
     var keepAwake: Bool
     var clickBank: String
     var voiceBank: String
+    var hapticPattern: String
+    var hapticFeel: String
 
     static let `default` = MetronomePrefs(
         bpm: 120, bc: 4, bu: 4, sm: SoundMode.uniform.rawValue, vol: 85,
         lang: "zh", haptic: false, keepAwake: true,
-        clickBank: MetronomePolicy.defaultBank, voiceBank: MetronomePolicy.defaultBank
+        clickBank: MetronomePolicy.defaultBank, voiceBank: MetronomePolicy.defaultBank,
+        hapticPattern: MetronomePolicy.hapticPatternAll,
+        hapticFeel: MetronomePolicy.hapticFeelStandard
     )
 
     static func decode(_ data: Data) -> MetronomePrefs {
@@ -131,6 +186,8 @@ struct MetronomePrefs: Equatable, Codable {
         if let b = raw["keepAwake"] as? Bool { p.keepAwake = b }
         if let s = raw["clickBank"] as? String { p.clickBank = s }
         if let s = raw["voiceBank"] as? String { p.voiceBank = s }
+        if let s = raw["hapticPattern"] as? String { p.hapticPattern = s }
+        if let s = raw["hapticFeel"] as? String { p.hapticFeel = s }
         return p
     }
 
@@ -142,7 +199,8 @@ struct MetronomePrefs: Equatable, Codable {
         let obj: [String: Any] = [
             "bpm": bpm, "bc": bc, "bu": bu, "sm": sm, "vol": vol,
             "lang": lang, "haptic": haptic, "keepAwake": keepAwake,
-            "clickBank": clickBank, "voiceBank": voiceBank
+            "clickBank": clickBank, "voiceBank": voiceBank,
+            "hapticPattern": hapticPattern, "hapticFeel": hapticFeel
         ]
         return try JSONSerialization.data(withJSONObject: obj)
     }

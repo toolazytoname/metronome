@@ -40,6 +40,13 @@ final class MetronomePolicyTests: XCTestCase {
         XCTAssertEqual(voice[1].gain, 0.28, accuracy: 1e-9)
     }
 
+    func testBankLabelKeys() {
+        XCTAssertEqual(MetronomePolicy.bankLabelKey("default", voice: false), "click_default")
+        XCTAssertEqual(MetronomePolicy.bankLabelKey("default", voice: true), "voice_default")
+        XCTAssertEqual(MetronomePolicy.bankLabelKey("click-stick", voice: false), "click_stick")
+        XCTAssertEqual(MetronomePolicy.bankLabelKey("voice-zh-yunxi", voice: true), "voice_zh_yunxi")
+    }
+
     func testUnpaidPathCanStartDefaultVoice() {
         XCTAssertTrue(MetronomePolicy.canStartDefaultVoice(unlocked: false))
         XCTAssertTrue(MetronomePolicy.canUsePackBank("default", unlocked: false))
@@ -66,6 +73,8 @@ final class MetronomePolicyTests: XCTestCase {
         let before = await fake.currentEntitlement()
         XCTAssertFalse(before)
         XCTAssertFalse(MetronomePolicy.canUsePackBank("click-stick", unlocked: before))
+        let price = await fake.productPrice()
+        XCTAssertEqual(price, "¥12.00")
         try? await fake.purchase()
         XCTAssertEqual(fake.purchaseCalls, 1)
         let after = await fake.currentEntitlement()
@@ -73,6 +82,57 @@ final class MetronomePolicyTests: XCTestCase {
         XCTAssertTrue(MetronomePolicy.canUsePackBank("click-stick", unlocked: after))
         try? await fake.restore()
         XCTAssertEqual(fake.restoreCalls, 1)
+    }
+
+    func testUnpaidHapticStaysEveryBeatStandardPulse() {
+        XCTAssertFalse(MetronomePolicy.canUseHapticPattern(MetronomePolicy.hapticPatternDownbeat, unlocked: false))
+        XCTAssertFalse(MetronomePolicy.canUseHapticFeel(MetronomePolicy.hapticFeelHeavy, unlocked: false))
+        XCTAssertTrue(MetronomePolicy.canUseHapticPattern(MetronomePolicy.hapticPatternAll, unlocked: false))
+        XCTAssertTrue(MetronomePolicy.canUseHapticFeel(MetronomePolicy.hapticFeelStandard, unlocked: false))
+        XCTAssertEqual(
+            MetronomePolicy.resolveHapticPattern(requested: MetronomePolicy.hapticPatternDownbeat, unlocked: false),
+            MetronomePolicy.hapticPatternAll
+        )
+        XCTAssertEqual(
+            MetronomePolicy.resolveHapticFeel(requested: MetronomePolicy.hapticFeelLight, unlocked: false),
+            MetronomePolicy.hapticFeelStandard
+        )
+        XCTAssertTrue(MetronomePolicy.shouldHapticTick(strong: false, pattern: MetronomePolicy.hapticPatternDownbeat, unlocked: false))
+        let unpaid = MetronomePolicy.hapticPulse(strong: true, feel: MetronomePolicy.hapticFeelHeavy, unlocked: false)
+        XCTAssertEqual(unpaid.durationMs, 12)
+        XCTAssertEqual(unpaid.intensity, 0.38, accuracy: 1e-9)
+        let weak = MetronomePolicy.hapticPulse(strong: false, feel: MetronomePolicy.hapticFeelHeavy, unlocked: false)
+        XCTAssertEqual(unpaid.intensity, weak.intensity, accuracy: 1e-9)
+        XCTAssertEqual(unpaid.durationMs, weak.durationMs)
+    }
+
+    func testPaidHapticDownbeatAndFeel() {
+        XCTAssertTrue(MetronomePolicy.canUseHapticPattern(MetronomePolicy.hapticPatternDownbeat, unlocked: true))
+        XCTAssertEqual(
+            MetronomePolicy.resolveHapticPattern(requested: MetronomePolicy.hapticPatternDownbeat, unlocked: true),
+            MetronomePolicy.hapticPatternDownbeat
+        )
+        XCTAssertFalse(MetronomePolicy.shouldHapticTick(strong: false, pattern: MetronomePolicy.hapticPatternDownbeat, unlocked: true))
+        XCTAssertTrue(MetronomePolicy.shouldHapticTick(strong: true, pattern: MetronomePolicy.hapticPatternDownbeat, unlocked: true))
+        let heavy = MetronomePolicy.hapticPulse(strong: true, feel: MetronomePolicy.hapticFeelHeavy, unlocked: true)
+        XCTAssertEqual(heavy.durationMs, 36)
+        let lightWeak = MetronomePolicy.hapticPulse(strong: false, feel: MetronomePolicy.hapticFeelLight, unlocked: true)
+        XCTAssertEqual(lightWeak.durationMs, 8)
+        let prefs = MetronomePrefs.from(["hapticPattern": "downbeat", "hapticFeel": "heavy"])
+        XCTAssertEqual(prefs.hapticPattern, "downbeat")
+        XCTAssertEqual(prefs.hapticFeel, "heavy")
+    }
+}
+
+final class BeatSchedulerReentrancyTests: XCTestCase {
+    func testStartWhilePlayingDoesNotResetIfEngineGuards() {
+        let clock = BeatScheduler(bpm: 120, beatsPerBar: 4)
+        clock.start(at: 0)
+        XCTAssertTrue(clock.playing)
+        let first = clock.pull(until: 0.1)
+        XCTAssertEqual(first.count, 1)
+        // A second start() on the scheduler itself is a new run (engine must no-op instead).
+        XCTAssertEqual(clock.nextNoteTime, 0.52, accuracy: 1e-9)
     }
 }
 

@@ -16,10 +16,12 @@ python3 tools/gen-sounds.py          # 重渲 click + 数拍，并拷到 miniapp
 
 ## 读文档的顺序
 
-1. `AGENTS.md` — 约束
+1. `AGENTS.md` — 约束、v1 原生说明书（已冻结）、上线目标、待办勾选
 2. `docs/engine-contract.md` — 状态和拍钟
 3. `docs/architecture.md` — 多端地图
 4. `docs/iap.md` — 音色包
 5. `DEPLOY.md` — 怎么发布（没有云后端）
 
-不要新建 `CLOUD.md`。
+原生先做 iOS 上线阻断（P1 + 商店），Android 只抄说明书里的功能阻断（P2）。无障碍和 1:1 视觉是上线后。改待办状态也改 `AGENTS.md`。
+
+不要新建 `CLOUD.md`。不要另写一份和 `AGENTS.md` 打架的 native TODO。

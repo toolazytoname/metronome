@@ -17,9 +17,11 @@ studio.weichao.jpq.soundpack
 | Click | `click-strong/weak/uniform` | `pack/click-stick`、`click-kick`、`click-tip` |
 | 中文数拍 | 晓伊 `voice/zh` | `pack/voice-zh-yunxi`、`pack/voice-zh-soft` |
 | 英文数拍 | Ana `voice/en` | `pack/voice-en-deep` |
-| 震动 | 开/关，一种短脉冲 | 强拍更重的两段式 |
+| 震动 | 开/关；每拍同一种短脉冲 | 只震强拍；轻 / 标准 / 重 |
 
-默认童声永远可玩。未解锁时点包内音色 → 系统购买页，不要自己画支付 UI。
+默认童声永远可玩。震动开/关永远免费。未解锁时点包内音色或付费震动选项 → 系统购买页，不要自己画支付 UI。
+
+偏好字段（原生额外，不进 Web）：`haptic` 布尔；`hapticPattern` 为 `all` | `downbeat`；`hapticFeel` 为 `light` | `standard` | `heavy`。未购 `resolve*` 强制 `all` + `standard`。
 
 ## 权威来源
 
@@ -34,7 +36,7 @@ studio.weichao.jpq.soundpack
 - 价格来自商店（不要写死 ¥12 在按钮上当唯一价格）
 - 购买中 / 失败 / 取消
 - **恢复购买**（审核硬性）
-- 购买成功后音色列表立刻可点
+- 购买成功后音色列表和震动选项立刻可点
 
 ## 不要做
 

@@ -8,6 +8,11 @@ struct BunnyMetronomeApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(model)
+                .onAppear {
+                    let args = ProcessInfo.processInfo.arguments
+                    if args.contains("-OpenSettings") { model.settingsOpen = true }
+                    if args.contains("-AutoPlay") { model.togglePlay() }
+                }
         }
     }
 }

@@ -77,6 +77,11 @@ App 是练琴屏（大 BPM、豆子、播放），不是把落地页塞进手机
 
 ## 建设顺序
 
-1. 仓库与文档（本阶段）
-2. iOS 做成参考实现并冻结说明书
-3. Android 按说明书移植，不许加功能
+1. 仓库与文档（已完成）
+2. iOS / Android 源码骨架进仓库（2026-08-19；政策单测可跑，未上架）
+3. **说明书已冻结**于 [AGENTS.md](../AGENTS.md)「v1 原生说明书」—— Android 不许加功能
+4. iOS 按「上线目标」做到 TestFlight → App Store（进行中）
+5. Android 按冻结说明书对齐，然后 Play 内测 + 官网 APK
+6. iOS App Store 先于 Android 生产
+
+详细待办与勾选：`AGENTS.md` 后半。不要在这里另写一套 TODO。

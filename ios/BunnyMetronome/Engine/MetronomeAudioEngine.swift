@@ -15,8 +15,10 @@ final class MetronomeAudioEngine {
     private var clickBank = MetronomePolicy.defaultBank
     private var voiceBank = MetronomePolicy.defaultBank
     private var format: AVAudioFormat?
+    private var observers: [NSObjectProtocol] = []
     var hapticEnabled = false
-    var onHaptic: (() -> Void)?
+    var onHaptic: ((Int) -> Void)?
+    var onInterrupted: (() -> Void)?
 
     init() {
         engine.attach(clickPlayer)
@@ -25,6 +27,11 @@ final class MetronomeAudioEngine {
         engine.connect(clickPlayer, to: mixer, format: nil)
         engine.connect(overlayPlayer, to: mixer, format: nil)
         engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        listenForSessionEvents()
+    }
+
+    deinit {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
     }
 
     func setOnBeat(_ handler: @escaping (Int) -> Void) {
@@ -47,10 +54,13 @@ final class MetronomeAudioEngine {
     }
 
     func loadSamples() throws {
+        if !buffers.isEmpty { return }
         let root = Bundle.main.resourceURL?.appendingPathComponent("Sounds")
             ?? Bundle.main.bundleURL
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: nil) else { return }
+        guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw NSError(domain: "audio", code: 1)
+        }
         for case let url as URL in enumerator where url.pathExtension.lowercased() == "mp3" {
             let rel = url.path.replacingOccurrences(of: root.path + "/", with: "")
                 .replacingOccurrences(of: ".mp3", with: "")
@@ -59,6 +69,9 @@ final class MetronomeAudioEngine {
                 if format == nil { format = buf.format }
             }
         }
+        guard !buffers.isEmpty else {
+            throw NSError(domain: "audio", code: 2)
+        }
         if let format {
             engine.connect(clickPlayer, to: mixer, format: format)
             engine.connect(overlayPlayer, to: mixer, format: format)
@@ -66,12 +79,20 @@ final class MetronomeAudioEngine {
     }
 
     func start() throws {
+        if scheduler.playing { return }
         try configurePlaybackSession()
+        if buffers.isEmpty {
+            try loadSamples()
+        }
         if !engine.isRunning {
+            engine.prepare()
             try engine.start()
         }
-        if !clickPlayer.isPlaying { clickPlayer.play() }
-        if !overlayPlayer.isPlaying { overlayPlayer.play() }
+        // Reset player timebases so scheduled sample times line up with playerTime().
+        clickPlayer.stop()
+        overlayPlayer.stop()
+        clickPlayer.play()
+        overlayPlayer.play()
         scheduler.start(at: currentPlayerTime())
         armTimer()
     }
@@ -82,12 +103,57 @@ final class MetronomeAudioEngine {
         timer = nil
         clickPlayer.stop()
         overlayPlayer.stop()
-        clickPlayer.play()
-        overlayPlayer.play()
     }
 
     func setBpm(_ bpm: Int) { scheduler.setBpm(bpm) }
     func setBeats(_ n: Int) { scheduler.setBeats(n) }
+
+    private func listenForSessionEvents() {
+        let nc = NotificationCenter.default
+        observers.append(nc.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] note in
+            self?.handleInterruption(note)
+        })
+        observers.append(nc.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] note in
+            self?.handleRouteChange(note)
+        })
+    }
+
+    private func handleInterruption(_ note: Notification) {
+        let typeValue = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+        let type = typeValue.flatMap(AVAudioSession.InterruptionType.init(rawValue:))
+        switch type {
+        case .began:
+            if scheduler.playing {
+                stop()
+                onInterrupted?()
+            }
+        case .ended:
+            let optsVal = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+            let opts = AVAudioSession.InterruptionOptions(rawValue: optsVal)
+            if opts.contains(.shouldResume) {
+                try? configurePlaybackSession()
+            }
+        default:
+            break
+        }
+    }
+
+    private func handleRouteChange(_ note: Notification) {
+        guard scheduler.playing else { return }
+        let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+        let reason = raw.flatMap(AVAudioSession.RouteChangeReason.init(rawValue:))
+        if reason == .oldDeviceUnavailable {
+            try? configurePlaybackSession()
+        }
+    }
 
     private func armTimer() {
         timer?.cancel()
@@ -116,6 +182,7 @@ final class MetronomeAudioEngine {
         )
         let rate = format?.sampleRate ?? 44100
         let sampleTime = AVAudioFramePosition((beat.time * rate).rounded())
+        // `at` is player time, same clock as currentPlayerTime().
         let at = AVAudioTime(sampleTime: sampleTime, atRate: rate)
         let players = [clickPlayer, overlayPlayer]
         for (i, voice) in voices.enumerated() {
@@ -125,8 +192,9 @@ final class MetronomeAudioEngine {
         }
         let delay = max(0, beat.time - currentPlayerTime())
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            self?.onBeat?(beat.index)
-            if self?.hapticEnabled == true { self?.onHaptic?() }
+            guard let self, self.scheduler.playing else { return }
+            self.onBeat?(beat.index)
+            if self.hapticEnabled { self.onHaptic?(beat.index) }
         }
     }
 
@@ -158,11 +226,16 @@ final class MetronomeAudioEngine {
         return copy
     }
 
+    /// Player-node seconds. `lastRenderTime` is engine/render time — scheduling
+    /// with that sampleTime drops every buffer in the past, so the UI can tick
+    /// while the speaker stays silent.
     private func currentPlayerTime() -> Double {
-        if let last = clickPlayer.lastRenderTime,
-           last.isSampleTimeValid,
-           let rate = format?.sampleRate, rate > 0 {
-            return Double(last.sampleTime) / rate
+        if let nodeTime = clickPlayer.lastRenderTime,
+           nodeTime.isHostTimeValid || nodeTime.isSampleTimeValid,
+           let playerTime = clickPlayer.playerTime(forNodeTime: nodeTime),
+           playerTime.isSampleTimeValid,
+           playerTime.sampleRate > 0 {
+            return Double(playerTime.sampleTime) / playerTime.sampleRate
         }
         return 0
     }

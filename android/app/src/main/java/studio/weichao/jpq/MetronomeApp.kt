@@ -10,13 +10,15 @@ class MetronomeApp : Application() {
         super.onCreate()
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel(
-                CHANNEL_ID, "Metronome", NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_DEFAULT
             )
+            ch.setSound(null, null)
+            ch.enableVibration(false)
             getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
         }
     }
 
     companion object {
-        const val CHANNEL_ID = "metronome_playback"
+        const val CHANNEL_ID = "metronome_playback_v2"
     }
 }

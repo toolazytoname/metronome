@@ -10,11 +10,25 @@ android {
         applicationId = "studio.weichao.jpq"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
+    }
+    val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+    if (!ksPath.isNullOrBlank()) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("ANDROID_STORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+            }
+        }
     }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
     }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }

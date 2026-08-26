@@ -85,15 +85,64 @@ python3 -m http.server 8080
 metronome/
 ├── index.html              # 网页版入口（留在仓库根）
 ├── vercel.json             # Vercel 部署配置
-├── assets/sounds/          # 采样唯一来源（Web / 小程序 / 日后原生共用）
+├── assets/sounds/          # 采样唯一来源（Web / 小程序 / 原生共用）
 ├── miniapp/                # 微信小程序（Vercel 忽略）
-├── ios/                    # SwiftUI App（建设中，Vercel 忽略）
-├── android/                # Compose App（iOS 冻结后，Vercel 忽略）
-├── AGENTS.md               # 多端规则
+├── ios/                    # SwiftUI 参考实现（Vercel 忽略；上架清单见 AGENTS.md）
+├── android/                # 按冻结说明书移植（Vercel 忽略）
+├── AGENTS.md               # 多端规则 + 原生待办
 └── docs/                   # 架构与契约
 ```
 
 网页版变更才应触发 Vercel。Dashboard → Settings → Git → Ignored Paths 建议包含：`miniapp/**`、`ios/**`、`android/**`、`docs/**`。
+
+---
+
+## 🍎 iOS（TestFlight / 提审）
+
+证书、Team ID、`Secrets.xcconfig` **不进 git**。CI 保持 `CODE_SIGNING_ALLOWED=NO`。
+
+1. 本机用个人/公司 Team 打开 `ios/BunnyMetronome.xcodeproj`，把 Debug/Release 的签名改成 Automatic（不要提交这步）。
+2. Scheme 已挂 `Configuration.storekit`，本地可测 IAP。
+3. 真机过完 `AGENTS.md` N1.25–N1.30。
+4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`。
+5. 建非消耗型 IAP `studio.weichao.jpq.soundpack`。价格档对齐 ¥12 / $1.99。
+6. 隐私营养：无账户、无跟踪。隐私 / 支持 URL 见 `docs/store/README.md`。
+7. 截图按商店清单。审核备注也在那份文件。
+8. Archive → 上传 → 内部 TestFlight → 提审。
+
+## 🤖 Android（Play 内测 / 签名 APK）
+
+Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023-11 之后的个人账号，生产轨还要先做封闭测试（至少 12 名测试者连续 14 天）。内部测试轨本身不收费。
+
+功能面已按 iOS 冻结说明书对齐（含工坊震动）。视觉不 1:1 搬马卡龙，不挡内测。
+
+### 自动出 GitHub Release 包
+
+1. 推 tag：`git tag v2.1.0 && git push origin v2.1.0`
+2. GitHub Actions `Native packages` 并行出：
+   - Android：`:policy:test` + `assembleDebug`（有 keystore secrets 再加 `assembleRelease`）
+   - iOS：`swift test` + iphoneos `CODE_SIGNING_ALLOWED=NO`，打成 **unsigned IPA**
+3. tag 会建 GitHub Release 并挂上这些文件。`workflow_dispatch` 只出 artifact、不建 Release。
+4. iOS unsigned IPA **不能**装真机，也 **不能** 传 App Store Connect。TestFlight 仍要本机发行证书 Archive。
+5. 要签 **Android release** APK，把这些塞进 GitHub Secrets（**不要进 git**）：
+   - `ANDROID_KEYSTORE_BASE64`（`.jks` 的 base64）
+   - `ANDROID_STORE_PASSWORD`
+   - `ANDROID_KEY_ALIAS`
+   - `ANDROID_KEY_PASSWORD`
+6. 没有 keystore 时只出 debug APK，能装，不能上 Play。
+
+不要自动把包传到 App Store / Play：证书、`.p8`、服务账号 JSON 不进仓库。Console 仍要你点一次。
+
+官网 / GitHub 旁路安装的 APK **不要免费送工坊**。Play Billing 只在 Play 装的包上可靠。同包名禁止后门解锁。
+
+### 本机 / Console
+
+1. `cd android && ./gradlew :policy:test`
+2. `./gradlew assembleDebug` 做功能核验。
+3. Release 用本地 keystore 签（`*.jks` 不进 git）。
+4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。
+5. Data safety：无用户数据收集；IAP 由 Google 处理。
+6. 商店文案 / 截图见 `docs/store/README.md`。国内商店与软著不做。
 
 ---
 

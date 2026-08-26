@@ -26,11 +26,13 @@ Web：`localStorage["metronome"]`
   "haptic": false,
   "keepAwake": true,
   "clickBank": "default",
-  "voiceBank": "default"
+  "voiceBank": "default",
+  "hapticPattern": "all",       // "all" | "downbeat"；未购 resolve 为 all
+  "hapticFeel": "standard"      // "light" | "standard" | "heavy"；未购 resolve 为 standard
 }
 ```
 
-非法值要 clamp，不要崩溃。未知 `sm` 回退 `uniform`。
+非法值要 clamp，不要崩溃。未知 `sm` 回退 `uniform`。未知 `hapticPattern` / `hapticFeel` 在播放时 `resolve*` 回 `all` / `standard`。未购不要让包内震动选项生效。
 
 ## 时钟
 

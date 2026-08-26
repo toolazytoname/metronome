@@ -133,6 +133,37 @@ jobs:
           test -d assets/sounds/pack/click-tip
           echo "✅ native sources + pack clicks present"
 
+      - name: Check native icons and privacy
+        run: |
+          test -s ios/BunnyMetronome/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+          test -f ios/BunnyMetronome/PrivacyInfo.xcprivacy
+          grep -q 'ITSAppUsesNonExemptEncryption' ios/BunnyMetronome/Info.plist
+          test -s android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          echo "✅ native icons + privacy files present"
+
+  ios-policy:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift policy tests
+        run: cd ios && swift test
+
+  android-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: JVM policy tests
+        run: cd android && ./gradlew :policy:test --no-daemon
+
+  miniapp-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Verify miniapp structure
         run: |
           required_files=(

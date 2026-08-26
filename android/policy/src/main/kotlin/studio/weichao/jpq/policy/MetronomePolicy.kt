@@ -77,7 +77,59 @@ object MetronomePolicy {
 
     fun voiceKey(bank: String, lang: String, file: String): String =
         if (bank == DEFAULT_BANK || bank.isEmpty()) "voice/$lang/$file" else "pack/$bank/$file"
+
+    fun bankLabelKey(bank: String, voice: Boolean): String {
+        if (bank == DEFAULT_BANK || bank.isEmpty()) {
+            return if (voice) "voice_default" else "click_default"
+        }
+        return bank.replace("-", "_")
+    }
+
+    const val HAPTIC_PATTERN_ALL = "all"
+    const val HAPTIC_PATTERN_DOWNBEAT = "downbeat"
+    const val HAPTIC_FEEL_LIGHT = "light"
+    const val HAPTIC_FEEL_STANDARD = "standard"
+    const val HAPTIC_FEEL_HEAVY = "heavy"
+
+    fun canUseHapticPattern(pattern: String, unlocked: Boolean): Boolean {
+        if (pattern == HAPTIC_PATTERN_ALL || pattern.isEmpty()) return true
+        return unlocked && pattern == HAPTIC_PATTERN_DOWNBEAT
+    }
+
+    fun canUseHapticFeel(feel: String, unlocked: Boolean): Boolean {
+        if (feel == HAPTIC_FEEL_STANDARD || feel.isEmpty()) return true
+        return unlocked && (feel == HAPTIC_FEEL_LIGHT || feel == HAPTIC_FEEL_HEAVY)
+    }
+
+    fun resolveHapticPattern(requested: String, unlocked: Boolean): String =
+        if (canUseHapticPattern(requested, unlocked)) {
+            requested.ifEmpty { HAPTIC_PATTERN_ALL }
+        } else {
+            HAPTIC_PATTERN_ALL
+        }
+
+    fun resolveHapticFeel(requested: String, unlocked: Boolean): String =
+        if (canUseHapticFeel(requested, unlocked)) {
+            requested.ifEmpty { HAPTIC_FEEL_STANDARD }
+        } else {
+            HAPTIC_FEEL_STANDARD
+        }
+
+    fun shouldHapticTick(strong: Boolean, pattern: String, unlocked: Boolean): Boolean =
+        if (resolveHapticPattern(pattern, unlocked) == HAPTIC_PATTERN_DOWNBEAT) strong else true
+
+    /** intensity/sharpness 0..1 for iOS; durationMs for Android one-shots. */
+    fun hapticPulse(strong: Boolean, feel: String, unlocked: Boolean): HapticPulse {
+        if (!unlocked) return HapticPulse(0.38, 0.42, 12)
+        return when (resolveHapticFeel(feel, true)) {
+            HAPTIC_FEEL_LIGHT -> if (strong) HapticPulse(0.45, 0.45, 14) else HapticPulse(0.22, 0.30, 8)
+            HAPTIC_FEEL_HEAVY -> if (strong) HapticPulse(1.0, 0.90, 36) else HapticPulse(0.55, 0.50, 18)
+            else -> if (strong) HapticPulse(0.92, 0.75, 28) else HapticPulse(0.42, 0.40, 12)
+        }
+    }
 }
+
+data class HapticPulse(val intensity: Double, val sharpness: Double, val durationMs: Int)
 
 data class MetronomePrefs(
     var bpm: Int = 120,
@@ -89,7 +141,9 @@ data class MetronomePrefs(
     var haptic: Boolean = false,
     var keepAwake: Boolean = true,
     var clickBank: String = MetronomePolicy.DEFAULT_BANK,
-    var voiceBank: String = MetronomePolicy.DEFAULT_BANK
+    var voiceBank: String = MetronomePolicy.DEFAULT_BANK,
+    var hapticPattern: String = MetronomePolicy.HAPTIC_PATTERN_ALL,
+    var hapticFeel: String = MetronomePolicy.HAPTIC_FEEL_STANDARD
 ) {
     val mode: SoundMode get() = SoundMode.parse(sm)
 
@@ -110,6 +164,8 @@ data class MetronomePrefs(
             (raw["keepAwake"] as? Boolean)?.let { p.keepAwake = it }
             (raw["clickBank"] as? String)?.let { p.clickBank = it }
             (raw["voiceBank"] as? String)?.let { p.voiceBank = it }
+            (raw["hapticPattern"] as? String)?.let { p.hapticPattern = it }
+            (raw["hapticFeel"] as? String)?.let { p.hapticFeel = it }
             return p
         }
     }
@@ -162,6 +218,7 @@ class BeatScheduler(bpm: Int = 120, beatsPerBar: Int = 4) {
 
 interface StoreAdapter {
     suspend fun currentEntitlement(): Boolean
+    suspend fun productPrice(): String?
     suspend fun purchase()
     suspend fun restore()
 }
@@ -169,7 +226,9 @@ interface StoreAdapter {
 class FakeStoreAdapter(var unlocked: Boolean = false) : StoreAdapter {
     var purchaseCalls = 0
     var restoreCalls = 0
+    var price: String? = "¥12.00"
     override suspend fun currentEntitlement() = unlocked
+    override suspend fun productPrice() = price
     override suspend fun purchase() {
         purchaseCalls += 1
         unlocked = true

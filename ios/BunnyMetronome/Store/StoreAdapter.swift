@@ -7,6 +7,17 @@ final class StoreKitAdapter: StoreAdapter {
     static let shared = StoreKitAdapter()
     private var updatesTask: Task<Void, Never>?
 
+    private init() {
+        updatesTask = Task { [weak self] in
+            for await result in Transaction.updates {
+                if case .verified(let tx) = result {
+                    await tx.finish()
+                    _ = self
+                }
+            }
+        }
+    }
+
     func currentEntitlement() async -> Bool {
         for await result in Transaction.currentEntitlements {
             if case .verified(let tx) = result, tx.productID == MetronomePolicy.productId {
@@ -14,6 +25,11 @@ final class StoreKitAdapter: StoreAdapter {
             }
         }
         return false
+    }
+
+    func productPrice() async -> String? {
+        let products = try? await Product.products(for: [MetronomePolicy.productId])
+        return products?.first?.displayPrice
     }
 
     func purchase() async throws {
@@ -26,8 +42,10 @@ final class StoreKitAdapter: StoreAdapter {
         case .success(let verification):
             let tx = try check(verification)
             await tx.finish()
-        case .userCancelled, .pending:
-            break
+        case .userCancelled:
+            throw StoreError.cancelled
+        case .pending:
+            throw StoreError.pending
         @unknown default:
             break
         }
@@ -45,9 +63,4 @@ final class StoreKitAdapter: StoreAdapter {
             return tx
         }
     }
-}
-
-enum StoreError: Error {
-    case missingProduct
-    case unverified
 }

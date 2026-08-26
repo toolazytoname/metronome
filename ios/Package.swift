@@ -21,7 +21,11 @@ let package = Package(
                 "Assets.xcassets",
                 "Sounds",
                 "Strings",
-                "Configuration.storekit"
+                "Configuration.storekit",
+                "PrivacyInfo.xcprivacy",
+                "Info.plist",
+                "en.lproj",
+                "zh-Hans.lproj"
             ]
         ),
         .testTarget(

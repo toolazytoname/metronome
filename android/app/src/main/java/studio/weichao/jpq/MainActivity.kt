@@ -6,43 +6,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.graphics.Color as AndroidColor
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -50,7 +30,8 @@ import studio.weichao.jpq.audio.MetronomeService
 import studio.weichao.jpq.billing.PlayStoreAdapter
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
-import studio.weichao.jpq.policy.SoundMode
+import studio.weichao.jpq.ui.MacaronApp
+import studio.weichao.jpq.ui.MacaronCallbacks
 
 class MainActivity : ComponentActivity() {
     private var service: MetronomeService? = null
@@ -60,10 +41,22 @@ class MainActivity : ComponentActivity() {
     private var activeBeat by mutableIntStateOf(-1)
     private var unlocked by mutableStateOf(false)
     private var settings by mutableStateOf(false)
+    private var copy by mutableStateOf<Map<String, String>>(emptyMap())
+    private var storeMessage by mutableStateOf("")
+    private var productPrice by mutableStateOf<String?>(null)
+    private var storeBusy by mutableStateOf(false)
+    private var storeAvailable by mutableStateOf(false)
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             service = (binder as MetronomeService.LocalBinder).service()
+            service?.onStopped = {
+                runOnUiThread {
+                    playing = false
+                    activeBeat = -1
+                    applyKeepAwake()
+                }
+            }
             service?.clock?.onBeat = { beat ->
                 runOnUiThread {
                     activeBeat = beat
@@ -83,17 +76,36 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        store = PlayStoreAdapter(this) { owned ->
-            runOnUiThread {
-                unlocked = owned
-                prefs = prefs.copy(
-                    clickBank = MetronomePolicy.resolveBank(prefs.clickBank, owned),
-                    voiceBank = MetronomePolicy.resolveBank(prefs.voiceBank, owned)
-                )
-                applyToService()
-            }
-        }
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = AndroidColor.TRANSPARENT
+        window.navigationBarColor = AndroidColor.TRANSPARENT
         prefs = loadPrefs()
+        copy = AppCopy.load(assets, prefs.lang)
+        store = PlayStoreAdapter(
+            this,
+            onEntitlementChange = { owned ->
+                runOnUiThread {
+                    unlocked = owned
+                    prefs = prefs.copy(
+                        clickBank = MetronomePolicy.resolveBank(prefs.clickBank, owned),
+                        voiceBank = MetronomePolicy.resolveBank(prefs.voiceBank, owned),
+                        hapticPattern = MetronomePolicy.resolveHapticPattern(prefs.hapticPattern, owned),
+                        hapticFeel = MetronomePolicy.resolveHapticFeel(prefs.hapticFeel, owned)
+                    )
+                    applyToService()
+                    if (owned) storeMessage = t("owned")
+                }
+            },
+            onMessage = { key ->
+                runOnUiThread { storeMessage = t(key) }
+            },
+            onPrice = { price ->
+                runOnUiThread { productPrice = price }
+            },
+            onAvailable = { ok ->
+                runOnUiThread { storeAvailable = ok }
+            }
+        )
         refreshEntitlement()
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -102,7 +114,67 @@ class MainActivity : ComponentActivity() {
             notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         bindService(Intent(this, MetronomeService::class.java), conn, Context.BIND_AUTO_CREATE)
-        setContent { PracticeScreen() }
+        setContent {
+            MacaronApp(
+                prefs = prefs,
+                playing = playing,
+                activeBeat = activeBeat,
+                unlocked = unlocked,
+                settings = settings,
+                storeMessage = storeMessage,
+                productPrice = productPrice,
+                storeBusy = storeBusy,
+                storeAvailable = storeAvailable,
+                cb = MacaronCallbacks(
+                    t = { t(it) },
+                    bankLabel = { bank, voice -> AppCopy.bankLabel(copy, bank, voice) },
+                    onToggle = { toggle() },
+                    onBpm = {
+                        prefs = prefs.copy(bpm = MetronomePolicy.clampBpm(it))
+                        applyToService()
+                    },
+                    onMode = {
+                        prefs = prefs.copy(sm = it.raw)
+                        applyToService()
+                    },
+                    onSignature = { bc, bu ->
+                        prefs = prefs.copy(
+                            bc = MetronomePolicy.clampBeats(bc),
+                            bu = MetronomePolicy.clampBeatUnit(bu)
+                        )
+                        applyToService()
+                    },
+                    onVolume = {
+                        prefs = prefs.copy(vol = MetronomePolicy.clampVolume(it))
+                        applyToService()
+                    },
+                    onLang = { setLang(it) },
+                    onHaptic = { prefs = prefs.copy(haptic = it); applyToService() },
+                    onKeepAwake = { prefs = prefs.copy(keepAwake = it); applyToService() },
+                    onClickBank = { requestClick(it) },
+                    onVoiceBank = { requestVoice(it) },
+                    onHapticPattern = { requestHapticPattern(it) },
+                    onHapticFeel = { requestHapticFeel(it) },
+                    onBuy = { if (!storeBusy) store.launch(this) },
+                    onRestore = { restorePurchases() },
+                    onShare = { share() },
+                    onSupport = { openUrl("/support", "/en/support") },
+                    onPrivacy = { openUrl("/privacy", "/en/privacy") },
+                    onOpenSettings = { settings = true },
+                    onCloseSettings = { settings = false }
+                )
+            )
+        }
+    }
+
+    private fun share() {
+        val base = if (prefs.lang == "en") "https://jpq.weichao.studio/en/" else "https://jpq.weichao.studio/"
+        val url = "${base}?bpm=${prefs.bpm}&sig=${prefs.bc}/${prefs.bu}&mode=${prefs.mode.raw}"
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, "${t("share_text")} $url")
+        }
+        startActivity(Intent.createChooser(send, t("share")))
     }
 
     override fun onResume() {
@@ -112,12 +184,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindService(conn)
+        try { unbindService(conn) } catch (_: Exception) {}
     }
+
+    private fun t(key: String) = AppCopy.t(copy, key)
 
     private fun refreshEntitlement() {
         lifecycleScope.launch {
             unlocked = store.currentEntitlement()
+            productPrice = store.productPrice()
             prefs = prefs.copy(
                 clickBank = MetronomePolicy.resolveBank(prefs.clickBank, unlocked),
                 voiceBank = MetronomePolicy.resolveBank(prefs.voiceBank, unlocked)
@@ -127,10 +202,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun restorePurchases() {
+        if (storeBusy) return
+        storeBusy = true
         lifecycleScope.launch {
-            store.restore()
-            unlocked = store.currentEntitlement()
-            applyToService()
+            try {
+                store.restore()
+                unlocked = store.currentEntitlement()
+                applyToService()
+                storeMessage = t(if (unlocked) "restore_ok" else "restore_none")
+            } catch (_: Exception) {
+                storeMessage = t("restore_failed")
+            } finally {
+                storeBusy = false
+            }
         }
     }
 
@@ -148,17 +232,28 @@ class MainActivity : ComponentActivity() {
             "haptic" to prefs.haptic,
             "keepAwake" to prefs.keepAwake,
             "clickBank" to prefs.clickBank,
-            "voiceBank" to prefs.voiceBank
+            "voiceBank" to prefs.voiceBank,
+            "hapticPattern" to prefs.hapticPattern,
+            "hapticFeel" to prefs.hapticFeel
         ))
         getSharedPreferences("metro", MODE_PRIVATE).edit().putString("metronome", obj.toString()).apply()
+    }
+
+    private fun applyKeepAwake() {
+        val on = playing && prefs.keepAwake
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun applyToService() {
         val click = MetronomePolicy.resolveBank(prefs.clickBank, unlocked)
         val voice = MetronomePolicy.resolveBank(prefs.voiceBank, unlocked)
         service?.keepAwake = prefs.keepAwake
+        service?.notificationTitle = t("app_name")
+        service?.pauseLabel = t("pause")
         service?.configure(prefs.bpm, prefs.bc, prefs.mode, prefs.lang, prefs.vol, click, voice)
         savePrefs()
+        applyKeepAwake()
     }
 
     private fun toggle() {
@@ -169,110 +264,74 @@ class MainActivity : ComponentActivity() {
             playing = false
             activeBeat = -1
         } else {
+            if (!svc.samplesReady()) {
+                storeMessage = t("play_error")
+                return
+            }
             startForegroundService(Intent(this, MetronomeService::class.java))
-            svc.startPlayback()
+            if (!svc.startPlayback()) {
+                storeMessage = t("play_error")
+                return
+            }
             playing = true
+            storeMessage = ""
         }
+        applyKeepAwake()
     }
 
     private fun vibrate(strong: Boolean) {
+        if (!MetronomePolicy.shouldHapticTick(strong, prefs.hapticPattern, unlocked)) return
+        val pulse = MetronomePolicy.hapticPulse(strong, prefs.hapticFeel, unlocked)
         val v = getSystemService(Vibrator::class.java) ?: return
-        val ms = if (strong && unlocked) 30L else 12L
-        v.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+        val amp = (pulse.intensity * 255).toInt().coerceIn(1, 255)
+        v.vibrate(VibrationEffect.createOneShot(pulse.durationMs.toLong(), amp))
     }
 
-    @Composable
-    private fun PracticeScreen() {
-        val coral = Color(0xFFE07A6A)
-        val bg = Color(0xFFFFF6EE)
-        Column(
-            Modifier.fillMaxSize().background(bg).padding(24.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text("小兔头节拍器", fontSize = 20.sp)
-            Text("${prefs.bpm}", fontSize = 72.sp, color = coral)
-            Text("BPM")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(prefs.bc) { i ->
-                    Box(
-                        Modifier.size(28.dp).clip(CircleShape)
-                            .background(if (i == activeBeat) coral else Color.White)
-                    )
-                }
-            }
-            Slider(
-                value = prefs.bpm.toFloat(),
-                onValueChange = {
-                    prefs = prefs.copy(bpm = MetronomePolicy.clampBpm(it.toInt()))
-                    applyToService()
-                },
-                valueRange = 40f..208f
-            )
-            Button(
-                onClick = { toggle() },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp)
-            ) { Text(if (playing) "暂停" else "播放") }
-            TextButton(onClick = { settings = !settings }) { Text("设置") }
-            if (settings) {
-                Row {
-                    listOf(SoundMode.TRADITIONAL, SoundMode.UNIFORM, SoundMode.VOICE).forEach { m ->
-                        TextButton(onClick = {
-                            prefs = prefs.copy(sm = m.raw)
-                            applyToService()
-                        }) { Text(m.raw) }
-                    }
-                }
-                Row {
-                    listOf(4 to 4, 3 to 4, 2 to 4, 6 to 8, 5 to 4, 7 to 8).forEach { (b, u) ->
-                        TextButton(onClick = {
-                            prefs = prefs.copy(bc = b, bu = u)
-                            applyToService()
-                        }) { Text("$b/$u") }
-                    }
-                }
-                Text("自定义拍数 ${prefs.bc}")
-                Slider(
-                    value = prefs.bc.toFloat(),
-                    onValueChange = {
-                        prefs = prefs.copy(bc = MetronomePolicy.clampBeats(it.toInt()))
-                        applyToService()
-                    },
-                    valueRange = 1f..16f,
-                    steps = 14
-                )
-                Text("音量 ${prefs.vol}")
-                Slider(
-                    value = prefs.vol.toFloat(),
-                    onValueChange = {
-                        prefs = prefs.copy(vol = MetronomePolicy.clampVolume(it.toInt()))
-                        applyToService()
-                    },
-                    valueRange = 10f..100f
-                )
-                TextButton(onClick = { prefs = prefs.copy(lang = if (prefs.lang == "zh") "en" else "zh"); applyToService() }) {
-                    Text(if (prefs.lang == "zh") "EN" else "中文")
-                }
-                TextButton(onClick = { prefs = prefs.copy(haptic = !prefs.haptic); applyToService() }) {
-                    Text(if (prefs.haptic) "震动开" else "震动关")
-                }
-                Text("音色工坊 · SKU ${MetronomePolicy.PRODUCT_ID}")
-                if (unlocked) {
-                    Text("已解锁")
-                    MetronomePolicy.packClickBanks.forEach { bank ->
-                        TextButton(onClick = {
-                            if (MetronomePolicy.canUsePackBank(bank, unlocked)) {
-                                prefs = prefs.copy(clickBank = bank)
-                                applyToService()
-                            }
-                        }) { Text(bank) }
-                    }
-                } else {
-                    Button(onClick = { store.launch(this@MainActivity) }) { Text("解锁") }
-                }
-                TextButton(onClick = { restorePurchases() }) { Text("恢复购买") }
-            }
+    private fun setLang(lang: String) {
+        prefs = prefs.copy(lang = if (lang == "en") "en" else "zh")
+        copy = AppCopy.load(assets, prefs.lang)
+        applyToService()
+    }
+
+    private fun openUrl(pathZh: String, pathEn: String) {
+        val path = if (prefs.lang == "en") pathEn else pathZh
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://jpq.weichao.studio$path")))
+    }
+
+    private fun requestClick(bank: String) {
+        if (MetronomePolicy.canUsePackBank(bank, unlocked)) {
+            prefs = prefs.copy(clickBank = bank)
+            applyToService()
+        } else {
+            store.launch(this)
         }
     }
+
+    private fun requestVoice(bank: String) {
+        if (MetronomePolicy.canUsePackBank(bank, unlocked)) {
+            prefs = prefs.copy(voiceBank = bank)
+            applyToService()
+        } else {
+            store.launch(this)
+        }
+    }
+
+    private fun requestHapticPattern(pattern: String) {
+        if (MetronomePolicy.canUseHapticPattern(pattern, unlocked)) {
+            prefs = prefs.copy(hapticPattern = pattern)
+            applyToService()
+        } else {
+            store.launch(this)
+        }
+    }
+
+    private fun requestHapticFeel(feel: String) {
+        if (MetronomePolicy.canUseHapticFeel(feel, unlocked)) {
+            prefs = prefs.copy(hapticFeel = feel)
+            applyToService()
+        } else {
+            store.launch(this)
+        }
+    }
+
 }

@@ -26,6 +26,8 @@ class AudioTrackClock(private val assets: AssetManager) {
     var voiceBank: String = MetronomePolicy.DEFAULT_BANK
     var volume: Float = 0.85f
     var onBeat: ((Int) -> Unit)? = null
+    var ready: Boolean = false
+        private set
 
     private val sampleRate = 44100
     private val buffers = HashMap<String, ShortArray>()
@@ -52,6 +54,9 @@ class AudioTrackClock(private val assets: AssetManager) {
         for (name in names) {
             decodeMp3("sounds/$name.mp3")?.let { buffers[name] = it }
         }
+        ready = buffers.containsKey("click-uniform") &&
+            buffers.containsKey("click-strong") &&
+            buffers.containsKey("click-weak")
     }
 
     fun start() {

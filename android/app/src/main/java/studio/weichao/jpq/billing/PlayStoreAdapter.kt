@@ -19,16 +19,25 @@ import kotlin.coroutines.resume
 
 class PlayStoreAdapter(
     context: Context,
-    private val onEntitlementChange: (Boolean) -> Unit
+    private val onEntitlementChange: (Boolean) -> Unit,
+    private val onMessage: (String) -> Unit = {},
+    private val onPrice: (String?) -> Unit = {},
+    private val onAvailable: (Boolean) -> Unit = {}
 ) : StoreAdapter {
     @Volatile private var unlocked = false
+    @Volatile var formattedPrice: String? = null
+        private set
+    @Volatile var available: Boolean = false
+        private set
     private val client: BillingClient
 
     init {
         client = BillingClient.newBuilder(context)
             .setListener(PurchasesUpdatedListener { result, purchases ->
-                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                    handlePurchases(purchases.orEmpty())
+                when (result.responseCode) {
+                    BillingClient.BillingResponseCode.OK -> handlePurchases(purchases.orEmpty())
+                    BillingClient.BillingResponseCode.USER_CANCELED -> onMessage("buy_cancelled")
+                    else -> onMessage("buy_failed")
                 }
             })
             .enablePendingPurchases(
@@ -37,8 +46,11 @@ class PlayStoreAdapter(
             .build()
         client.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
-                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                available = result.responseCode == BillingClient.BillingResponseCode.OK
+                onAvailable(available)
+                if (available) {
                     refreshPurchases()
+                    queryPrice()
                 }
             }
             override fun onBillingServiceDisconnected() {}
@@ -50,11 +62,62 @@ class PlayStoreAdapter(
         return queryAndApply()
     }
 
+    override suspend fun productPrice(): String? {
+        if (formattedPrice != null) return formattedPrice
+        if (client.isReady) queryPrice()
+        return formattedPrice
+    }
+
     override suspend fun purchase() {
         /* Host activity calls launch(). */
     }
 
     fun launch(activity: Activity) {
+        if (!client.isReady) {
+            onMessage("buy_unavailable")
+            return
+        }
+        val params = QueryProductDetailsParams.newBuilder()
+            .setProductList(
+                listOf(
+                    QueryProductDetailsParams.Product.newBuilder()
+                        .setProductId(MetronomePolicy.PRODUCT_ID)
+                        .setProductType(BillingClient.ProductType.INAPP)
+                        .build()
+                )
+            ).build()
+        client.queryProductDetailsAsync(params) { result, details ->
+            if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                onMessage("buy_unavailable")
+                return@queryProductDetailsAsync
+            }
+            val product = details.firstOrNull()
+            if (product == null) {
+                onMessage("buy_unavailable")
+                return@queryProductDetailsAsync
+            }
+            formattedPrice = product.oneTimePurchaseOfferDetails?.formattedPrice
+            onPrice(formattedPrice)
+            val flow = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(
+                    listOf(
+                        BillingFlowParams.ProductDetailsParams.newBuilder()
+                            .setProductDetails(product)
+                            .build()
+                    )
+                ).build()
+            val launchResult = client.launchBillingFlow(activity, flow)
+            if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                onMessage("buy_failed")
+            }
+        }
+    }
+
+    override suspend fun restore() {
+        queryAndApply()
+    }
+
+    private fun queryPrice() {
         val params = QueryProductDetailsParams.newBuilder()
             .setProductList(
                 listOf(
@@ -65,21 +128,9 @@ class PlayStoreAdapter(
                 )
             ).build()
         client.queryProductDetailsAsync(params) { _, details ->
-            val product = details.firstOrNull() ?: return@queryProductDetailsAsync
-            val flow = BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(
-                    listOf(
-                        BillingFlowParams.ProductDetailsParams.newBuilder()
-                            .setProductDetails(product)
-                            .build()
-                    )
-                ).build()
-            client.launchBillingFlow(activity, flow)
+            formattedPrice = details.firstOrNull()?.oneTimePurchaseOfferDetails?.formattedPrice
+            onPrice(formattedPrice)
         }
-    }
-
-    override suspend fun restore() {
-        queryAndApply()
     }
 
     private suspend fun queryAndApply(): Boolean = suspendCancellableCoroutine { cont ->

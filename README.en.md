@@ -344,8 +344,8 @@ vercel.json              Deploy config (redirects + cache policy)
 scripts/                 Playwright capture + SEO audit scripts
 docs/                    Architecture, engine contract, IAP, product
 miniapp/                 WeChat Mini Program source
-ios/                     SwiftUI + AVAudioEngine (in progress)
-android/                 Compose + AudioTrack (after iOS freezes)
+ios/                     SwiftUI + AVAudioEngine (reference impl; backlog in AGENTS.md)
+android/                 Compose + AudioTrack (port of the frozen spec)
 packages/strings/        Native UI copy
 images/                  Logo, QR codes, favicon
 assets/screenshots/      README screenshot assets

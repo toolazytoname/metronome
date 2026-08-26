@@ -3,12 +3,17 @@ package studio.weichao.jpq.audio
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import studio.weichao.jpq.MainActivity
 import studio.weichao.jpq.MetronomeApp
+import studio.weichao.jpq.R
 import studio.weichao.jpq.policy.SoundMode
 
 class MetronomeService : Service() {
@@ -20,7 +25,18 @@ class MetronomeService : Service() {
     lateinit var clock: AudioTrackClock
         private set
     var keepAwake = true
+    var notificationTitle: String = "小兔头节拍器"
+    var pauseLabel: String = "暂停"
+    var onStopped: (() -> Unit)? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var stopped = true
+    private var focusRequest: AudioFocusRequest? = null
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            stopPlayback()
+            onStopped?.invoke()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -32,8 +48,16 @@ class MetronomeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> stopPlayback()
-            ACTION_TOGGLE -> if (clock.scheduler.playing) stopPlayback() else startPlayback()
+            ACTION_STOP -> {
+                stopPlayback()
+                onStopped?.invoke()
+            }
+            ACTION_TOGGLE -> if (clock.scheduler.playing) {
+                stopPlayback()
+                onStopped?.invoke()
+            } else {
+                startPlayback()
+            }
         }
         return START_STICKY
     }
@@ -46,44 +70,101 @@ class MetronomeService : Service() {
         clock.volume = (vol / 100f).coerceIn(0.05f, 1f)
         clock.clickBank = click
         clock.voiceBank = voice
+        if (!stopped) postNotification()
     }
 
-    fun startPlayback() {
-        val pending = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-        val stop = PendingIntent.getService(
-            this, 1, Intent(this, MetronomeService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-        val n = NotificationCompat.Builder(this, MetronomeApp.CHANNEL_ID)
-            .setContentTitle("Bunny Metronome")
-            .setContentText("${clock.scheduler.bpm} BPM")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentIntent(pending)
-            .addAction(android.R.drawable.ic_media_pause, "Pause", stop)
-            .setOngoing(true)
-            .build()
-        startForeground(42, n)
+    fun samplesReady(): Boolean = clock.ready
+
+    fun startPlayback(): Boolean {
+        if (!clock.ready) return false
+        stopped = false
+        requestFocus()
+        postNotification()
         if (keepAwake) {
-            wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "jpq:metro").apply { acquire() }
+            if (wakeLock == null) {
+                wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "jpq:metro")
+            }
+            if (wakeLock?.isHeld != true) wakeLock?.acquire()
         }
         clock.start()
+        return true
     }
 
     fun stopPlayback() {
+        if (stopped && !clock.scheduler.playing) {
+            releaseFocus()
+            return
+        }
+        stopped = true
         clock.stop()
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
+        releaseFocus()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopPlayback()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
         stopPlayback()
         super.onDestroy()
+    }
+
+    private fun postNotification() {
+        val pending = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val stop = PendingIntent.getService(
+            this, 1, Intent(this, MetronomeService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val n = NotificationCompat.Builder(this, MetronomeApp.CHANNEL_ID)
+            .setContentTitle(notificationTitle)
+            .setContentText("${clock.scheduler.bpm} BPM")
+            .setSmallIcon(R.drawable.ic_stat_metro)
+            .setContentIntent(pending)
+            .addAction(R.drawable.ic_stat_metro, pauseLabel, stop)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+        startForeground(42, n)
+    }
+
+    private fun requestFocus() {
+        val am = getSystemService(AudioManager::class.java) ?: return
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+        if (Build.VERSION.SDK_INT >= 26) {
+            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(attrs)
+                .setOnAudioFocusChangeListener(focusListener)
+                .build()
+            focusRequest = req
+            am.requestAudioFocus(req)
+        } else {
+            @Suppress("DEPRECATION")
+            am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+        }
+    }
+
+    private fun releaseFocus() {
+        val am = getSystemService(AudioManager::class.java) ?: return
+        if (Build.VERSION.SDK_INT >= 26) {
+            focusRequest?.let { am.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            am.abandonAudioFocus(focusListener)
+        }
+        focusRequest = null
     }
 
     companion object {

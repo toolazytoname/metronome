@@ -348,8 +348,8 @@ vercel.json              部署配置（重定向 + 缓存策略）
 scripts/                 本地体检脚本
 docs/                    架构、引擎契约、IAP、产品说明
 miniapp/                 微信小程序源码
-ios/                     SwiftUI + AVAudioEngine（建设中）
-android/                 Compose + AudioTrack（iOS 冻结后）
+ios/                     SwiftUI + AVAudioEngine（参考实现；待办见 AGENTS.md）
+android/                 Compose + AudioTrack（按冻结说明书移植）
 packages/strings/        原生 UI 文案表
 images/                  Logo、二维码、favicon
 assets/screenshots/      README 截图素材
