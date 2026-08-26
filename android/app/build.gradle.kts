@@ -10,8 +10,8 @@ android {
         applicationId = "studio.weichao.jpq"
         minSdk = 26
         targetSdk = 35
-        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
+        versionCode = (System.getenv("VERSION_CODE") ?: "4").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "2.1.2"
     }
     val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
     if (!ksPath.isNullOrBlank()) {

@@ -2,9 +2,17 @@
 
 Bundle / application id: `studio.weichao.jpq`  
 Name: 小兔头节拍器 / Bunny Metronome  
-SKU: `studio.weichao.jpq.soundpack` (non-consumable, ¥12 / $1.99)
+SKU: `studio.weichao.jpq.soundpack` (non-consumable, ¥12 / $1.99)  
+Version: `2.1.2` (build 4). iPhone only — do not upload iPad screenshots.
 
 提审当天把本节贴进 App Store Connect / Play Console。代码待办在 [AGENTS.md](../../AGENTS.md) P4。
+
+提审容易漏（不是文案）：
+
+- Connect 先签付费应用协议 + 税务 / 银行，否则 IAP 建不了。
+- 第一个非消耗型 IAP 必须跟这一版 App **一起**送审。
+- 个人 Play 账号上**生产轨**要 12 名测试者连续 14 天封闭测试；内部测试轨不挡。
+- 商店链接在 Ready for Sale 之前不要改落地页徽章（N5.9）。
 
 ## Short description
 

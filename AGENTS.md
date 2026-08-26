@@ -164,12 +164,10 @@ cd android && ./gradlew assembleDebug
 提审前容易漏（不是新功能）：
 
 - iOS 工程曾 `TARGETED_DEVICE_FAMILY = 1,2`，Connect 会当 iPad App 要 iPad 截图。v1 **只发 iPhone**（`1`）
-- `privacy.html` / 落地页仍写「即将上线」（N5.10 / N5.9，上线后改口）
-- App `MARKETING_VERSION` 还是 1.0.0，git tag 已是 2.1.1，提审前对齐
-- bunny 源图带「豆包AI生成」水印：图标已裁，练琴屏图还在
 - Connect 付费协议 + 税务银行；个人 Play 账号上生产轨要 12 人 × 14 天封闭测试
 - 第一个 IAP 必须跟一版 App 一起送审
 - 截图按 Connect 强制尺寸重出（草稿是模拟器）
+- 落地页商店徽章等 Ready for Sale 再挂（N5.9）
 
 ---
 
@@ -451,8 +449,8 @@ Android
 - [x] N5.6 练琴屏有 bunny / 豆子 / 珊瑚（iOS 模拟器核验）
 - [ ] N5.7 无障碍（VoiceOver / TalkBack / Dynamic Type / Reduce Motion）
 - [ ] N5.8 来电 / 焦点 / 国产 ROM
-- [ ] N5.9 生产 IAP 真钱走通后再把落地页「即将上」改成商店链接
-- [ ] N5.10 `privacy.html` 现时态
+- [ ] N5.9 生产 IAP 真钱走通后再把落地页换成商店链接（FAQ 已去掉「即将上线」，仍无商店徽章）
+- [x] N5.10 `privacy.html` / `en/privacy.html` 现时态（2026-08-26）
 - [ ] N5.11 官网 APK 下载页（有签名包再挂）
 
 ---
