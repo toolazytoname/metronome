@@ -4,6 +4,10 @@ import SwiftUI
 struct BunnyMetronomeApp: App {
     @StateObject private var model = MetronomeModel()
 
+    init() {
+        AppAnalytics.start()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

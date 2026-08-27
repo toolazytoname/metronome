@@ -13,6 +13,7 @@ let package = Package(
             path: "BunnyMetronome",
             exclude: [
                 "BunnyMetronomeApp.swift",
+                "AppAnalytics.swift",
                 "ContentView.swift",
                 "MetronomeModel.swift",
                 "Haptics.swift",
@@ -23,6 +24,7 @@ let package = Package(
                 "Strings",
                 "Configuration.storekit",
                 "PrivacyInfo.xcprivacy",
+                "GoogleService-Info.plist",
                 "Info.plist",
                 "en.lproj",
                 "zh-Hans.lproj"

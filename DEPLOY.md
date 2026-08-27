@@ -106,7 +106,7 @@ metronome/
 3. 真机过完 `AGENTS.md` N1.25–N1.30。
 4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`。
 5. 建非消耗型 IAP `studio.weichao.jpq.soundpack`。价格档对齐 ¥12 / $1.99。
-6. 隐私营养：无账户、无跟踪。隐私 / 支持 URL 见 `docs/store/README.md`。
+6. 隐私营养：无账户、无跟踪（Analytics ≠ Tracking）。勾产品交互 + 设备 ID（应用实例，非 IDFA）。隐私 / 支持 URL 见 `docs/store/README.md`。
 7. 截图按商店清单。审核备注也在那份文件。
 8. Archive → 上传 → 内部 TestFlight → 提审。
 
@@ -141,7 +141,17 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
 2. `./gradlew assembleDebug` 做功能核验。
 3. Release 用本地 keystore 签（`*.jks` 不进 git）。
 4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。
-5. Data safety：无用户数据收集；IAP 由 Google 处理。
+5. Data safety：应用内活动 + Firebase 实例 ID，与 Google 共享；广告标识关闭。IAP 由 Google Play 处理。详见 `docs/store/README.md`。
+
+### Firebase Analytics
+
+控制台建项目，包名 / Bundle ID 都是 `studio.weichao.jpq`：
+
+1. [Firebase Console](https://console.firebase.google.com) 加 Android + iOS App。
+2. 把 `google-services.json` 放到 `android/app/`（有这个文件 Gradle 才应用 Google Services 插件）。
+3. 把 `GoogleService-Info.plist` 放到 `ios/BunnyMetronome/`（已列入 Xcode 资源；占位文件里的 `YOUR_` 前缀会跳过初始化）。
+4. 客户端配置可以进 git。不要提交 Firebase **Admin** 密钥。
+5. 控制台关闭 Google Analytics 广告功能 / 数据共享（能关的都关）。App 里已关 ADID 采集。
 6. 商店文案 / 截图见 `docs/store/README.md`。国内商店与软著不做。
 
 ---

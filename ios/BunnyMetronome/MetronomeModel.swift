@@ -8,7 +8,13 @@ final class MetronomeModel: ObservableObject {
     @Published var playing = false
     @Published var activeBeat: Int = -1
     @Published var unlocked = false
-    @Published var settingsOpen = false
+    @Published var settingsOpen = false {
+        didSet {
+            if oldValue != settingsOpen {
+                AppAnalytics.event("settings_panel", ["action": settingsOpen ? "open" : "close"])
+            }
+        }
+    }
     @Published var storeMessage: String = ""
     @Published var productPrice: String?
     @Published var storeBusy = false
@@ -137,6 +143,7 @@ final class MetronomeModel: ObservableObject {
             audio.stop()
             playing = false
             activeBeat = -1
+            AppAnalytics.event("play", playParams(action: "pause"))
         } else {
             applyAudioSettings()
             do {
@@ -144,6 +151,7 @@ final class MetronomeModel: ObservableObject {
                 try audio.start()
                 playing = true
                 storeMessage = ""
+                AppAnalytics.event("play", playParams(action: "play"))
             } catch {
                 storeMessage = t("play_error")
             }
@@ -152,12 +160,17 @@ final class MetronomeModel: ObservableObject {
     }
 
     func setBpm(_ n: Int) {
+        let old = prefs.bpm
         prefs.bpm = MetronomePolicy.clampBpm(n)
         audio.setBpm(prefs.bpm)
+        if old != prefs.bpm {
+            AppAnalytics.event("bpm_change", ["from": old, "to": prefs.bpm])
+        }
         persist()
     }
 
     func setSignature(bc: Int, bu: Int) {
+        let prev = "\(prefs.bc)/\(prefs.bu)"
         var txn = Transaction()
         txn.disablesAnimations = true
         withTransaction(txn) {
@@ -166,9 +179,14 @@ final class MetronomeModel: ObservableObject {
             audio.setBeats(prefs.bc)
             persist()
         }
+        let sig = "\(prefs.bc)/\(prefs.bu)"
+        if prev != sig {
+            AppAnalytics.event("time_sig", ["from": prev, "to": sig])
+        }
     }
 
     func setMode(_ mode: SoundMode) {
+        let prev = prefs.sm
         var txn = Transaction()
         txn.disablesAnimations = true
         withTransaction(txn) {
@@ -176,6 +194,18 @@ final class MetronomeModel: ObservableObject {
             audio.setMode(mode)
             persist()
         }
+        if prev != mode.rawValue {
+            AppAnalytics.event("sound_mode", ["from": prev, "to": mode.rawValue])
+        }
+    }
+
+    private func playParams(action: String) -> [String: Any] {
+        [
+            "action": action,
+            "bpm": prefs.bpm,
+            "beats": "\(prefs.bc)/\(prefs.bu)",
+            "sound_mode": prefs.sm
+        ]
     }
 
     func setLang(_ lang: String) {

@@ -34,8 +34,8 @@
 
   <h2>Network</h2>
   <ul>
-    <li>Web / mini-program: optional anonymous analytics (Umeng, GA4). No name, email, or practice audio.</li>
-    <li>Native v1: analytics <strong>off by default</strong>. IAP talks only to the system store.</li>
+    <li>Web / mini-program: anonymous analytics (Umeng, GA4). No name, email, or practice audio.</li>
+    <li>iOS / Android: <strong>Firebase Analytics</strong> records in-app events (open, play/pause, BPM, meter, sound mode, settings). We use an app-instance ID, <strong>not advertising IDs (IDFA / GAID)</strong>, and not for cross-app ads. Events go to Google so we can see daily activity. IAP still talks only to the system store.</li>
     <li>No microphone, contacts, or location permission.</li>
   </ul>
 

@@ -61,5 +61,4 @@ android/policy/build/
 android/local.properties
 *.jks
 *.keystore
-google-services.json
 play-service-account.json

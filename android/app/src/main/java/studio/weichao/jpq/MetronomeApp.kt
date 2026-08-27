@@ -8,6 +8,7 @@ import android.os.Build
 class MetronomeApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        AppAnalytics.start(this)
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel(
                 CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_DEFAULT

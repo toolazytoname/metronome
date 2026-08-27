@@ -34,8 +34,8 @@
 
   <h2>网络请求</h2>
   <ul>
-    <li>网页 / 小程序：可选的匿名统计（友盟、GA4），不含姓名、邮箱或练习音频。</li>
-    <li>原生 App v1：默认<strong>不上统计</strong>。内购只与系统商店通信。</li>
+    <li>网页 / 小程序：匿名统计（友盟、GA4）。不含姓名、邮箱或练习音频。</li>
+    <li>iOS / Android：<strong>Firebase Analytics</strong> 记录产品内事件（打开、播放/暂停、BPM、拍号、音效模式、设置开合）。用应用实例 ID，<strong>不采广告标识（IDFA / GAID）</strong>，不用于跨 App 广告。事件会发到 Google，以便我们看日活。内购仍只与系统商店通信。</li>
     <li>不申请麦克风、通讯录、定位。</li>
   </ul>
 

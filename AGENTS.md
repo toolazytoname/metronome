@@ -116,7 +116,7 @@ cd android && ./gradlew assembleDebug
 - Android 在冻结说明书之外自行加功能
 - 让文档和代码分叉（先改 `AGENTS.md`）
 - 空 App Icon、系统播放三角当启动图标、写死 ¥12 的购买按钮、App 内收款码 —— 这些过不了审，不要送
-- 原生 v1 加统计 SDK
+- 原生接广告 / 归因 SDK，打开 IDFA / OAID / ATT（Firebase Analytics 只做产品内事件，广告标识关掉）
 - 为原生发明深色模式、iPad 专属布局、小组件、Watch、CarPlay
 - 把无障碍打磨、1:1 复刻 Web、CI 原生单测当成上线阻断（那些是上线后）
 
@@ -159,7 +159,7 @@ cd android && ./gradlew assembleDebug
 - App Store Connect 建 App + IAP；Play Console 内测 + 本地 keystore
 - pack 人耳听一遍
 
-**不要补统计。** 原生 v1 不上 SDK 是故意的：隐私页、`PrivacyInfo`、Play Data safety 都写了无跟踪。Web / 小程序才有友盟 / GA4。加进来要改隐私营养，第一版过不了。
+分析：Web 友盟 + GA4；小程序 `umtrack-wx`；原生 **Firebase Analytics**（产品内事件：打开、播放、BPM、模式、拍号、设置）。关掉广告标识，`NSPrivacyTracking = false`，不弹 ATT。配置文件 `google-services.json` / `GoogleService-Info.plist` 来自 Firebase 控制台，客户端配置可以进仓库；Play 服务账号 JSON 仍不进 git。
 
 提审前容易漏（不是新功能）：
 
@@ -224,7 +224,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - 音色工坊：购买、Restore、已购选 click **和** 数拍，以及震动模式 / 震感
    - 设置里能点到隐私 / 支持链接 = 上线应当（商店 Connect 里的 URL 才是阻断）
    - 保持亮屏开关 = 上线应当（默认亮着也行）
-3. **不做的屏**：账号、统计、主题、复节奏、谱面、社交、打赏码。
+3. **不做的屏**：账号、主题、复节奏、谱面、社交、打赏码。
 
 ### 音色工坊
 
@@ -297,7 +297,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [ ] 40 / 120 / 208 各 60 秒不加速、不拖；播放中改 BPM 不插拍
 - [ ] 未购默认童声可播；点付费走系统购买；Restore 能找回
 - [x] 1024 图标 + 显示名；设置里有 Restore（模拟器核验）
-- [ ] Connect：IAP 商品、隐私营养、隐私/支持 URL、截图、年龄 4+（文案已写，账号未建）
+- [ ] Connect：IAP 商品、隐私营养（无跟踪；分析勾产品交互 + 实例 ID）、隐私/支持 URL、截图、年龄 4+（文案已写，账号未建）
 - [x] `PrivacyInfo.xcprivacy`；不声明麦克风；出口合规 NO
 - [ ] 内部 TestFlight 过完真机清单再提审
 - [ ] 审核通过且 Ready for Sale
@@ -319,7 +319,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 ### 明确不做（上线范围外）
 
-小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、华为/小米商店、软著、KMP、云同步、账号、统计、深色模式、自定义导入采样、复节奏、官网 APK 下载页、落地页商店徽章（没有链接先别改口）。
+小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、华为/小米商店、软著、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、官网 APK 下载页、落地页商店徽章（没有链接先别改口）。
 
 ---
 
@@ -372,7 +372,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 合规 / 工程
 
-- [x] N1.20 `PrivacyInfo.xcprivacy` 无跟踪无麦克风 **阻断**
+- [x] N1.20 `PrivacyInfo.xcprivacy` 无跟踪无麦克风；分析声明产品交互 + 应用实例 ID **阻断**
 - [x] N1.21 `ITSAppUsesNonExemptEncryption` **阻断**
 - [x] N1.22 仓库侧：CI `CODE_SIGNING_ALLOWED=NO`；`Secrets.xcconfig` gitignore。本机 Team 仍需你开 **阻断**
 - [x] N1.23 `swift test` 14 项绿（2026-08-25，含震动 gating） **应当**
@@ -402,7 +402,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [x] N2.10 停播 / destroy / 划掉任务释放 WakeLock **阻断**
 - [x] N2.11 `start()` 可重入；解码失败不假死 **阻断**
 - [x] N2.12 音频焦点 **应当**
-- [x] N2.13 权限只有通知（33+）、震动、前台媒体 **阻断**
+- [x] N2.13 运行时权限只有通知（33+）、震动、前台媒体；联网给 Firebase **阻断**
 - [x] N2.14 同包名 APK 不送包后门 **阻断**
 - [x] N2.15 `:policy:test` 绿（2026-08-25） **应当**
 - [ ] N2.16 真机：通知暂停、划掉即停、40/120/208、未购/Restore **阻断**
@@ -420,7 +420,7 @@ iOS
 
 - [ ] N4.1 App Store Connect 建 App，Bundle ID `studio.weichao.jpq` **阻断**
 - [ ] N4.2 建 IAP `studio.weichao.jpq.soundpack` 非消耗型 **阻断**
-- [ ] N4.3 隐私营养：无账户无跟踪 **阻断**
+- [ ] N4.3 隐私营养：无账户无跟踪；分析勾产品交互 + 应用实例 ID **阻断**
 - [ ] N4.4 隐私 / 支持 URL 指现网 **阻断**
 - [x] N4.5 中文模拟器截图在 `docs/store/screenshots/`（默认 / 播放 / 设置）。提审前按 Connect 强制尺寸再出签名套 **阻断**
 - [x] N4.6 审核备注写在 `docs/store/README.md` **阻断**
@@ -430,7 +430,7 @@ iOS
 Android
 
 - [ ] N4.9 Play Console 建应用 **阻断**（相对 Android 上线）
-- [ ] N4.10 同一 SKU；Data safety 无收集 **阻断**
+- [ ] N4.10 同一 SKU；Data safety 声明应用活动 + Firebase 实例 ID（与 Google 共享，非广告） **阻断**
 - [ ] N4.11 内部测试轨先于生产 **阻断**
 - [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机截图未拍 **阻断**
 - [x] N4.13 国内商店 / 软著 **不做**

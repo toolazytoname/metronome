@@ -61,7 +61,24 @@ English shots are should-have, same three frames.
 
 ## Privacy / Data safety
 
-No account. Local preferences only. Optional IAP recorded by Apple / Google. No tracking. Contact lazywc@gmail.com.
+No account. Local preferences stay on device. Optional IAP recorded by Apple / Google.
+
+Analytics (not tracking): Firebase Analytics for in-app events (open, play, BPM, meter, mode, settings). App-instance ID only — advertising ID collection off. Data is sent to Google to measure usage. No name, email, or audio.
+
+App Store privacy nutrition:
+- Data types: Product Interaction, Device ID (app instance, not IDFA)
+- Linked to identity: No
+- Used for tracking: No
+- Third-party advertising: No
+
+Play Data safety:
+- Collected: App activity (in-app actions), App info and performance / Device or other IDs (Firebase instance ID)
+- Shared: Yes — with Google (Firebase)
+- Encrypted in transit: Yes
+- Users can request deletion: No (anonymous instance; uninstall stops new events)
+- Optional: No (collected when the app runs)
+
+Contact lazywc@gmail.com.
 
 Privacy URL: https://jpq.weichao.studio/privacy  
 Support URL: https://jpq.weichao.studio/support  
@@ -69,7 +86,7 @@ EN: `/en/privacy`, `/en/support`
 
 ## Review notes (paste)
 
-Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (`studio.weichao.jpq.soundpack`) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app.
+Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (`studio.weichao.jpq.soundpack`) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads.
 
 ## Age
 

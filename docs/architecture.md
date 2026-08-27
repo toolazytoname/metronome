@@ -50,7 +50,7 @@ v1 不上共享 C++ / KMP 引擎。漂移成为问题再抽。
 
 ## 数据
 
-没有服务器。偏好是一份小 JSON，见契约。分析：Web 友盟 CNZZ + GA4；小程序 `umtrack-wx`；原生 v1 **默认不上统计**。
+没有服务器。偏好是一份小 JSON，见契约。分析：Web 友盟 CNZZ + GA4；小程序 `umtrack-wx`；原生 Firebase Analytics（产品内事件，无广告标识）。没有自建用户表。
 
 ## 视觉 token（原生对照用）
 

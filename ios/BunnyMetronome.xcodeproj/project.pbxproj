@@ -10,6 +10,8 @@
 		TST1 /* BunnyMetronomeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BunnyMetronomeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 
 		S01 /* BunnyMetronomeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunnyMetronomeApp.swift; sourceTree = "<group>"; };
+		S13 /* AppAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAnalytics.swift; sourceTree = "<group>"; };
+		GS1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		S02 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		S03 /* MetronomeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomeModel.swift; sourceTree = "<group>"; };
 		S04 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -33,6 +35,9 @@
 		IPV /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (IPE, IPZ,); name = InfoPlist.strings; sourceTree = "<group>"; };
 
 		B01 /* BunnyMetronomeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S01 /* BunnyMetronomeApp.swift */; };
+		B13 /* AppAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S13 /* AppAnalytics.swift */; };
+		BGS /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = GS1 /* GoogleService-Info.plist */; };
+		BFA /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FBA /* FirebaseAnalytics */; };
 		B02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S02 /* ContentView.swift */; };
 		B03 /* MetronomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = S03 /* MetronomeModel.swift */; };
 		B04 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S04 /* Haptics.swift */; };
@@ -73,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				S01 /* BunnyMetronomeApp.swift */,
+				S13 /* AppAnalytics.swift */,
 				S02 /* ContentView.swift */,
 				S03 /* MetronomeModel.swift */,
 				S04 /* Haptics.swift */,
@@ -83,6 +89,7 @@
 				SD1 /* Sounds */,
 				SK1 /* Configuration.storekit */,
 				PV1 /* PrivacyInfo.xcprivacy */,
+				GS1 /* GoogleService-Info.plist */,
 				IPL /* Info.plist */,
 				IPV /* InfoPlist.strings */,
 			);
@@ -128,11 +135,11 @@
 			sourceTree = "<group>";
 		};
 
-		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12,); runOnlyForDeploymentPostprocessing = 0; };
+		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12,); runOnlyForDeploymentPostprocessing = 0; };
 		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10,); runOnlyForDeploymentPostprocessing = 0; };
-		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2, BPV, BIP,); runOnlyForDeploymentPostprocessing = 0; };
+		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2, BPV, BIP, BGS,); runOnlyForDeploymentPostprocessing = 0; };
 		RTST /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		FAPP /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		FAPP /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BFA,); runOnlyForDeploymentPostprocessing = 0; };
 		FTST /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 
 		PX1 /* PBXContainerItemProxy */ = {
@@ -161,6 +168,9 @@
 			dependencies = (
 			);
 			name = BunnyMetronome;
+			packageProductDependencies = (
+				FBA /* FirebaseAnalytics */,
+			);
 			productName = BunnyMetronome;
 			productReference = APP1;
 			productType = "com.apple.product-type.application";
@@ -199,6 +209,9 @@
 				"zh-Hans",
 			);
 			mainGroup = G0;
+			packageReferences = (
+				FBSDK /* XCRemoteSwiftPackageReference */,
+			);
 			productRefGroup = GPROD;
 			projectDirPath = "";
 			projectRoot = "";
@@ -313,6 +326,20 @@
 		CLPRJ = {isa = XCConfigurationList; buildConfigurations = (CD, CR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		CLAPP = {isa = XCConfigurationList; buildConfigurations = (AD, AR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		CLTST = {isa = XCConfigurationList; buildConfigurations = (TD, TR,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+
+		FBSDK /* XCRemoteSwiftPackageReference */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.8.0;
+			};
+		};
+		FBA /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBSDK /* XCRemoteSwiftPackageReference */;
+			productName = FirebaseAnalytics;
+		};
 	};
 	rootObject = PJ /* Project object */;
 }
