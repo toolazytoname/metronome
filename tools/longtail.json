@@ -3,15 +3,15 @@
     "slug": "piano-practice",
     "title_zh": "钢琴练习节拍器",
     "title_en": "Piano Practice Metronome",
-    "desc_zh": "为钢琴入门练琴预设 80 BPM 4/4 拍，传统鼓点模式帮你听清每个强拍，配套哈农、车尔尼、拜厄等教材的慢练章节起步速度。",
-    "desc_en": "Pre-set metronome page for piano practice — 80 BPM, 4/4, traditional drum. The starting tempo for Hanon, Czerny, and Beyer technique books.",
+    "desc_zh": "钢琴练习示例页：预设 80 BPM、4/4、传统鼓点。这是本页给入门慢练用的起点，不是所有教材的统一规定。",
+    "desc_en": "Example piano-practice page: 80 BPM, 4/4, traditional drum. A slow-practice starting point on this page, not a universal syllabus rule.",
     "bpm": 80,
     "sig": "4/4",
     "mode": "traditional",
     "mode_label_zh": "传统鼓点",
     "mode_label_en": "traditional",
-    "narrative_zh": "<p>刚开始跟节拍练琴，节奏不稳是最大的拦路虎。</p><p>80 BPM 是公认的入门起步速度——哈农、车尔尼、拜厄这些基本功教材的慢练章节大多落在这个区间。低于这个速度练起来太拖沓，再快又容易赶拍子。新手如果直接跳到 100 BPM，两周后多半会发现自己音阶弹出节拍不稳、节拍器被嫌弃成摆设。</p><p>这个页面已经帮你预设好了：80 BPM、4/4 拍、传统鼓点。每个小节第一拍是清楚的「咚」、后面三拍是轻一点的「嗒」，耳朵一听就知道每组的起点在哪——这是大多数钢琴老师让学生从第一天就跟节拍器练的根本原因。</p><p>点下面按钮直接进入主应用，开始时就是 80 BPM 4/4 传统鼓点。每周稳在一个 BPM 不动，下周试着推到 85。坚持一个月，节奏稳定性会有质的变化。</p>",
-    "narrative_en": "<p>Starting piano with a metronome? Tempo drift is the #1 stumbling block in the first six months.</p><p>80 BPM is the widely-agreed starting tempo — Hanon, Czerny, and Beyer all open their technique sections around this speed. Slower than 80 and the rhythm falls apart from dragging; faster and you start racing the beat before you have earned it. Most beginners who jump to 100 BPM within two weeks end up abandoning the metronome entirely because the gap between their scales and the click grows too obvious.</p><p>This page pre-sets 80 BPM, 4/4, traditional drum. The first beat of each bar is a clear accent, the next three lighter — the moment you hear it, you know where each group begins. That is the reason most piano teachers insist on practicing with a metronome from day one.</p><p>Hit the button below and you are in the app with 80 BPM 4/4 already set. Stay there for a week before pushing to 85. After a month, your tempo stability takes a real step.</p>"
+    "narrative_zh": "<p>刚开始跟节拍练琴，节奏不稳很常见。</p><p>本页把示例速度设在 <strong>80 BPM</strong>。不少入门练习会从类似的慢速起步，方便听清每个音和每个拍点；它不是「公认唯一入门速度」，也不是「低于 80 就一定拖沓」。教材标记、老师要求和曲子本身都会不同，进入主应用后可以随时改。</p><p>预设是 80 BPM、4/4、传统鼓点：每个小节<strong>只有第一拍</strong>用强 click，后三拍是弱 click。听清小节起点后，再按自己的谱子往上加速度。</p><p>点下面按钮进入主应用，会带上这一页的预设。稳定了再小幅加 BPM 即可，不必按某张时间表。</p>",
+    "narrative_en": "<p>Starting piano with a metronome? Tempo drift is common at first.</p><p>This page uses <strong>80 BPM</strong> as an example slow-practice tempo. Many beginner drills sit in a similar range so you can hear every note against the click. It is not a universal “official starting speed,” and slower is not automatically “too dragging.” Follow your score and your teacher; you can change BPM in the app.</p><p>The preset is 80 BPM, 4/4, traditional drum: <strong>only beat 1</strong> of each bar is the strong click, the next three are weak. Use that to find the downbeat, then nudge the tempo when the line is clean.</p><p>The button below opens the app with this preset. Stay as long as you need; there is no required weekly schedule.</p>"
   },
   {
     "slug": "drum-slow-60",
@@ -31,29 +31,29 @@
     "slug": "running-cadence-180",
     "title_zh": "跑步配速 180 BPM 节拍器",
     "title_en": "180 BPM Running Cadence Metronome",
-    "desc_zh": "跑步配速 180 步/分，佳明、Strava 多项研究公认的最优步频，跟拍能改善跑步经济性、降低受伤风险。",
-    "desc_en": "Running cadence metronome at 180 BPM — the widely-recommended step rate from Garmin and Strava research. Improves running economy and reduces injury risk.",
+    "desc_zh": "跑步步频示例页：预设 180 BPM 均匀 click。180 步/分是常见训练目标之一，不是所有跑者的最佳值。",
+    "desc_en": "Running-cadence example page: 180 BPM uniform click. 180 steps/min is a common training target, not a proven best cadence for every runner.",
     "bpm": 180,
     "sig": "4/4",
     "mode": "uniform",
     "mode_label_zh": "均匀节拍",
     "mode_label_en": "uniform",
-    "narrative_zh": "<p>180 步/分是过去二十年跑步研究反复确认的「最佳步频」——不管是精英马拉松选手，还是业余跑者，把步频提到 180 附近，膝关节冲击力下降、跑步经济性提高。</p><p>大多数人平时自然跑是 160-170，看起来差不多，但步子过大的代价是脚跟着地——跑步伤膝、胫骨前痛、髋部代偿，很多都从这里来。用节拍器盯 180 一两周，等身体习惯了再撤掉，自然就会维持。</p><p>这个页面已经设到 180 BPM、4/4 拍，均匀节拍（每拍等响，强调节奏而不是强弱）。跑步时放在口袋里，每响一下对应一步——不用看屏幕，听节奏对齐脚步就行。刚开始觉得「跑得快了累」，那是步幅还没降下来，三五次之后步频会自动让步幅小一些。</p>",
-    "narrative_en": "<p>180 steps per minute is the cadence that twenty years of running research keeps coming back to — elite marathoners and weekend joggers alike. Get your cadence up near 180 and the heel-strike mechanics that wreck knees start to fade. Running economy improves, ground reaction force drops.</p><p>Most people self-select at 160-170. Close enough that it feels fine, but the over-striding that comes with it is exactly what loads the joints badly. Train with a metronome at 180 for a couple of weeks, then take it off — your body keeps the new pattern.</p><p>This page is set to 180 BPM, 4/4, uniform click (every beat equal weight, no accents, so it is just a step-clock). Pocket the phone, match your footfalls to the click, do not look at the screen. The first few runs feel weirdly fast — that is your stride length dropping, which is the whole point.</p>"
+    "narrative_zh": "<p>本页示例预设是 <strong>180 BPM</strong> 均匀 click：每响一下对应一步，方便在跑步时听节奏，而不是看屏幕。</p><p>180 步/分常被当作一个训练参考区间，但不是所有跑者都该用这个数字，也不能从这一页推出「跟拍就能减少伤膝」或「练几周就会固化」。合适的步频和身高、配速、路面有关，需要按自身情况调整。</p><p>预设为 180 BPM、4/4、均匀节拍（每拍等响，没有强弱）。进入主应用后可以把 BPM 改成你自己的目标步频。</p>",
+    "narrative_en": "<p>This page is an example preset: <strong>180 BPM</strong> uniform click, one beep per step, so you can match footfalls by ear.</p><p>180 steps/min is a common coaching target. It is <strong>not</strong> a proven “best cadence” for every runner, elite or recreational, and this page does not claim that following the click will prevent knee injuries or lock in a new pattern in a couple of weeks. Cadence depends on height, pace, and terrain.</p><p>The preset is 180 BPM, 4/4, uniform (no accents). Open the app and change BPM to your own target.</p>"
   },
   {
     "slug": "six-eight-time",
     "title_zh": "6/8 拍节拍器（jig 与爱尔兰民谣）",
     "title_en": "6/8 Time Metronome (Jig & Irish Folk)",
-    "desc_zh": "6/8 复合拍号节拍器，jig、Irish folk、美国乡村摇滚常用拍号。90 BPM 是大多数 jig 教学曲目的标准起步速度。",
-    "desc_en": "6/8 compound-time metronome, the time signature of jigs, Irish folk, and American roots music. 90 BPM is the standard starting tempo for most jig tutorials.",
+    "desc_zh": "6/8 拍示例页：预设 90 BPM、传统鼓点。本应用传统模式只在小节第一拍加重音，没有 jig 教材里的第二组重音。",
+    "desc_en": "6/8 example page: 90 BPM, traditional drum. In this app, traditional mode accents only beat 1 of the bar — not a second jig-style accent.",
     "bpm": 90,
     "sig": "6/8",
     "mode": "traditional",
     "mode_label_zh": "传统鼓点",
     "mode_label_en": "traditional",
-    "narrative_zh": "<p>6/8 拍是「复合拍号」里最常遇到的那个——学吉他 fiddling、班卓琴、蓝草、爱尔兰民谣、jig、jazz waltz，几乎都要面对它。它听起来是 6 拍，但实际分组是「2+2+2」，每组三拍、共有两组——心里的拍子是 2 而不是 6。</p><p>这个页面预设 90 BPM、6/8 拍、传统鼓点。传统鼓点模式里，每个 8 分音符都有清楚的强弱对比（强 - 弱 - 弱 - 强 - 弱 - 弱），三拍一循环、两组一循环——听起来是「哒哒哒 · 哒哒哒」这种火车轮转的节奏感，就是 jig 最标志性的律动。</p><p>点开主应用后，先跟着拍子用脚打一组六拍（强 - 弱 - 弱 · 强 - 弱 - 弱），等一周弄清楚了，再上手弹拨。复合拍号最初几周会反复「回到 4/4 思考」，这是正常的——多跟拍就内化了。</p>",
-    "narrative_en": "<p>6/8 is the compound time signature everyone meets eventually — fiddle tunes, banjo, bluegrass, Irish folk, jazz waltzes. There are six eighth notes per bar, but they group in 2s, so the pulse you actually feel is 2, not 6. Counting \"one-and-a, two-and-a\" gets you there.</p><p>This page is set to 90 BPM, 6/8, traditional drum. The drum mode gives you a clear accent on the downbeat of each group: BUM-bum-bum · BUM-bum-bum. That rhythmic lilt is the entire feel of a jig — once it is in your body, the tune basically plays itself.</p><p>Open the app and tap your foot through six notes (BUM-bum-bum · BUM-bum-bum) for a while before you ever pick up the instrument. Your brain will fight this for the first two weeks — it keeps wanting to count to four. That is normal. Stay with it; the compound meter sinks in around week three.</p>"
+    "narrative_zh": "<p>6/8 是常见的复合拍号：一小节六个八分音符。许多 jig、民谣会把这六拍<strong>心里</strong>数成两组三拍（one-and-a, two-and-a），感到的大拍是 2，不是 6。这是数拍习惯，不是本应用另做了一套重音分组。</p><p>本页示例预设 90 BPM、6/8、传统鼓点。<strong>实际引擎只在小节第一拍（beat 0）用强 click，其余五拍都是弱 click</strong>。没有第二组再自动加重音。若教材要求第二组再打一下重音，请用身体或谱面自己补。</p><p>点开主应用后可以改 BPM 和模式。先听清六个拍点，再按曲子的分组去数。</p>",
+    "narrative_en": "<p>6/8 is a common compound meter: six eighth notes per bar. Many jigs and folk tunes are <strong>counted</strong> as two groups of three (one-and-a, two-and-a), so the felt pulse is 2, not 6. That is a counting habit, not a second accent engine in this app.</p><p>This page presets 90 BPM, 6/8, traditional drum. <strong>The engine accents only beat 1 of the bar (beat index 0); the other five beats are weak clicks.</strong> It does not add a second automatic accent on beat 4. If a tutor wants that extra accent, you supply it — the metronome will not.</p><p>Open the app to change BPM or mode. Learn the six clicks first, then count them in the grouping your tune uses.</p>"
   },
   {
     "slug": "waltz-three-four",

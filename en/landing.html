@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="en" href="https://jpq.weichao.studio/about/en/">
     <link rel="alternate" hreflang="x-default" href="https://jpq.weichao.studio/about/">
     <link rel="canonical" href="https://jpq.weichao.studio/about/en/">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/en/manifest.json">
     <base href="/">
     <link rel="icon" type="image/png" href="/images/bunny.png">
     <link rel="apple-touch-icon" href="/images/bunny.png">
@@ -376,6 +376,24 @@
             color: var(--coral-deep);
         }
         .section-sub { font-size: 13px; color: var(--muted); }
+        .scene-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .scene-grid a {
+            display: block;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: var(--surface);
+            border: 1.5px solid oklch(100% 0 0 / 0.8);
+            text-decoration: none;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 650;
+        }
+        .scene-grid a span { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
         .features {
             display: grid;
@@ -884,6 +902,22 @@
         </div>
     </section>
 
+    <section class="block" id="scenes">
+        <div class="block-head">
+            <span class="eyebrow">Practice</span>
+            <h2 class="section-title">Practice <em>scenes</em></h2>
+            <p class="section-sub">A few useful presets. Tempos are examples — change them in the app.</p>
+        </div>
+        <div class="scene-grid">
+            <a href="/en/p/piano-practice.html">Piano slow practice<span>80 BPM · 4/4 · traditional</span></a>
+            <a href="/en/p/kids-piano-count.html">Kids counting<span>70 BPM · voice</span></a>
+            <a href="/en/p/waltz-three-four.html">Waltz<span>100 BPM · 3/4</span></a>
+            <a href="/en/p/six-eight-time.html">6/8 time<span>90 BPM · accent on beat 1 only</span></a>
+            <a href="/en/p/guitar-practice.html">Guitar<span>100 BPM · uniform</span></a>
+            <a href="/en/p/drum-slow-60.html">Drum slow practice<span>60 BPM · 4/4</span></a>
+        </div>
+    </section>
+
     <section class="block tinted-warm">
         <div class="block-head">
             <span class="eyebrow mint">Audience</span>
@@ -1109,6 +1143,7 @@
         </div>
         <div class="foot-links">
             <a href="/en/">App</a>
+            <a href="#scenes">Practice scenes</a>
             <a href="#faq">FAQ</a>
             <a href="/en/privacy">Privacy</a>
             <a href="/en/support">Support</a>

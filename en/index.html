@@ -478,6 +478,16 @@
             font-weight: 700;
             cursor: pointer;
         }
+        .scene-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 14px;
+            margin: 10px 18px 0;
+            font-size: 12px;
+        }
+        .scene-links a { color: var(--muted); text-decoration: none; }
+        .scene-links a:hover { color: var(--coral-deep); }
 
         /* Settings */
         .settings {
@@ -960,6 +970,14 @@
         </div>
 
         <p class="meta-bar">40-208 BPM · 4/4 · 7/8 · 3 sound modes</p>
+        <nav class="scene-links" aria-label="Practice scenes">
+            <a href="/en/p/piano-practice.html">Piano 80</a>
+            <a href="/en/p/kids-piano-count.html">Kids counting</a>
+            <a href="/en/p/waltz-three-four.html">Waltz 3/4</a>
+            <a href="/en/p/six-eight-time.html">6/8 time</a>
+            <a href="/en/p/guitar-practice.html">Guitar</a>
+            <a href="/about/en/">More scenes</a>
+        </nav>
     </div>
 
     <!-- iOS silent-mode hint -->

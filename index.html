@@ -527,6 +527,16 @@
             font-weight: 700;
             cursor: pointer;
         }
+        .scene-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 14px;
+            margin: 10px 18px 0;
+            font-size: 12px;
+        }
+        .scene-links a { color: var(--muted); text-decoration: none; }
+        .scene-links a:hover { color: var(--coral-deep); }
 
         /* =============================================================
            Settings card —— 折叠面板（保留 toggle/panel/open class）
@@ -1063,6 +1073,14 @@
         </div>
 
         <p class="meta-bar">已支持 40-208 BPM · 4/4 · 7/8 · 3 种音效</p>
+        <nav class="scene-links" aria-label="练习场景">
+            <a href="/p/piano-practice.html">钢琴 80</a>
+            <a href="/p/kids-piano-count.html">儿童数拍</a>
+            <a href="/p/waltz-three-four.html">华尔兹 3/4</a>
+            <a href="/p/six-eight-time.html">6/8 拍</a>
+            <a href="/p/guitar-practice.html">吉他</a>
+            <a href="/about/">更多场景</a>
+        </nav>
     </div>
 
     <!-- iOS 静音提示 -->

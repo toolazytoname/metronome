@@ -3,13 +3,14 @@
 gen-longtail.py — render the 10 long-tail landing pages from tools/longtail.json.
 
 Outputs:
-  p/<slug>.html       (Chinese, paired with /p/longtail.css)
-  en/p/<slug>.html    (English, paired via /p/longtail.css with ../p/ relative path)
+  p/<slug>.html       (Chinese, stylesheet /p/longtail.css)
+  en/p/<slug>.html    (English, same absolute /p/longtail.css)
 
 Run from the metronome repo root:
   python3 tools/gen-longtail.py
 """
 import json
+import html
 import pathlib
 import sys
 
@@ -31,10 +32,14 @@ MODE_PARAM = {
 
 def render(tpl_path, item, lang):
     tpl = tpl_path.read_text()
+    title = item["title_zh"] if lang == "zh" else item["title_en"]
+    description = item["desc_zh"] if lang == "zh" else item["desc_en"]
     out = (
         tpl
-        .replace("{{TITLE}}", item["title_zh"] if lang == "zh" else item["title_en"])
-        .replace("{{DESC}}", item["desc_zh"] if lang == "zh" else item["desc_en"])
+        .replace("{{TITLE}}", html.escape(title, quote=True))
+        .replace("{{DESC}}", html.escape(description, quote=True))
+        .replace("{{JSON_TITLE}}", json.dumps(title, ensure_ascii=False).replace("<", "\\u003c"))
+        .replace("{{JSON_DESC}}", json.dumps(description, ensure_ascii=False).replace("<", "\\u003c"))
         .replace("{{NARRATIVE}}", item["narrative_zh"] if lang == "zh" else item["narrative_en"])
         .replace("{{SLUG}}", item["slug"])
         .replace("{{BPM}}", str(item["bpm"]))

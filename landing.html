@@ -10,6 +10,9 @@
     <meta name="robots" content="index, follow">
 
     <link rel="canonical" href="https://jpq.weichao.studio/about/">
+    <link rel="alternate" hreflang="zh-CN" href="https://jpq.weichao.studio/about/">
+    <link rel="alternate" hreflang="en" href="https://jpq.weichao.studio/about/en/">
+    <link rel="alternate" hreflang="x-default" href="https://jpq.weichao.studio/about/">
     <link rel="manifest" href="/manifest.json">
     <base href="/">
     <link rel="icon" type="image/png" href="/images/bunny.png">
@@ -442,6 +445,24 @@
         .feat-ico.alt-3 { background: var(--lemon);         color: var(--lemon-deep); }
         .feat h4 { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
         .feat p  { font-size: 12px; color: var(--muted); line-height: 1.45; }
+        .scene-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .scene-grid a {
+            display: block;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: var(--surface);
+            border: 1.5px solid oklch(100% 0 0 / 0.8);
+            text-decoration: none;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 650;
+        }
+        .scene-grid a span { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
         /* =============================================================
            谁在用
@@ -944,6 +965,22 @@
         </div>
     </section>
 
+    <section class="block" id="scenes">
+        <div class="block-head">
+            <span class="eyebrow">Practice</span>
+            <h2 class="section-title">练习<em>场景</em></h2>
+            <p class="section-sub">几个常用预设，打开就能练。速度只是示例，进应用后可改。</p>
+        </div>
+        <div class="scene-grid">
+            <a href="/p/piano-practice.html">钢琴慢练<span>80 BPM · 4/4 · 传统</span></a>
+            <a href="/p/kids-piano-count.html">儿童数拍<span>70 BPM · 童音</span></a>
+            <a href="/p/waltz-three-four.html">华尔兹<span>100 BPM · 3/4</span></a>
+            <a href="/p/six-eight-time.html">6/8 拍<span>90 BPM · 传统（只重第一拍）</span></a>
+            <a href="/p/guitar-practice.html">吉他<span>100 BPM · 均匀</span></a>
+            <a href="/p/drum-slow-60.html">鼓手慢练<span>60 BPM · 4/4</span></a>
+        </div>
+    </section>
+
     <!-- 谁在用 -->
     <section class="block tinted-warm">
         <div class="block-head">
@@ -1173,6 +1210,7 @@
         </div>
         <div class="foot-links">
             <a href="./">主程序</a>
+            <a href="#scenes">练习场景</a>
             <a href="#faq">FAQ</a>
             <a href="/privacy">隐私</a>
             <a href="/support">支持</a>

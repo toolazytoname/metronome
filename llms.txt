@@ -4,7 +4,7 @@
 
 ## About
 
-A static-HTML metronome with three sound modes and common time signatures. Open the URL in any browser and it just works — desktop, mobile, iOS, Android. There is also a WeChat mini-program. Native App Store / Play apps are being built; the default counting voice stays free.
+A static-HTML metronome with three sound modes and common time signatures. Open the URL in any browser and it just works — desktop, mobile, iOS, Android. There is also a WeChat mini-program. Native iOS / Android apps exist in-repo; the default counting voice stays free.
 
 Features:
 - BPM range 40–208
@@ -12,7 +12,7 @@ Features:
 - 3 sound modes: classic drum (strong/weak clicks), uniform click, pre-rendered count samples (zh 一–十六 / en one–sixteen)
 - Bilingual UI (中文 / English)
 - iOS silent-mode heuristic — warns once if the ringer is off
-- Static HTML — no backend, no auth. Optional anonymous analytics on web/miniapp only
+- Static HTML — no backend, no auth. Product analytics: Umeng CNZZ + GA4 on web, umtrack-wx on the WeChat mini-program, Firebase Analytics on native (app-instance ID, no advertising IDs)
 
 Intended for:
 - Piano / guitar / drum practice
@@ -24,8 +24,8 @@ Intended for:
 
 - [Chinese — main app](https://jpq.weichao.studio/)
 - [English — main app](https://jpq.weichao.studio/en/)
-- [Chinese — landing](https://jpq.weichao.studio/landing.html)
-- [English — landing](https://jpq.weichao.studio/en/landing.html)
+- [Chinese — about](https://jpq.weichao.studio/about/)
+- [English — about](https://jpq.weichao.studio/about/en/)
 
 ### Long-tail entry points (BPM / time signature / mode pre-set)
 

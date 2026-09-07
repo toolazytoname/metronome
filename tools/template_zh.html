@@ -18,13 +18,16 @@
 <meta name="twitter:description" content="{{DESC}}">
 <meta name="twitter:image" content="https://jpq.weichao.studio/images/bunny.png">
 <link rel="icon" href="/images/bunny.png">
-<link rel="stylesheet" href="longtail.css">
+<link rel="stylesheet" href="/p/longtail.css">
+<link rel="alternate" hreflang="zh-CN" href="https://jpq.weichao.studio/p/{{SLUG}}.html">
+<link rel="alternate" hreflang="en" href="https://jpq.weichao.studio/en/p/{{SLUG}}.html">
+<link rel="alternate" hreflang="x-default" href="https://jpq.weichao.studio/p/{{SLUG}}.html">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "{{TITLE}}",
-  "description": "{{DESC}}",
+  "name": {{JSON_TITLE}},
+  "description": {{JSON_DESC}},
   "url": "https://jpq.weichao.studio/p/{{SLUG}}.html",
   "isPartOf": {
     "@type": "WebApplication",
@@ -51,7 +54,7 @@
 <p class="fallback">打开后主应用会按 {{BPM}} BPM、{{SIG}} 拍、{{MODE_LABEL}} 预设。如果需要调整，进入页面后直接在主应用里拖动 BPM 滑块、切换拍号和音效即可。</p>
 <footer>
   <a href="/">主页</a>
-  <a href="/landing.html">产品介绍</a>
+  <a href="/about/">产品介绍</a>
   <a href="/en/p/{{SLUG}}.html">English</a>
   <a href="https://github.com/toolazytoname/metronome" target="_blank" rel="noopener">GitHub</a>
 </footer>
