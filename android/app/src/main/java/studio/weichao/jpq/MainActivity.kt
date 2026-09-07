@@ -28,8 +28,10 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import studio.weichao.jpq.audio.MetronomeService
 import studio.weichao.jpq.billing.PlayStoreAdapter
+import studio.weichao.jpq.policy.EntitlementFlow
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
+import studio.weichao.jpq.policy.StoreRestoreResult
 import studio.weichao.jpq.ui.MacaronApp
 import studio.weichao.jpq.ui.MacaronCallbacks
 
@@ -85,13 +87,9 @@ class MainActivity : ComponentActivity() {
             this,
             onEntitlementChange = { owned ->
                 runOnUiThread {
-                    unlocked = owned
-                    prefs = prefs.copy(
-                        clickBank = MetronomePolicy.resolveBank(prefs.clickBank, owned),
-                        voiceBank = MetronomePolicy.resolveBank(prefs.voiceBank, owned),
-                        hapticPattern = MetronomePolicy.resolveHapticPattern(prefs.hapticPattern, owned),
-                        hapticFeel = MetronomePolicy.resolveHapticFeel(prefs.hapticFeel, owned)
-                    )
+                    val next = EntitlementFlow.authoritative(EntitlementFlow.State(prefs, unlocked), owned)
+                    unlocked = next.unlocked
+                    prefs = next.stored
                     applyToService()
                     if (owned) storeMessage = t("owned")
                 }
@@ -104,6 +102,9 @@ class MainActivity : ComponentActivity() {
             },
             onAvailable = { ok ->
                 runOnUiThread { storeAvailable = ok }
+            },
+            onBusy = { busy ->
+                runOnUiThread { storeBusy = busy }
             }
         )
         refreshEntitlement()
@@ -116,7 +117,7 @@ class MainActivity : ComponentActivity() {
         bindService(Intent(this, MetronomeService::class.java), conn, Context.BIND_AUTO_CREATE)
         setContent {
             MacaronApp(
-                prefs = prefs,
+                prefs = EntitlementFlow.State(prefs, unlocked).display,
                 playing = playing,
                 activeBeat = activeBeat,
                 unlocked = unlocked,
@@ -163,7 +164,7 @@ class MainActivity : ComponentActivity() {
                     onVoiceBank = { requestVoice(it) },
                     onHapticPattern = { requestHapticPattern(it) },
                     onHapticFeel = { requestHapticFeel(it) },
-                    onBuy = { if (!storeBusy) store.launch(this) },
+                    onBuy = { store.launch(this) },
                     onRestore = { restorePurchases() },
                     onShare = { share() },
                     onSupport = { openUrl("/support", "/en/support") },
@@ -198,6 +199,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        store.close()
         try { unbindService(conn) } catch (_: Exception) {}
     }
 
@@ -214,27 +216,24 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             unlocked = store.currentEntitlement()
             productPrice = store.productPrice()
-            prefs = prefs.copy(
-                clickBank = MetronomePolicy.resolveBank(prefs.clickBank, unlocked),
-                voiceBank = MetronomePolicy.resolveBank(prefs.voiceBank, unlocked)
-            )
+            // 未知/失败的 false 只门控播放（applyToService 内 resolve*），
+            // 不得把 default 写回 prefs。权威归一化只走 onEntitlementChange。
             applyToService()
         }
     }
 
     private fun restorePurchases() {
-        if (storeBusy) return
-        storeBusy = true
         lifecycleScope.launch {
-            try {
-                store.restore()
-                unlocked = store.currentEntitlement()
-                applyToService()
-                storeMessage = t(if (unlocked) "restore_ok" else "restore_none")
-            } catch (_: Exception) {
-                storeMessage = t("restore_failed")
-            } finally {
-                storeBusy = false
+            when (val r = store.restore()) {
+                is StoreRestoreResult.Done -> {
+                    unlocked = r.unlocked
+                    applyToService()
+                    storeMessage = t(if (r.unlocked) "restore_ok" else "restore_none")
+                }
+                StoreRestoreResult.Busy -> storeMessage = t("buying")
+                StoreRestoreResult.Unavailable -> storeMessage = t("buy_unavailable")
+                StoreRestoreResult.Failed -> storeMessage = t("restore_failed")
+                StoreRestoreResult.Stale -> { }
             }
         }
     }
@@ -267,8 +266,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyToService() {
-        val click = MetronomePolicy.resolveBank(prefs.clickBank, unlocked)
-        val voice = MetronomePolicy.resolveBank(prefs.voiceBank, unlocked)
+        val gate = EntitlementFlow.State(prefs, unlocked)
+        val click = gate.playbackClick
+        val voice = gate.playbackVoice
         service?.keepAwake = prefs.keepAwake
         service?.notificationTitle = t("app_name")
         service?.pauseLabel = t("pause")
@@ -322,38 +322,29 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestClick(bank: String) {
-        if (MetronomePolicy.canUsePackBank(bank, unlocked)) {
-            prefs = prefs.copy(clickBank = bank)
-            applyToService()
-        } else {
-            store.launch(this)
-        }
+        applyPick(EntitlementFlow.pickClick(EntitlementFlow.State(prefs, unlocked), bank))
     }
 
     private fun requestVoice(bank: String) {
-        if (MetronomePolicy.canUsePackBank(bank, unlocked)) {
-            prefs = prefs.copy(voiceBank = bank)
-            applyToService()
-        } else {
-            store.launch(this)
-        }
+        applyPick(EntitlementFlow.pickVoice(EntitlementFlow.State(prefs, unlocked), bank))
     }
 
     private fun requestHapticPattern(pattern: String) {
-        if (MetronomePolicy.canUseHapticPattern(pattern, unlocked)) {
-            prefs = prefs.copy(hapticPattern = pattern)
-            applyToService()
-        } else {
-            store.launch(this)
-        }
+        applyPick(EntitlementFlow.pickHapticPattern(EntitlementFlow.State(prefs, unlocked), pattern))
     }
 
     private fun requestHapticFeel(feel: String) {
-        if (MetronomePolicy.canUseHapticFeel(feel, unlocked)) {
-            prefs = prefs.copy(hapticFeel = feel)
-            applyToService()
-        } else {
-            store.launch(this)
+        applyPick(EntitlementFlow.pickHapticFeel(EntitlementFlow.State(prefs, unlocked), feel))
+    }
+
+    private fun applyPick(pick: EntitlementFlow.Pick) {
+        when (pick) {
+            is EntitlementFlow.Pick.Save -> {
+                prefs = pick.stored
+                applyToService()
+            }
+            EntitlementFlow.Pick.LaunchPurchase -> store.launch(this)
+            EntitlementFlow.Pick.KeepStored -> { }
         }
     }
 

@@ -115,6 +115,18 @@ object MetronomePolicy {
             HAPTIC_FEEL_STANDARD
         }
 
+    /**
+     * 仅权威账本（含 OK 空列表撤销）可把 resolve 结果写回存储字段。
+     * 未知/未连接/查询失败不得调用：播放侧用 resolve* 门控即可。
+     */
+    fun applyAuthoritativeUnlock(prefs: MetronomePrefs, unlocked: Boolean): MetronomePrefs =
+        prefs.copy(
+            clickBank = resolveBank(prefs.clickBank, unlocked),
+            voiceBank = resolveBank(prefs.voiceBank, unlocked),
+            hapticPattern = resolveHapticPattern(prefs.hapticPattern, unlocked),
+            hapticFeel = resolveHapticFeel(prefs.hapticFeel, unlocked)
+        )
+
     fun shouldHapticTick(strong: Boolean, pattern: String, unlocked: Boolean): Boolean =
         if (resolveHapticPattern(pattern, unlocked) == HAPTIC_PATTERN_DOWNBEAT) strong else true
 
@@ -220,20 +232,22 @@ interface StoreAdapter {
     suspend fun currentEntitlement(): Boolean
     suspend fun productPrice(): String?
     suspend fun purchase()
-    suspend fun restore()
+    suspend fun restore(): StoreRestoreResult
 }
 
 class FakeStoreAdapter(var unlocked: Boolean = false) : StoreAdapter {
     var purchaseCalls = 0
     var restoreCalls = 0
     var price: String? = "¥12.00"
+    var restoreResult: StoreRestoreResult? = null
     override suspend fun currentEntitlement() = unlocked
     override suspend fun productPrice() = price
     override suspend fun purchase() {
         purchaseCalls += 1
         unlocked = true
     }
-    override suspend fun restore() {
+    override suspend fun restore(): StoreRestoreResult {
         restoreCalls += 1
+        return restoreResult ?: StoreRestoreResult.Done(unlocked)
     }
 }
