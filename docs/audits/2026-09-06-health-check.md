@@ -691,3 +691,35 @@ JVM：`:policy:test` **53** FAIL 0（含 bind 对齐、toggle 在 service true/U
 - **音频与清理**：状态验证不等于扬声器输出或节拍听感；Android 开始时媒体静音，结束观察到 Muted false / volume_music_speaker 10，工人报告未调用改音量或取消静音命令，变化原因未确认。偏好通过 UI 恢复到 85 / 3/4 / voice / zh。工人结束时确认 Android 无本 App 进程/Service/WakeLock，iOS 无 Bunny/WDA 残留进程。
 
 N1.25–N1.31 / N2.16 等完整发布条目保持未勾；真 Play/Sandbox 购买、物理静音键、目标速度听感与商店配置仍需验证。本节仅归档新增证据，不宣布全项目完工或可发布。
+
+## 2026-09-07 · 真机控制恢复与 opt-in 测试设施收口（非发布验收）
+
+本轮基线 `ae8b14c`，未改产品源码、采样、IAP 或发布规则。以下新增证据补充上节的历史 BLOCKED，不覆盖或删除旧失败记录。原始证据保留在本机 `/tmp/metronome-device-20260907/`；这些临时路径不是仓库内永久附件。
+
+### iOS · iPhone 11 真机 UI / 生命周期
+
+- 复用既有 Development 签名，构建 `Debug-iphoneos` 并保留数据覆盖安装成功（`ios-reliable/app-build.txt`、`app-install.txt`）。App executable SHA256：`23a25575dd3fa96ea6226e6aaab824573795903235ef1c1bd33287f55853f14e`。
+- 使用真机 `.xctestrun` 通过 XCTest 启动已签名 Appium WDA，经本机 USB relay 控制成功；不再把普通 Runner launch 或模拟器产物当作真机 XCTest。WDA 临时源码 revision `4fd551c39d08bdd86a2e8a447f4133cc6d8741ec`，未加入产品仓库。
+- `ios-reliable/core-result-v2.json`：一次播放/一次暂停、中英切换、精确 40 / 120 / 208 分别保持 **60.407 / 60.362 / 60.408 秒**，每 15 秒检查新 UI；播放中 120→121 保持播放态，之后暂停。全部仅 **PASS_UI_STATE(_ONLY)**，不是节拍听感/无插拍证明。恢复 85 / zh 并关闭 App 成功。
+- `settings-result-v2.json`：三种模式、六种预设拍号 UI 断言通过；滚动显示 Restore 时 WDA 超时，该轮 `restore-baseline` 亦 FAILED（timed out）。基线随后另行恢复，并在后续 background / repo-smoke 运行中核对为 85 / 4/4 / voice / zh；树中隐藏的 Restore 不算可见验收，系统购买/Restore **未执行、未通过**。初次 emoji predicate 失败属于工具错误，记录保留。
+- `background-result-v2.json`：120 BPM 播放后 HOME，15/30/45/60 秒目标 App state=3，保持 **60.0198 秒**；回 App 新 UI 仍播放，一次暂停，恢复 85 并关闭。仅 **PASS_UI_LIFECYCLE_ONLY**，不证明后台有声、物理锁屏或静音键。
+- 入仓 `scripts/test_ios_device_wda.py` 的首轮 `repo-smoke` 在清理时 WDA 连接丢失，**exit 1**；导演按观察到的 pid 关闭目标 App。新 WDA 下 `repo-smoke-fresh/result.json` 全部 smoke 断言、恢复和关闭通过，**exit 0**；三段 60 秒明确 SKIPPED。长保持证据来自前述临时 v2 harness，不能冒充最终 repo smoke 重跑。
+- `practice-idle-app-crop.png` 仅为练琴屏实机裁剪图，不是完整 Connect 截图套件。未获得 Restore 可见或真实购买证据。
+
+### Android · OnePlus 8T 真机证据与设施修复
+
+- `android-reliable/smoke-a01b.txt`：a01 真正 Activity recreate 后 UI / Service / scheduler 播放态一致，一次暂停释放 FGS / WakeLock；**OK (1 test)**、方法 STATUS 0、终结 `INSTRUMENTATION_CODE:-1`。这是 D1 recreate 的新增真机通过证据。
+- 早期 runner 部分 120/208 保持和 HOME 方法状态记录仅属历史部分证据。`instrument2.txt` / `instrument3.txt` 的 `Process crashed` + `INSTRUMENTATION_CODE:0` 即使外层 EXIT 0 也**不通过**。通知手指暂停、真实 recents 划掉、完整最终 suite 均未验收；不把工具崩溃直接定为产品缺陷。
+- 新增 androidTest 与单方法 wrapper。a07 未点到通知 Pause 必失败，ACTION_STOP 仅清理；a11 共进程自杀场景明确 Ignore，需独立外部 UI harness；BPM 步进改 Compose 点击逐步回读；移除 debug `ui-test-manifest`，避免向分发的 debug APK 注入测试 Activity；删除未用 forceStop helper。
+- wrapper 精确单方法、JUnit/终结码/状态序列判定、拒绝 error/skip/shortMsg、超时、非零 adb rc、防旧证据目录、按包 UID 过滤日志、清理失败非零退出。独立只读复核主要变更 PASS；指出 a11 文案尚未落盘后，导演实际修正文案，明确 wrapper 不实现划掉。
+- `wrapper-offline-checks.txt`：8 类 verdict fixture、非法 selector 拒绝、mock adb 清理成功/失败退出判定通过；**不是设备重跑**。最终 wrapper 修订后未再次运行 instrumentation。
+- 测试会改偏好，a09 不是通用恢复且曾超时。导演经真实 UI 恢复 **85 / 3/4 / voice / zh**，完整 prefs 与原始备份一致。clean app APK SHA256 `d760a1ea305affce4b9205cc03f8400ab3db08448a8a9c1de7abb935073e4285` 同签名 `install -r` 成功；最终安装后 `prefs-after-clean-install.xml` 再与 `prefs-backup.xml` 完整比对相等。证据在 `android-cleanup-director/`。无音量设置写入。
+
+### 收尾、边界与未完成项
+
+- Android 清理记录：无目标 pid/Service，当前 Wake Locks size=0；历史 ACQ/REL 不当作当前持锁。恢复及覆盖安装不算测试通过证据。
+- iOS 最后只打开设置、未播放。2026-09-07 03:46 PDT 观察目标 pid 5374 后正常 terminate，重新按目标 executable 查询无 Bunny / WebDriverAgentRunner；停止本轮精确路径 USB relay pid 78559。日志 `ios-reliable/final-cleanup/result.txt`。原偏好 85 / 4/4 / voice / zh 保持；未修改设置音量。
+- 操作说明统一放在 [原生真机测试工具](../testing/native-device-validation.md)，不新设发布清单。脚本 opt-in、不接普通 CI、不跑无人授权设备；中断缺 verdict 不能当绿，偏好须经 UI 恢复。
+- **仍未完成**：人耳 40/120/208 时钟与 pack、iOS 静音键/物理锁屏出声、Android 通知/真实划掉、Sandbox/Play 买与 Restore、发行证书及商店配置/上架。N1.25–N1.31 / N2.16 完整条目继续不勾；未上传商店、未发布、未宣称全项目完成。
+
+提交前离线闸门：`:policy:test :app:assembleDebug :app:assembleDebugAndroidTest --offline` **BUILD SUCCESSFUL / exit 0**（`android-reliable/final-gates.txt`）；JUnit XML 合计 **53 tests / 0 failures / 0 errors / 0 skipped**。两 Python 脚本 `py_compile`、`git diff --check` 通过；最终 wrapper 离线重读历史 a01 判真、instrument2/3 判假。未为此重跑设备。最终构建 app APK SHA256 仍与上文 clean install 相同。

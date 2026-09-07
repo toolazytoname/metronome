@@ -16,6 +16,7 @@ android {
         targetSdk = 35
         versionCode = (System.getenv("VERSION_CODE") ?: "4").toInt()
         versionName = System.getenv("VERSION_NAME") ?: "2.1.2"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
     if (!ksPath.isNullOrBlank()) {
@@ -41,6 +42,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    testOptions { animationsDisabled = true }
 }
 
 dependencies {
@@ -56,4 +58,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.8")
 }
