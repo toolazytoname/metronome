@@ -68,6 +68,22 @@ jobs:
           node --check js/engine.js
           node --check sw.js
 
+      - name: Web behaviour tests
+        run: |
+          node scripts/test_web_prefs.js
+          node scripts/test_sw_fetch.js
+          node scripts/test_engine.js
+          node scripts/test_web_start.js
+          node scripts/test_longtail.js
+          echo "✅ web prefs / SW / engine / longtail tests ok"
+
+      - name: Miniapp unit tests
+        run: |
+          cd miniapp
+          npm ci
+          npm test
+          echo "✅ miniapp vitest ok"
+
       - name: Check leftover speechSynthesis is gone
         run: |
           if grep -q "speechSynthesis" index.html en/index.html js/engine.js; then
