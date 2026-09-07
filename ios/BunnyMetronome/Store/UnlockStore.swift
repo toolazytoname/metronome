@@ -5,29 +5,43 @@ protocol StoreAdapter: AnyObject {
     func productPrice() async -> String?
     func purchase() async throws
     func restore() async throws
+    func setEntitlementObserver(_ observer: (@MainActor () async -> Void)?)
 }
 
-/// Test double for the store. Unlock *policy* still lives in MetronomePolicy.
-final class FakeStoreAdapter: StoreAdapter {
-    var unlocked: Bool
-    var purchaseCalls = 0
-    var restoreCalls = 0
-    var price: String? = "¥12.00"
+struct EntitlementSnapshot: Equatable {
+    var productID: String
+    var verified: Bool
+    var revoked: Bool
+}
 
-    init(unlocked: Bool = false) {
-        self.unlocked = unlocked
+enum EntitlementDecision {
+    static func shouldRefresh(productID: String, verified: Bool, sku: String = MetronomePolicy.productId) -> Bool {
+        verified && productID == sku
     }
 
-    func currentEntitlement() async -> Bool { unlocked }
-    func productPrice() async -> String? { price }
+    static func unlocked(from snapshots: [EntitlementSnapshot], sku: String = MetronomePolicy.productId) -> Bool {
+        snapshots.contains { $0.productID == sku && $0.verified && !$0.revoked }
+    }
+}
 
-    func purchase() async throws {
-        purchaseCalls += 1
-        unlocked = true
+/// Drops an older in-flight entitlements query when a newer refresh has started.
+final class EntitlementRefreshGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var seq: UInt64 = 0
+
+    func begin() -> UInt64 {
+        lock.lock()
+        seq += 1
+        let token = seq
+        lock.unlock()
+        return token
     }
 
-    func restore() async throws {
-        restoreCalls += 1
+    func isCurrent(_ token: UInt64) -> Bool {
+        lock.lock()
+        let ok = token == seq
+        lock.unlock()
+        return ok
     }
 }
 

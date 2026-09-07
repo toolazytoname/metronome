@@ -2,7 +2,8 @@ import Foundation
 import FirebaseAnalytics
 import FirebaseCore
 
-/// Product analytics only. No advertising ID.
+/// Product analytics only. Linked SPM product is FirebaseAnalyticsCore
+/// (firebase-ios-sdk 11.15.0 official no-IDFA product; WithoutAdIdSupport is deprecated).
 /// Skips configure until GoogleService-Info.plist has a real GOOGLE_APP_ID.
 enum AppAnalytics {
     private static var ready = false

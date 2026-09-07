@@ -23,6 +23,7 @@
 		S09 /* PrefsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefsStore.swift; sourceTree = "<group>"; };
 		S11 /* UnlockStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockStore.swift; sourceTree = "<group>"; };
 		S10 /* MetronomePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomePolicyTests.swift; sourceTree = "<group>"; };
+		S14 /* StoreTestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreTestDoubles.swift; sourceTree = "<group>"; };
 		AS1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		SD1 /* Sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sounds; sourceTree = "<group>"; };
 		J1 /* zh.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = zh.json; sourceTree = "<group>"; };
@@ -37,7 +38,7 @@
 		B01 /* BunnyMetronomeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S01 /* BunnyMetronomeApp.swift */; };
 		B13 /* AppAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S13 /* AppAnalytics.swift */; };
 		BGS /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = GS1 /* GoogleService-Info.plist */; };
-		BFA /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FBA /* FirebaseAnalytics */; };
+		BFA /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = FBA /* FirebaseAnalyticsCore */; };
 		B02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S02 /* ContentView.swift */; };
 		B03 /* MetronomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = S03 /* MetronomeModel.swift */; };
 		B04 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S04 /* Haptics.swift */; };
@@ -49,6 +50,7 @@
 		B09 /* PrefsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S09 /* PrefsStore.swift */; };
 		B11 /* UnlockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S11 /* UnlockStore.swift */; };
 		B10 /* MetronomePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10 /* MetronomePolicyTests.swift */; };
+		B14 /* StoreTestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = S14 /* StoreTestDoubles.swift */; };
 		BA1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AS1 /* Assets.xcassets */; };
 		BSD /* Sounds in Resources */ = {isa = PBXBuildFile; fileRef = SD1 /* Sounds */; };
 		BJ1 /* zh.json in Resources */ = {isa = PBXBuildFile; fileRef = J1 /* zh.json */; };
@@ -130,13 +132,14 @@
 			isa = PBXGroup;
 			children = (
 				S10 /* MetronomePolicyTests.swift */,
+				S14 /* StoreTestDoubles.swift */,
 			);
 			path = BunnyMetronomeTests;
 			sourceTree = "<group>";
 		};
 
 		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12,); runOnlyForDeploymentPostprocessing = 0; };
-		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10,); runOnlyForDeploymentPostprocessing = 0; };
+		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10, B14,); runOnlyForDeploymentPostprocessing = 0; };
 		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2, BPV, BIP, BGS,); runOnlyForDeploymentPostprocessing = 0; };
 		RTST /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		FAPP /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BFA,); runOnlyForDeploymentPostprocessing = 0; };
@@ -169,7 +172,7 @@
 			);
 			name = BunnyMetronome;
 			packageProductDependencies = (
-				FBA /* FirebaseAnalytics */,
+				FBA /* FirebaseAnalyticsCore */,
 			);
 			productName = BunnyMetronome;
 			productReference = APP1;
@@ -335,10 +338,10 @@
 				minimumVersion = 11.8.0;
 			};
 		};
-		FBA /* FirebaseAnalytics */ = {
+		FBA /* FirebaseAnalyticsCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FBSDK /* XCRemoteSwiftPackageReference */;
-			productName = FirebaseAnalytics;
+			productName = FirebaseAnalyticsCore;
 		};
 	};
 	rootObject = PJ /* Project object */;

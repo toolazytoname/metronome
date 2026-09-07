@@ -22,10 +22,14 @@ final class MetronomeModel: ObservableObject {
     let audio = MetronomeAudioEngine()
     let haptics = TickHaptics()
     private let store: StoreAdapter
+    private let entitlementGate = EntitlementRefreshGate()
 
     init(store: StoreAdapter? = nil) {
         self.store = store ?? StoreKitAdapter.shared
         self.prefs = PrefsStore.load()
+        self.store.setEntitlementObserver { [weak self] in
+            await self?.refreshEntitlement()
+        }
         applyAudioSettings()
         audio.setOnBeat { [weak self] beat in
             Task { @MainActor in
@@ -284,7 +288,10 @@ final class MetronomeModel: ObservableObject {
     }
 
     func refreshEntitlement() async {
-        unlocked = await store.currentEntitlement()
+        let token = entitlementGate.begin()
+        let value = await store.currentEntitlement()
+        guard entitlementGate.isCurrent(token) else { return }
+        unlocked = value
         prefs.clickBank = MetronomePolicy.resolveBank(requested: prefs.clickBank, unlocked: unlocked)
         prefs.voiceBank = MetronomePolicy.resolveBank(requested: prefs.voiceBank, unlocked: unlocked)
         applyAudioSettings()

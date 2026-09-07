@@ -1,18 +1,34 @@
 import Foundation
 import StoreKit
 
-/// Production adapter. Tests inject FakeStoreAdapter — they do not stub unlock policy.
+/// Production adapter. Tests inject FakeStoreAdapter from the test target.
 @MainActor
 final class StoreKitAdapter: StoreAdapter {
     static let shared = StoreKitAdapter()
     private var updatesTask: Task<Void, Never>?
+    private var observer: (@MainActor () async -> Void)?
 
     private init() {
+        startUpdatesIfNeeded()
+    }
+
+    func setEntitlementObserver(_ observer: (@MainActor () async -> Void)?) {
+        self.observer = observer
+        startUpdatesIfNeeded()
+    }
+
+    private func startUpdatesIfNeeded() {
+        guard updatesTask == nil else { return }
         updatesTask = Task { [weak self] in
             for await result in Transaction.updates {
-                if case .verified(let tx) = result {
+                guard let self else { return }
+                switch result {
+                case .verified(let tx):
                     await tx.finish()
-                    _ = self
+                    guard EntitlementDecision.shouldRefresh(productID: tx.productID, verified: true) else { continue }
+                    await self.observer?()
+                case .unverified:
+                    continue
                 }
             }
         }

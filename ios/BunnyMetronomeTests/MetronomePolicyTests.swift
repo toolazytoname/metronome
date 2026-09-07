@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(BunnyMetronomeCore)
 @testable import BunnyMetronomeCore
+#else
+@testable import BunnyMetronome
+#endif
 
 final class MetronomePolicyTests: XCTestCase {
     func testClampBpm() {
@@ -121,6 +125,101 @@ final class MetronomePolicyTests: XCTestCase {
         let prefs = MetronomePrefs.from(["hapticPattern": "downbeat", "hapticFeel": "heavy"])
         XCTAssertEqual(prefs.hapticPattern, "downbeat")
         XCTAssertEqual(prefs.hapticFeel, "heavy")
+    }
+}
+
+final class EntitlementRefreshTests: XCTestCase {
+    func testLedgerIgnoresOtherSkuUnverifiedAndRevoked() {
+        XCTAssertFalse(EntitlementDecision.shouldRefresh(productID: "other.sku", verified: true))
+        XCTAssertFalse(EntitlementDecision.shouldRefresh(productID: MetronomePolicy.productId, verified: false))
+        XCTAssertTrue(EntitlementDecision.shouldRefresh(productID: MetronomePolicy.productId, verified: true))
+        XCTAssertFalse(EntitlementDecision.unlocked(from: [
+            EntitlementSnapshot(productID: MetronomePolicy.productId, verified: false, revoked: false)
+        ]))
+        XCTAssertFalse(EntitlementDecision.unlocked(from: [
+            EntitlementSnapshot(productID: MetronomePolicy.productId, verified: true, revoked: true)
+        ]))
+        XCTAssertFalse(EntitlementDecision.unlocked(from: [
+            EntitlementSnapshot(productID: "other.sku", verified: true, revoked: false)
+        ]))
+        XCTAssertTrue(EntitlementDecision.unlocked(from: [
+            EntitlementSnapshot(productID: MetronomePolicy.productId, verified: true, revoked: false)
+        ]))
+    }
+
+    func testVerifiedUpdateRefreshesEntitlementWithoutShortcutTrue() async {
+        let fake = FakeStoreAdapter(unlocked: false)
+        let bridge = await MainActor.run { EntitlementObserverBinding(store: fake) }
+        await fake.simulateTransactionUpdate(
+            productID: MetronomePolicy.productId,
+            verified: true,
+            unlockedAfterRefresh: true
+        )
+        let unlocked = await MainActor.run { bridge.unlocked }
+        let count = await MainActor.run { bridge.refreshCount }
+        XCTAssertTrue(unlocked)
+        XCTAssertEqual(count, 1)
+        await MainActor.run { bridge.detach() }
+    }
+
+    func testUnverifiedUpdateDoesNotUnlock() async {
+        let fake = FakeStoreAdapter(unlocked: false)
+        let bridge = await MainActor.run { EntitlementObserverBinding(store: fake) }
+        await fake.simulateTransactionUpdate(
+            productID: MetronomePolicy.productId,
+            verified: false,
+            unlockedAfterRefresh: true
+        )
+        let unlocked = await MainActor.run { bridge.unlocked }
+        let count = await MainActor.run { bridge.refreshCount }
+        XCTAssertFalse(unlocked)
+        XCTAssertEqual(count, 0)
+        XCTAssertFalse(fake.unlocked)
+        await MainActor.run { bridge.detach() }
+    }
+
+    func testPendingPurchaseDoesNotUnlockUntilVerifiedUpdate() async {
+        let fake = FakeStoreAdapter(unlocked: false)
+        fake.purchaseError = .pending
+        do {
+            try await fake.purchase()
+            XCTFail("pending should throw")
+        } catch StoreError.pending {
+            XCTAssertFalse(fake.unlocked)
+        } catch {
+            XCTFail("unexpected \(error)")
+        }
+        let bridge = await MainActor.run { EntitlementObserverBinding(store: fake) }
+        await fake.simulateTransactionUpdate(
+            productID: MetronomePolicy.productId,
+            verified: true,
+            unlockedAfterRefresh: true
+        )
+        let unlocked = await MainActor.run { bridge.unlocked }
+        XCTAssertTrue(unlocked)
+        await MainActor.run { bridge.detach() }
+    }
+
+    func testRevokeRefreshLocksAgain() async {
+        let fake = FakeStoreAdapter(unlocked: true)
+        let bridge = await MainActor.run { EntitlementObserverBinding(store: fake) }
+        await fake.simulateTransactionUpdate(
+            productID: MetronomePolicy.productId,
+            verified: true,
+            unlockedAfterRefresh: false
+        )
+        let unlocked = await MainActor.run { bridge.unlocked }
+        XCTAssertFalse(unlocked)
+        await MainActor.run { bridge.detach() }
+    }
+
+    func testRefreshGateDropsOlderToken() {
+        let gate = EntitlementRefreshGate()
+        let a = gate.begin()
+        XCTAssertTrue(gate.isCurrent(a))
+        let b = gate.begin()
+        XCTAssertFalse(gate.isCurrent(a))
+        XCTAssertTrue(gate.isCurrent(b))
     }
 }
 
