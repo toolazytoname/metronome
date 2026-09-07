@@ -32,7 +32,7 @@ global.wx = {
 };
 global.Page = def => { RealPageDef = def; };
 const mini = require('../pages/index/index.js');
-const { AudioManager, getAudioManager, VOICE_CLICK_GAIN, OVERLAY_KEY, parseStrictInt, clampBpmInput, clampVolInput } = mini;
+const { AudioManager, getAudioManager, VOICE_CLICK_GAIN, OVERLAY_KEY, parseStrictInt, clampBpmInput, clampVolInput, normalizeTimeSig, clampMeterPart } = mini;
 const { getI18n } = require('../utils/i18n');
 
 const TIME_SIGS = [
@@ -57,6 +57,8 @@ function makePage() {
     settingsOpen: false,
     timeSigs: TIME_SIGS,
     currentSig: '4/4',
+    bc: 4,
+    bu: 4,
     customBeats: '4',
     customUnit: '4',
     // v2.2 新增字段（_refreshNowPlaying / handlers 会读）
@@ -191,25 +193,52 @@ describe('Constants', () => {
   });
 });
 
+describe('normalizeTimeSig', () => {
+  it('clamps complete integers and keeps fallback for junk', () => {
+    expect(normalizeTimeSig('5', '8', 4, 4)).toEqual({ bc: 5, bu: 8 });
+    expect(normalizeTimeSig('99', '99', 4, 4)).toEqual({ bc: 16, bu: 16 });
+    expect(normalizeTimeSig('0', '-3', 4, 4)).toEqual({ bc: 1, bu: 1 });
+    expect(normalizeTimeSig('', 'abc', 3, 4)).toEqual({ bc: 3, bu: 4 });
+    expect(normalizeTimeSig('12a', '4.5', 3, 4)).toEqual({ bc: 3, bu: 4 });
+    expect(clampMeterPart('7', 4)).toBe(7);
+    expect(clampMeterPart('nope', 4)).toBe(4);
+  });
+});
+
 // ============================================================
 // _getBeatCount
 // ============================================================
 describe('_getBeatCount', () => {
-  it('returns customBeats parsed as int', () => { const p = makePage(); p.data.customBeats = '7'; expect(p._getBeatCount()).toBe(7); });
-  it('defaults to 4 on empty string', () => { const p = makePage(); p.data.customBeats = ''; expect(p._getBeatCount()).toBe(4); });
-  it('defaults to 4 on non-numeric', () => { const p = makePage(); p.data.customBeats = 'abc'; expect(p._getBeatCount()).toBe(4); });
-  it('handles numeric input without string conversion', () => { const p = makePage(); p.data.customBeats = 5; expect(p._getBeatCount()).toBe(5); });
+  it('uses applied bc, not the draft input', () => {
+    const p = makePage();
+    p.data.bc = 3;
+    p.data.customBeats = '7';
+    expect(p._getBeatCount()).toBe(3);
+  });
+  it('defaults to 4 when applied bc is missing', () => {
+    const p = makePage();
+    p.data.bc = undefined;
+    p.data.customBeats = '9';
+    expect(p._getBeatCount()).toBe(4);
+  });
+  it('clamps applied bc to 1–16', () => {
+    const p = makePage();
+    p.data.bc = 99;
+    expect(p._getBeatCount()).toBe(16);
+    p.data.bc = 0;
+    expect(p._getBeatCount()).toBe(1);
+  });
 });
 
 // ============================================================
 // _updateBeats
 // ============================================================
 describe('_updateBeats', () => {
-  it('creates correct number of beats from customBeats', () => { const p = makePage(); p.data.customBeats = '5'; p.data.soundMode = 'uniform'; p._updateBeats(); expect(p.data.beats.length).toBe(5); });
-  it('uniform mode: all beats get className uniform', () => { const p = makePage(); p.data.customBeats = '4'; p.data.soundMode = 'uniform'; p._updateBeats(); p.data.beats.forEach(b => expect(b.className).toBe('uniform')); });
-  it('traditional mode: first beat strong, rest traditional', () => { const p = makePage(); p.data.customBeats = '4'; p.data.soundMode = 'traditional'; p._updateBeats(); expect(p.data.beats[0].className).toBe('strong'); expect(p.data.beats[1].className).toBe('traditional'); expect(p.data.beats[2].className).toBe('traditional'); });
-  it('all active false initially', () => { const p = makePage(); p.data.customBeats = '3'; p.data.soundMode = 'uniform'; p._updateBeats(); p.data.beats.forEach(b => expect(b.active).toBe(false)); });
-  it('sequential nums starting at 1', () => { const p = makePage(); p.data.customBeats = '4'; p.data.soundMode = 'uniform'; p._updateBeats(); expect(p.data.beats[0].num).toBe(1); expect(p.data.beats[3].num).toBe(4); });
+  it('creates correct number of beats from applied bc', () => { const p = makePage(); p.data.bc = 5; p.data.soundMode = 'uniform'; p._updateBeats(); expect(p.data.beats.length).toBe(5); });
+  it('uniform mode: all beats get className uniform', () => { const p = makePage(); p.data.bc = 4; p.data.soundMode = 'uniform'; p._updateBeats(); p.data.beats.forEach(b => expect(b.className).toBe('uniform')); });
+  it('traditional mode: first beat strong, rest traditional', () => { const p = makePage(); p.data.bc = 4; p.data.soundMode = 'traditional'; p._updateBeats(); expect(p.data.beats[0].className).toBe('strong'); expect(p.data.beats[1].className).toBe('traditional'); expect(p.data.beats[2].className).toBe('traditional'); });
+  it('all active false initially', () => { const p = makePage(); p.data.bc = 3; p.data.soundMode = 'uniform'; p._updateBeats(); p.data.beats.forEach(b => expect(b.active).toBe(false)); });
+  it('sequential nums starting at 1', () => { const p = makePage(); p.data.bc = 4; p.data.soundMode = 'uniform'; p._updateBeats(); expect(p.data.beats[0].num).toBe(1); expect(p.data.beats[3].num).toBe(4); });
 });
 
 // ============================================================
@@ -245,10 +274,54 @@ describe('Event Handlers', () => {
   it('onBpmChanging updates bpm in real-time', () => { const p = makePage(); p.data.bpm = 120; p.onBpmChanging({ detail: { value: '85' } }); expect(p.data.bpm).toBe(85); });
   it('onModeChange switches to voice mode', () => { const p = makePage(); p.data.soundMode = 'uniform'; p.onModeChange({ currentTarget: { dataset: { mode: 'voice' } } }); expect(p.data.soundMode).toBe('voice'); });
   it('onModeChange switches to traditional', () => { const p = makePage(); p.data.soundMode = 'uniform'; p.data.running = true; p.onModeChange({ currentTarget: { dataset: { mode: 'traditional' } } }); expect(p.data.soundMode).toBe('traditional'); });
-  it('onTimeSigChange parses sig and updates fields', () => { const p = makePage(); p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onTimeSigChange({ currentTarget: { dataset: { sig: '3/4' } } }); expect(p.data.currentSig).toBe('3/4'); expect(p.data.customBeats).toBe('3'); expect(p.data.customUnit).toBe('4'); });
-  it('onCustomBeatsInput updates customBeats', () => { const p = makePage(); p.onCustomBeatsInput({ detail: { value: '6' } }); expect(p.data.customBeats).toBe('6'); });
-  it('onCustomUnitInput updates customUnit', () => { const p = makePage(); p.onCustomUnitInput({ detail: { value: '8' } }); expect(p.data.customUnit).toBe('8'); });
-  it('onApplyCustom builds sig and calls _updateBeats', () => { const p = makePage(); p.data.customBeats = '5'; p.data.customUnit = '4'; p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onApplyCustom(); expect(p.data.currentSig).toBe('5/4'); });
+  it('onTimeSigChange parses sig and updates fields', () => { const p = makePage(); p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onTimeSigChange({ currentTarget: { dataset: { sig: '3/4' } } }); expect(p.data.currentSig).toBe('3/4'); expect(p.data.bc).toBe(3); expect(p.data.customBeats).toBe('3'); expect(p.data.customUnit).toBe('4'); });
+  it('onCustomBeatsInput updates draft only', () => { const p = makePage(); p.onCustomBeatsInput({ detail: { value: '6' } }); expect(p.data.customBeats).toBe('6'); expect(p.data.bc).toBe(4); expect(p._getBeatCount()).toBe(4); });
+  it('onCustomUnitInput updates customUnit', () => { const p = makePage(); p.onCustomUnitInput({ detail: { value: '8' } }); expect(p.data.customUnit).toBe('8'); expect(p.data.bu).toBe(4); });
+  it('onApplyCustom builds sig and calls _updateBeats', () => { const p = makePage(); p.data.customBeats = '5'; p.data.customUnit = '4'; p._updateBeats = () => {}; p._saveState = () => {}; p.data.running = false; p.onApplyCustom(); expect(p.data.currentSig).toBe('5/4'); expect(p.data.bc).toBe(5); });
+  it('unapplied custom draft does not change clock, beats, or storage', () => {
+    const p = makePage();
+    let saved = null;
+    global.wx.setStorageSync = (k, v) => { saved = v; };
+    p.onTimeSigChange({ currentTarget: { dataset: { sig: '3/4' } } });
+    expect(p.data.currentSig).toBe('3/4');
+    expect(p.data.beats.length).toBe(3);
+    p.onCustomBeatsInput({ detail: { value: '5' } });
+    expect(p.data.currentSig).toBe('3/4');
+    expect(p.data.beats.length).toBe(3);
+    expect(p._getBeatCount()).toBe(3);
+    p._saveState();
+    expect(saved.bc).toBe(3);
+    expect(saved.bu).toBe(4);
+  });
+  it('onApplyCustom 99/99 normalizes label, beats, and storage together', () => {
+    const p = makePage();
+    let saved = null;
+    global.wx.setStorageSync = (k, v) => { saved = v; };
+    p.data.customBeats = '99';
+    p.data.customUnit = '99';
+    p.onApplyCustom();
+    expect(p.data.currentSig).toBe('16/16');
+    expect(p.data.bc).toBe(16);
+    expect(p.data.bu).toBe(16);
+    expect(p.data.customBeats).toBe('16');
+    expect(p.data.customUnit).toBe('16');
+    expect(p.data.beats.length).toBe(16);
+    expect(saved.bc).toBe(16);
+    expect(saved.bu).toBe(16);
+  });
+  it('onApplyCustom rejects incomplete integers and keeps applied meter', () => {
+    const p = makePage();
+    p.data.bc = 3;
+    p.data.bu = 4;
+    p.data.currentSig = '3/4';
+    p.data.customBeats = '12a';
+    p.data.customUnit = '';
+    p.onApplyCustom();
+    expect(p.data.currentSig).toBe('3/4');
+    expect(p.data.bc).toBe(3);
+    expect(p.data.customBeats).toBe('3');
+    expect(p.data.customUnit).toBe('4');
+  });
   it('onToggleSettings flips boolean', () => { const p = makePage(); p.data.settingsOpen = false; p.onToggleSettings(); expect(p.data.settingsOpen).toBe(true); p.onToggleSettings(); expect(p.data.settingsOpen).toBe(false); });
   it('onVolChange clamps and persists volume', () => {
     const p = makePage();
@@ -274,6 +347,8 @@ describe('State Persistence', () => {
     global.wx.getStorageSync = () => ({ bpm: 999, bc: 0, bu: 99, sm: 'voice', vol: 3 });
     p._loadState();
     expect(p.data.bpm).toBe(208);
+    expect(p.data.bc).toBe(1);
+    expect(p.data.bu).toBe(16);
     expect(p.data.customBeats).toBe('1');
     expect(p.data.customUnit).toBe('16');
     expect(p.data.vol).toBe(10);
@@ -281,6 +356,7 @@ describe('State Persistence', () => {
   });
   it('_saveState stores bpm, bc, bu, sm, vol', () => {
     const p = makePage();
+    p.data.bc = 6; p.data.bu = 8;
     p.data.customBeats = '6'; p.data.customUnit = '8';
     p.data.bpm = 150; p.data.soundMode = 'traditional'; p.data.vol = 40;
     let saved = null;
@@ -294,7 +370,7 @@ describe('State Persistence', () => {
     global.wx.getStorageSync = k => storage[k];
     global.wx.setStorageSync = (k, v) => { storage[k] = v; };
     const p = makePage();
-    p.data.bpm = 150; p.data.customBeats = '7'; p.data.customUnit = '8';
+    p.data.bpm = 150; p.data.bc = 7; p.data.bu = 8; p.data.customBeats = '7'; p.data.customUnit = '8';
     p.data.soundMode = 'voice'; p.data.vol = 62;
     p._saveState();
     const p2 = makePage();
@@ -310,9 +386,9 @@ describe('State Persistence', () => {
 describe('Playback', () => {
   it('_start sets running=true, resets _currentBeat to 0, fires one immediate tick', () => { const p = makePage(); p.data.running = false; p._currentBeat = 5; p._start(); expect(p.data.running).toBe(true); expect(p._currentBeat).toBe(1); });
   it('_stop sets running=false and resets all beats active=false', () => { const p = makePage(); p.data.running = true; p._stopTick = () => {}; p.data.beats = [{ num: 1, className: 'uniform', active: true }, { num: 2, className: 'uniform', active: false }]; p._stop(); expect(p.data.running).toBe(false); expect(p.data.beats[0].active).toBe(false); });
-  it('_tick advances _currentBeat with modulo wrap', () => { const p = makePage(); p.data.customBeats = '4'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }, { num: 4, className: 'uniform', active: false }]; p._currentBeat = 3; p._tick(); expect(p._currentBeat).toBe(0); });
-  it('_tick activates the correct beat UI', () => { const p = makePage(); p.data.customBeats = '3'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); expect(p.data.beats[2].active).toBe(false); });
-  it('_tick deactivates previous beat on subsequent ticks', () => { const p = makePage(); p.data.customBeats = '3'; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 0; p._tick(); expect(p.data.beats[0].active).toBe(true); p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); });
+  it('_tick advances _currentBeat with modulo wrap', () => { const p = makePage(); p.data.bc = 4; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }, { num: 4, className: 'uniform', active: false }]; p._currentBeat = 3; p._tick(); expect(p._currentBeat).toBe(0); });
+  it('_tick activates the correct beat UI', () => { const p = makePage(); p.data.bc = 3; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); expect(p.data.beats[2].active).toBe(false); });
+  it('_tick deactivates previous beat on subsequent ticks', () => { const p = makePage(); p.data.bc = 3; p.data.soundMode = 'uniform'; p.data.beats = [{ num: 1, className: 'uniform', active: false }, { num: 2, className: 'uniform', active: false }, { num: 3, className: 'uniform', active: false }]; p._currentBeat = 0; p._tick(); expect(p.data.beats[0].active).toBe(true); p._currentBeat = 1; p._tick(); expect(p.data.beats[0].active).toBe(false); expect(p.data.beats[1].active).toBe(true); });
   it('_startTick uses setTimeout chain (not setInterval)', () => { const p = makePage(); p.data.bpm = 60; p.data.running = true; p._tick = () => {}; let timeoutCreated = false; let intervalCreated = false; const origSetTimeout = global.setTimeout; const origSetInterval = global.setInterval; global.setTimeout = (fn, ms) => { timeoutCreated = true; return origSetTimeout(fn, ms); }; global.setInterval = (fn, ms) => { intervalCreated = true; return origSetInterval(fn, ms); }; p._startTick(); global.setTimeout = origSetTimeout; global.setInterval = origSetInterval; expect(timeoutCreated).toBe(true); expect(intervalCreated).toBe(false); });
   it('_stopTick clears the setTimeout timer', () => { const p = makePage(); let cleared = false; const orig = global.clearTimeout; global.clearTimeout = () => { cleared = true; }; p._timer = 42; p._stopTick(); global.clearTimeout = orig; expect(cleared).toBe(true); expect(p._timer).toBe(null); });
   it('_armNext uses absolute _nextAt — delay = target - now', () => {
@@ -933,6 +1009,7 @@ describe('B2-R03 destroyed ctx cannot pollute a new pool', () => {
     p.data.soundMode = 'voice';
     p.data.lang = 'zh';
     p.data.customBeats = '8';
+    p.data.bc = 8;
     p._updateBeats();
     global.__setMockNow(0);
     global.__clearAllTimers();
@@ -1048,5 +1125,27 @@ describe('batch3 miniapp remaining', () => {
     expect(am._pool.uniform[0]).toBe(oldUniform);
     expect(am.ctxCount()).toBe(44);
     global.__audioAutoCanplay = true;
+  });
+});
+
+describe('BPM drag analytics', () => {
+  it('records one committed drag from its original BPM and keeps the status text current', () => {
+    const page = makePage();
+    const events = [];
+    const previous = wx.uma;
+    wx.uma = { trackEvent(name, data) { events.push({ name, data }); } };
+    try {
+      page.onBpmChanging({ detail: { value: 130 } });
+      page.onBpmChanging({ detail: { value: 140 } });
+      expect(page.data.nowPlayingText).toContain('140');
+      expect(events).toHaveLength(0);
+      page.onBpmChange({ detail: { value: 140 } });
+      expect(events).toEqual([{ name: 'bpm_change', data: { from: 120, to: 140 } }]);
+      page.onBpmChange({ detail: { value: 140 } });
+      expect(events).toHaveLength(1);
+      page.onBpmChanging({ detail: { value: 150 } });
+      page.onBpmChange({ detail: { value: 150 } });
+      expect(events[1]).toEqual({ name: 'bpm_change', data: { from: 140, to: 150 } });
+    } finally { wx.uma = previous; }
   });
 });

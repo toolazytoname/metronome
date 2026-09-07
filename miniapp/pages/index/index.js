@@ -35,6 +35,32 @@ function clampVolInput(raw) {
   return Math.max(10, Math.min(100, n));
 }
 
+function clampMeterPart(raw, fallback) {
+  const n = parseStrictInt(raw);
+  if (n == null) return fallback;
+  return Math.max(1, Math.min(16, n));
+}
+
+function normalizeTimeSig(beatsRaw, unitRaw, fallbackBc, fallbackBu) {
+  const fbBc = fallbackBc == null ? 4 : fallbackBc;
+  const fbBu = fallbackBu == null ? 4 : fallbackBu;
+  return {
+    bc: clampMeterPart(beatsRaw, fbBc),
+    bu: clampMeterPart(unitRaw, fbBu),
+  };
+}
+
+function trackEvent(name, payload) {
+  try {
+    const uma = typeof wx !== 'undefined' ? wx.uma : null;
+    if (uma && typeof uma.trackEvent === 'function') {
+      uma.trackEvent(name, payload || {});
+    }
+  } catch (e) {
+    // analytics must never break playback
+  }
+}
+
 class AudioManager {
   constructor() {
     this._inited = false;
@@ -304,6 +330,8 @@ Page({
     // 拍号 —— label 根据当前 lang 动态生成
     timeSigs: buildTimeSigs(initialI18n),
     currentSig: '4/4',
+    bc: DEFAULT_STATE.bc,
+    bu: DEFAULT_STATE.bu,
     customBeats: '4',
     customUnit: '4',
 
@@ -439,6 +467,8 @@ Page({
           bpm,
           soundMode: sm,
           vol,
+          bc,
+          bu,
           currentSig: sig,
           customBeats: String(bc),
           customUnit: String(bu),
@@ -453,11 +483,10 @@ Page({
   _saveState() {
     try {
       const bpm = this.data.bpm;
-      const bc = this._getBeatCount();
-      const bu = parseInt(this.data.customUnit) || 4;
+      const meter = normalizeTimeSig(this.data.bc, this.data.bu, DEFAULT_STATE.bc, DEFAULT_STATE.bu);
       const soundMode = this.data.soundMode;
       const vol = this.data.vol;
-      wx.setStorageSync('metronome', { bpm, bc, bu, sm: soundMode, vol });
+      wx.setStorageSync('metronome', { bpm, bc: meter.bc, bu: meter.bu, sm: soundMode, vol });
     } catch (e) {
       // ignore storage failure
     }
@@ -467,8 +496,7 @@ Page({
   // 节拍圆点 UI
   // ========================================================
   _getBeatCount() {
-    const n = parseInt(this.data.customBeats, 10) || 4;
-    return Math.max(1, Math.min(16, n));
+    return normalizeTimeSig(this.data.bc, this.data.bu, DEFAULT_STATE.bc, DEFAULT_STATE.bu).bc;
   },
 
   _updateBeats() {
@@ -514,9 +542,10 @@ Page({
   onBpmChange(e) {
     const newBpm = clampBpmInput(e && e.detail ? e.detail.value : undefined);
     if (newBpm == null) return;
-    if (newBpm !== this.data.bpm) {
-      this.setData({ bpm: newBpm });
-    }
+    const prev = this._bpmDragStart == null ? this.data.bpm : this._bpmDragStart;
+    this._bpmDragStart = null;
+    this.setData({ bpm: newBpm });
+    if (newBpm !== prev) trackEvent('bpm_change', { from: prev, to: newBpm });
     this._saveState();
     this._refreshNowPlaying();
   },
@@ -524,13 +553,17 @@ Page({
   onBpmChanging(e) {
     const newBpm = clampBpmInput(e && e.detail ? e.detail.value : undefined);
     if (newBpm == null) return;
+    if (this._bpmDragStart == null) this._bpmDragStart = this.data.bpm;
     this.setData({ bpm: newBpm });
+    this._refreshNowPlaying();
   },
 
   onModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
     if (mode !== 'traditional' && mode !== 'uniform' && mode !== 'voice') return;
+    const prev = this.data.soundMode;
     this.setData({ soundMode: mode });
+    if (prev !== mode) trackEvent('sound_mode', { from: prev, to: mode });
     if (mode === 'voice') {
       audioManager.ensureVoice(this.data.lang);
       audioManager.ensureMode('voice');
@@ -545,15 +578,21 @@ Page({
 
   onTimeSigChange(e) {
     const sig = e.currentTarget.dataset.sig;
-    const [b, u] = sig.split('/');
+    const parts = String(sig || '').split('/');
+    const meter = normalizeTimeSig(parts[0], parts[1], this.data.bc, this.data.bu);
+    const applied = `${meter.bc}/${meter.bu}`;
+    const prev = this.data.currentSig;
     this.setData({
-      currentSig: sig,
-      customBeats: b,
-      customUnit: u,
+      bc: meter.bc,
+      bu: meter.bu,
+      currentSig: applied,
+      customBeats: String(meter.bc),
+      customUnit: String(meter.bu),
     });
     this._updateBeats();
     this._saveState();
     this._refreshNowPlaying();
+    if (prev !== applied) trackEvent('time_sig', { from: prev, to: applied });
     // 切换拍号时如果正在播放，重启
     if (this.data.running) {
       this._stop();
@@ -570,13 +609,25 @@ Page({
   },
 
   onApplyCustom() {
-    const b = parseInt(this.data.customBeats) || 4;
-    const u = parseInt(this.data.customUnit) || 4;
-    const sig = `${b}/${u}`;
-    this.setData({ currentSig: sig });
+    const meter = normalizeTimeSig(
+      this.data.customBeats,
+      this.data.customUnit,
+      this.data.bc,
+      this.data.bu
+    );
+    const sig = `${meter.bc}/${meter.bu}`;
+    const prev = this.data.currentSig;
+    this.setData({
+      bc: meter.bc,
+      bu: meter.bu,
+      currentSig: sig,
+      customBeats: String(meter.bc),
+      customUnit: String(meter.bu),
+    });
     this._updateBeats();
     this._saveState();
     this._refreshNowPlaying();
+    if (prev !== sig) trackEvent('time_sig_custom', { from: prev, to: sig, beats: meter.bc, unit: meter.bu });
     if (this.data.running) {
       this._stop();
       this._start();
@@ -651,9 +702,11 @@ Page({
     const newBpm = clampBpmInput(b);
     if (newBpm == null) return;
     const old = this.data.bpm;
+    this._bpmDragStart = null;
     if (newBpm === old) return;
 
     this.setData({ bpm: newBpm });
+    trackEvent('bpm_change', { from: old, to: newBpm });
     this._saveState();
     this._refreshNowPlaying();
   },
@@ -833,4 +886,7 @@ module.exports = {
   parseStrictInt,
   clampBpmInput,
   clampVolInput,
+  clampMeterPart,
+  normalizeTimeSig,
+  trackEvent,
 };

@@ -1,1 +1,7 @@
-<web-view src="{{url}}"></web-view>
+<web-view wx:if="{{url && !failed}}" src="{{url}}" binderror="onWebError"></web-view>
+<view wx:else class="fallback">
+  <text class="fallback-title">{{failTitle}}</text>
+  <text class="fallback-hint">{{failHint}}</text>
+  <text class="fallback-url" selectable="true">{{copyUrl}}</text>
+  <button class="fallback-copy" bindtap="onCopy">{{copyLabel}}</button>
+</view>
