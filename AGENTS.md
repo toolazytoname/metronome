@@ -70,8 +70,10 @@ AGENTS.md  CLAUDE.md  DEPLOY.md
 - 语言另存：小程序 `metronome_lang`；Web 靠 `/` vs `/en/`；原生 `lang` 在同一份偏好里
 - 改 BPM **不得插入额外一拍**，只改下一拍间隔
 - Web 时钟：`js/engine.js`（`LOOKAHEAD_MS = 25`，`SCHEDULE_AHEAD = 0.1`）。小程序时钟：`miniapp/pages/index/index.js`。禁止 `setInterval` / `speechSynthesis` 当拍钟
-- 小程序若一次回调已落后超过一个间隔：**最多发当前这一拍**，然后把下一拍时刻拨到 `now + interval`，**丢弃过期拍、不 delay=0 追赶连发**。这条只约束小程序；Web / 原生仍走音频时间线预约，不在此改语义
+- 小程序若一次回调已落后超过一个间隔：**最多发当前这一拍**，然后把下一拍时刻拨到 `now + interval`，**丢弃过期拍、不 delay=0 追赶连发**
+- Web 调度器（`js/engine.js`）若 `nextNoteTime` 已落后超过一个间隔：把下一拍拨到 `currentTime` 再按 lookahead 预约，**丢弃过期拍、禁止把积压节拍一次补发完**。改 BPM 仍只改下一拍间隔，不插拍。原生仍走音频时间线预约，不在此改语义
 - BPM 入口只接受完整有限整数（整个字符串都是十进制数字）；非法/空/NaN **忽略**，不写进 data 或时钟
+- Web 首次采样加载必须有截止时间；失败回退合成 click，启动异常要有可见错误和重试，禁止过期的 `start()` 在暂停后继续出声或申请亮屏
 - 童声：`assets/sounds/voice/{zh|en}/01.mp3`–`16.mp3`，和弱 click 叠在同一拍（弱 click 增益 0.28）
 - 小程序 voice 与弱 click **都就绪才同拍触发**；未就绪的当前拍不排队补发。stop / onHide / onUnload / 切语言或模式必须作废进行中的加载回调，禁止迟到出声。池内每个 InnerAudio 自己的就绪态，不能「池里任意一个 canplay 就算整池就绪」。播放键不得假装在响：加载中或失败要有可见提示，恢复后可再点
 - 采样失败时 Web 回退合成 click，不要让播放键假死。原生播放失败必须有可见错误，禁止按钮空转

@@ -142,6 +142,18 @@
     return safeSet(getLocalStorage(), key, val);
   }
 
+  function adoptScreenLock(lock, isPlaying) {
+    if (!lock) return null;
+    if (!isPlaying) {
+      try {
+        var released = typeof lock.release === 'function' ? lock.release() : null;
+        if (released && typeof released.catch === 'function') released.catch(function () {});
+      } catch (e) { /* ignore */ }
+      return null;
+    }
+    return lock;
+  }
+
   var api = {
     clampBpm: clampBpm,
     clampBeats: clampBeats,
@@ -157,7 +169,8 @@
     safeGet: safeGet,
     safeSet: safeSet,
     loadPref: loadPref,
-    savePref: savePref
+    savePref: savePref,
+    adoptScreenLock: adoptScreenLock
   };
 
   if (typeof module !== 'undefined' && module.exports) {

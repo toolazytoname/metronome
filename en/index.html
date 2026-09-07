@@ -458,6 +458,26 @@
                 0 0 0 8px oklch(74% 0.165 22 / 0.18),
                 0 16px 32px -10px oklch(58% 0.190 22 / 0.6);
         }
+        .audio-error {
+            display: none;
+            margin: 8px 24px 0;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: oklch(95% 0.04 25);
+            color: oklch(38% 0.12 25);
+            font-size: 13px;
+            text-align: center;
+            line-height: 1.45;
+        }
+        .audio-error.show { display: block; }
+        .audio-error button {
+            margin-left: 6px;
+            border: 0;
+            background: transparent;
+            color: var(--coral-deep);
+            font-weight: 700;
+            cursor: pointer;
+        }
 
         /* Settings */
         .settings {
@@ -877,12 +897,13 @@
             </div>
 
             <div class="control">
-                <button class="play-btn" id="play-btn">▶</button>
+                <button class="play-btn" id="play-btn" type="button" aria-label="Play">▶</button>
             </div>
+            <p class="audio-error" id="audio-error" role="alert"></p>
         </div>
 
         <div class="settings">
-            <button class="toggle" id="settings-toggle">
+            <button class="toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel">
                 <span>Settings</span>
                 <span class="toggle-arrow">▼</span>
             </button>
@@ -924,11 +945,11 @@
                         <div class="donate-title">☕ Support — coffee for the dev</div>
                         <div class="qr-pair">
                             <div class="qr-item wechat">
-                                <img class="qr-img" src="images/qr-wechat.jpg" alt="WeChat">
+                                <img class="qr-img" src="images/qr-wechat.jpg" alt="WeChat" loading="lazy">
                                 <div class="qr-label">💚 WeChat</div>
                             </div>
                             <div class="qr-item alipay">
-                                <img class="qr-img" src="images/qr-alipay.jpg" alt="Alipay">
+                                <img class="qr-img" src="images/qr-alipay.jpg" alt="Alipay" loading="lazy">
                                 <div class="qr-label">💛 Alipay</div>
                             </div>
                         </div>
@@ -1016,12 +1037,12 @@ document.getElementById("vol-display").textContent=s.vol;
 document.querySelectorAll(".mode-btn").forEach(function(e){e.classList.toggle("active",e.dataset.mode===s.sm);});
 document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===s.bc+"/"+s.bu);});
 log("Loaded BPM="+s.bpm+" bc="+s.bc+" sm="+s.sm+" vol="+s.vol);
-document.getElementById("settings-toggle").onclick=function(){this.classList.toggle("open");document.getElementById("settings-panel").classList.toggle("open");track('settings_panel',{action:document.getElementById("settings-panel").classList.contains("open")?'open':'close'});};
+document.getElementById("settings-toggle").onclick=function(){this.classList.toggle("open");var open=document.getElementById("settings-panel").classList.toggle("open");this.setAttribute("aria-expanded",open?"true":"false");track('settings_panel',{action:open?'open':'close'});};
 document.getElementById("play-btn").onclick=function(){if(s.r){stop();track('play',{action:'pause',bpm:s.bpm,beats:s.bc+'/'+s.bu,sound_mode:s.sm});}else{start();track('play',{action:'play',bpm:s.bpm,beats:s.bc+'/'+s.bu,sound_mode:s.sm});}};
 document.getElementById("bpm-minus").onclick=function(){setBpm(s.bpm-1,{track:true});};
 document.getElementById("bpm-plus").onclick=function(){setBpm(s.bpm+1,{track:true});};
 document.getElementById("bpm-slider").oninput=function(e){setBpm(parseInt(e.target.value),{persist:false});};
-document.getElementById("bpm-slider").onchange=function(e){setBpm(parseInt(e.target.value),{track:true});};
+document.getElementById("bpm-slider").onchange=function(e){var from=_bpmCommit;setBpm(parseInt(e.target.value));if(from!==s.bpm)track('bpm_change',{from:from,to:s.bpm});_bpmCommit=s.bpm;};
 document.getElementById("vol-slider").oninput=function(e){setVol(parseInt(e.target.value),{persist:false});};
 document.getElementById("vol-slider").onchange=function(e){setVol(parseInt(e.target.value));};
 document.querySelectorAll(".mode-btn").forEach(function(el){el.onclick=function(){setMode(el.dataset.mode);};});
@@ -1035,7 +1056,11 @@ applyBtn.addEventListener("touchmove",function(){if(applyTimer){clearTimeout(app
 applyBtn.addEventListener("mousedown",function(){applyTimer=setTimeout(function(){document.getElementById("debug-log").classList.add("show");},2000);});
 applyBtn.addEventListener("mouseup",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
 applyBtn.addEventListener("mouseleave",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
-document.getElementById("apply-btn").onclick=function(){var b=parseInt(document.getElementById("custom-beats").value)||4;var u=parseInt(document.getElementById("custom-unit").value)||4;var sig=b+"/"+u;setTS(sig);track('time_sig_custom',{beats:b,unit:u,result:sig});};
+document.getElementById("apply-btn").onclick=function(){var b=document.getElementById("custom-beats").value;var u=document.getElementById("custom-unit").value;setTS(b+"/"+u);track('time_sig_custom',{beats:s.bc,unit:s.bu,result:s.bc+"/"+s.bu});};
+var _bpmCommit=s.bpm;
+var _wakeGen=0;
+var _wakePending=null;
+var _playGen=0;
 function save(){if(_urlPreset)return;MetronomePrefs.safeSet(_ls,"metronome",JSON.stringify({bpm:s.bpm,bc:s.bc,bu:s.bu,sm:s.sm,vol:s.vol}));}
 function refreshNowPlaying(){
   var np=document.getElementById("now-playing");
@@ -1052,7 +1077,7 @@ function setBpm(b,opts){
   document.getElementById("bpm-slider").value=s.bpm;
   engine.setBpm(s.bpm);
   refreshNowPlaying();
-  if(opts.persist!==false)save();
+  if(opts.persist!==false){save();_bpmCommit=s.bpm;}
   if(old!==s.bpm&&opts.track)track('bpm_change',{from:old,to:s.bpm});
 }
 function setVol(v,opts){
@@ -1073,43 +1098,87 @@ function setMode(mode){
   if(prev!==next)track('sound_mode',{from:prev,to:next});
 }
 function setTS(sig){
-  var prev=s.bc+'/'+s.bu;var a=sig.split("/");s.bc=MetronomePrefs.clampBeats(parseInt(a[0],10)||4);s.bu=MetronomePrefs.clampBeatUnit(parseInt(a[1],10)||4);
+  var prev=s.bc+'/'+s.bu;var a=String(sig||'').split("/");
+  s.bc=MetronomePrefs.clampBeats(a[0]);s.bu=MetronomePrefs.clampBeatUnit(a[1]);
   engine.setBeats(s.bc);engine.resetBeat();
-  document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===sig);});
+  var applied=s.bc+'/'+s.bu;
+  document.getElementById("custom-beats").value=s.bc;
+  document.getElementById("custom-unit").value=s.bu;
+  document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===applied);});
   updateBeats();refreshNowPlaying();save();
-  if(prev!==sig)track('time_sig',{from:prev,to:sig});
+  if(prev!==applied)track('time_sig',{from:prev,to:applied});
 }
 function updateBeats(){var c=document.getElementById("beats-container");c.innerHTML="";for(var i=0;i<s.bc;i++){var e=document.createElement("div");var cls="beat";if(s.sm==="traditional"&&i===0)cls+=" strong";else cls+=" "+s.sm;e.className=cls;e.textContent=i+1;e.dataset.beat=i;c.appendChild(e);}}
-function requestWakeLock(){
-  if(!navigator.wakeLock)return;
-  navigator.wakeLock.request("screen").then(function(lock){
-    _wake=lock;
-    lock.addEventListener("release",function(){_wake=null;});
-  }).catch(function(){});
+function hideAudioError(){
+  var el=document.getElementById("audio-error");
+  if(!el)return;
+  el.classList.remove("show");
+  el.innerHTML="";
 }
-function releaseWakeLock(){if(_wake){try{_wake.release();}catch(e){}_wake=null;}}
+function showAudioError(msg){
+  var el=document.getElementById("audio-error");
+  if(!el)return;
+  el.classList.add("show");
+  el.innerHTML="";
+  el.appendChild(document.createTextNode(msg+" "));
+  var retry=document.createElement("button");
+  retry.type="button";
+  retry.id="audio-retry";
+  retry.textContent="Retry";
+  retry.onclick=function(){hideAudioError();if(engine.reloadSamples)engine.reloadSamples();start();};
+  el.appendChild(retry);
+}
+function requestWakeLock(){
+  if(!s.r||!navigator.wakeLock||_wake||_wakePending!==null)return;
+  var gen=_wakeGen;
+  _wakePending=gen;
+  Promise.resolve().then(function(){
+    if(gen!==_wakeGen||!s.r)return null;
+    return navigator.wakeLock.request("screen");
+  }).then(function(lock){
+    if(_wakePending===gen)_wakePending=null;
+    if(!lock)return;
+    if(gen!==_wakeGen||!s.r){MetronomePrefs.adoptScreenLock(lock,false);return;}
+    _wake=lock;
+    lock.addEventListener("release",function(){if(_wake===lock)_wake=null;});
+  }).catch(function(){if(_wakePending===gen)_wakePending=null;});
+}
+function releaseWakeLock(){
+  _wakeGen+=1;
+  _wakePending=null;
+  var lock=_wake;
+  _wake=null;
+  MetronomePrefs.adoptScreenLock(lock,false);
+}
 function start(){
   if(s.r)return;
+  var run=++_playGen;
   s.r=true;
+  hideAudioError();
   var btn=document.getElementById("play-btn");
-  btn.innerHTML="⏸";btn.classList.add("running");
+  btn.innerHTML="⏸";btn.classList.add("running");btn.setAttribute("aria-label","Pause");
   refreshNowPlaying();
   engine.setBpm(s.bpm);engine.setBeats(s.bc);engine.setMode(s.sm);engine.setVolume(s.vol/100);
   engine.start().then(function(){
+    if(run!==_playGen||!s.r)return;
     requestWakeLock();
   }).catch(function(err){
+    if(run!==_playGen||!s.r)return;
     s.r=false;
-    btn.innerHTML="▶";btn.classList.remove("running");
+    releaseWakeLock();
+    btn.innerHTML="▶";btn.classList.remove("running");btn.setAttribute("aria-label","Play");
     refreshNowPlaying();
     log("audio start failed",err&&err.message);
+    showAudioError("Could not start audio. Tap Retry.");
   });
 }
 function stop(){
   if(!s.r)return;
+  _playGen+=1;
   s.r=false;
   engine.stop();
   var btn=document.getElementById("play-btn");
-  btn.innerHTML="▶";btn.classList.remove("running");
+  btn.innerHTML="▶";btn.classList.remove("running");btn.setAttribute("aria-label","Play");
   document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});
   refreshNowPlaying();
   releaseWakeLock();
@@ -1130,7 +1199,11 @@ if("serviceWorker" in navigator){
 (function(){
   document.addEventListener("keydown",function(e){
     if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"))return;
-    if(e.code==="Space"){e.preventDefault();document.getElementById("play-btn").click();}
+    if(e.code==="Space"){
+      var t=e.target;var tag=t&&t.tagName;
+      if(tag==="BUTTON"||tag==="A"||(t&&t.getAttribute&&t.getAttribute("role")==="button"))return;
+      e.preventDefault();document.getElementById("play-btn").click();
+    }
     else if(e.code==="ArrowUp"){e.preventDefault();setBpm(s.bpm+(e.shiftKey?5:1));}
     else if(e.code==="ArrowDown"){e.preventDefault();setBpm(s.bpm-(e.shiftKey?5:1));}
   });

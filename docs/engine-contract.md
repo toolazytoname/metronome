@@ -47,8 +47,11 @@ Web 现实现（`js/engine.js`）：
 - `LOOKAHEAD_MS = 25`
 - `SCHEDULE_AHEAD = 0.1`
 - `src.start(time)` 用 `AudioContext.currentTime`
+- 采样 fetch 有截止时间（默认 8s）；超时当失败，合成 click 回退。`stop()` 取消已预约音源
 
-小程序现实现：`_nextAt` 绝对时刻 + `setTimeout`。切后台必须 `stop`（平台限制）。播放中改 BPM 只改**下一拍**间隔，不重启、不插拍。若回调时已经落后超过一个间隔：只打当前这一拍，然后将 `_nextAt` 设为 `now + interval`，**丢弃过期拍，禁止 delay=0 循环补发**（与 Web/iOS/Android 的音频时间线预约不同，只约束小程序 JS 钟）。BPM 输入必须是完整有限整数；非法值忽略。
+小程序现实现：`_nextAt` 绝对时刻 + `setTimeout`。切后台必须 `stop`（平台限制）。播放中改 BPM 只改**下一拍**间隔，不重启、不插拍。若回调时已经落后超过一个间隔：只打当前这一拍，然后将 `_nextAt` 设为 `now + interval`，**丢弃过期拍，禁止 delay=0 循环补发**。BPM 输入必须是完整有限整数；非法值忽略。
+
+Web 现实现另加：若 `nextNoteTime` 已落后 `currentTime` 超过一个间隔，把 `nextNoteTime` 拨到 `currentTime` 再按 `SCHEDULE_AHEAD` 预约，**不把积压的过期拍一次排完**。改 BPM 仍只影响下一拍间隔。iOS / Android 仍走音频时间线预约，不在此改语义。
 
 iOS：`AVAudioEngine` + `scheduleBuffer`；`AVAudioSession.category = .playback`。禁止录音类别，不要申请麦克风。
 

@@ -8,6 +8,32 @@
   var LOOKAHEAD_MS = 25;
   var SCHEDULE_AHEAD = 0.1;
   var MAX_VOICE = 16;
+  var SAMPLE_TIMEOUT_MS = 8000;
+
+  function withTimeout(promise, ms, onTimeout) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        if (onTimeout) {
+          try { onTimeout(); } catch (e) { /* ignore */ }
+        }
+        reject(new Error('timeout'));
+      }, ms);
+      promise.then(function (value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }, function (err) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
 
   function clamp(n, lo, hi) {
     return Math.max(lo, Math.min(hi, n));
@@ -30,6 +56,7 @@
     this.timer = null;
     this.nextNoteTime = 0;
     this.visualTimers = [];
+    this._liveSources = [];
     this._loadPromise = null;
     this._starting = false;
     this._startPromise = null;
@@ -75,13 +102,21 @@
     return this._loadPromise;
   };
 
+  MetronomeEngine.prototype.reloadSamples = function () {
+    this._loadPromise = null;
+    this.ready = false;
+    this.buffers = {};
+  };
+
   MetronomeEngine.prototype._fetchBuffer = function (key, rel) {
     var self = this;
-    return fetch(this._url(rel)).then(function (res) {
+    var ac = typeof AbortController === 'function' ? new AbortController() : null;
+    var fetchOpts = ac ? { signal: ac.signal } : {};
+    var work = fetch(this._url(rel), fetchOpts).then(function (res) {
       if (!res.ok) throw new Error(rel);
       return res.arrayBuffer();
     }).then(function (ab) {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         var done = false;
         function ok(buf) {
           if (done || !buf) return;
@@ -101,6 +136,11 @@
           fail();
         }
       });
+    });
+    return withTimeout(work, MetronomeEngine.SAMPLE_TIMEOUT_MS || SAMPLE_TIMEOUT_MS, function () {
+      if (ac) {
+        try { ac.abort(); } catch (e) { /* ignore */ }
+      }
     }).catch(function () {
       return null;
     });
@@ -140,9 +180,11 @@
     this.playing = true;
     this._starting = true;
     var runId = ++this._runId;
-    this._startPromise = this.init().then(function () {
-      self._starting = false;
+    var init;
+    try { init = this.init(); } catch (err) { init = Promise.reject(err); }
+    this._startPromise = init.then(function () {
       if (!self.playing || self._runId !== runId) return;
+      self._starting = false;
       self.cb = 0;
       self.nextNoteTime = self.ctx.currentTime + 0.02;
       self._scheduler();
@@ -166,7 +208,29 @@
       clearTimeout(this.timer);
       this.timer = null;
     }
+    this._stopLiveSources();
     this._clearVisuals();
+  };
+
+  MetronomeEngine.prototype._trackSource = function (src) {
+    if (!src) return src;
+    var self = this;
+    this._liveSources.push(src);
+    var prev = src.onended;
+    src.onended = function (ev) {
+      var i = self._liveSources.indexOf(src);
+      if (i >= 0) self._liveSources.splice(i, 1);
+      if (typeof prev === 'function') prev.call(src, ev);
+    };
+    return src;
+  };
+
+  MetronomeEngine.prototype._stopLiveSources = function () {
+    var list = this._liveSources;
+    this._liveSources = [];
+    for (var i = 0; i < list.length; i++) {
+      try { list[i].stop(); } catch (e) { /* already stopped */ }
+    }
   };
 
   MetronomeEngine.prototype._clearVisuals = function () {
@@ -176,10 +240,17 @@
 
   MetronomeEngine.prototype._scheduler = function () {
     if (!this.playing || !this.ctx) return;
-    var ahead = this.ctx.currentTime + SCHEDULE_AHEAD;
+    var now = this.ctx.currentTime;
+    var interval = 60 / this.bpm;
+    var ahead = now + SCHEDULE_AHEAD;
+    // More than one interval behind: drop expired beats and resume from now.
+    // Do not burst-schedule the backlog. Changing BPM still only changes `interval`.
+    if (this.nextNoteTime < now - interval) {
+      this.nextNoteTime = now;
+    }
     while (this.nextNoteTime < ahead) {
       this._scheduleBeat(this.cb, this.nextNoteTime);
-      this.nextNoteTime += 60 / this.bpm;
+      this.nextNoteTime += interval;
       this.cb = (this.cb + 1) % this.bc;
     }
     var self = this;
@@ -215,6 +286,7 @@
       src.buffer = buf;
       src.connect(g);
       g.connect(this.master);
+      this._trackSource(src);
       src.start(time);
       return;
     }
@@ -235,6 +307,7 @@
     g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
     o.connect(g);
     g.connect(this.master);
+    this._trackSource(o);
     o.start(time);
     o.stop(time + dur + 0.01);
 
@@ -253,8 +326,13 @@
     ns.connect(bp);
     bp.connect(ng);
     ng.connect(this.master);
+    this._trackSource(ns);
     ns.start(time);
   };
+
+  MetronomeEngine.SAMPLE_TIMEOUT_MS = SAMPLE_TIMEOUT_MS;
+  MetronomeEngine.SCHEDULE_AHEAD = SCHEDULE_AHEAD;
+  MetronomeEngine.LOOKAHEAD_MS = LOOKAHEAD_MS;
 
   global.MetronomeEngine = MetronomeEngine;
 })(typeof window !== 'undefined' ? window : this);
