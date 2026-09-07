@@ -1089,6 +1089,7 @@ window.addEventListener('load', function(){
   }, 1500);
 });
 </script>
+<script src="/js/prefs.js"></script>
 <script src="/js/engine.js"></script>
 <script>
 var log=function(){var m=Array.prototype.join.call(arguments," ");console.log(m);var d=document.getElementById("debug-log");if(d){d.textContent+=m+"\n";d.scrollTop=d.scrollHeight;}};
@@ -1104,16 +1105,10 @@ var engine=new MetronomeEngine({
 var s={bpm:120,bc:4,bu:4,r:false,sm:"uniform",vol:85};
 var _wake=null;
 var _qs=new URLSearchParams(location.search);
-var _urlPreset=!!(_qs.get('bpm')||_qs.get('sig')||_qs.get('mode'));
-if(_qs.get('bpm')){var _b=parseInt(_qs.get('bpm'));if(_b>=40&&_b<=208)s.bpm=_b;}
-if(_qs.get('sig')){var _m=_qs.get('sig').match(/^([1-9][0-9]?)\/([1-9][0-9]?)$/);if(_m){s.bc=+_m[1];s.bu=+_m[2];}}
-if(_qs.get('mode')&&['traditional','uniform','voice'].indexOf(_qs.get('mode'))!==-1)s.sm=_qs.get('mode');
-var cfg=JSON.parse(localStorage.getItem("metronome")||"{}");
-if(cfg.bpm&&!_qs.get('bpm'))s.bpm=cfg.bpm;
-if(cfg.bc&&!_qs.get('sig'))s.bc=cfg.bc;
-if(cfg.bu&&!_qs.get('sig'))s.bu=cfg.bu;
-if(cfg.sm&&!_qs.get('mode'))s.sm=cfg.sm;
-if(typeof cfg.vol==="number")s.vol=Math.max(10,Math.min(100,cfg.vol));
+var _urlPreset=MetronomePrefs.urlPreset(_qs);
+var _ls=MetronomePrefs.getLocalStorage();
+var _resolved=MetronomePrefs.resolveState(_qs,MetronomePrefs.safeGet(_ls,"metronome"));
+s.bpm=_resolved.bpm;s.bc=_resolved.bc;s.bu=_resolved.bu;s.sm=_resolved.sm;s.vol=_resolved.vol;
 engine.setBpm(s.bpm);engine.setBeats(s.bc);engine.setMode(s.sm);engine.setVolume(s.vol/100);
 document.getElementById("bpm-display").textContent=s.bpm;
 document.getElementById("bpm-slider").value=s.bpm;
@@ -1144,7 +1139,7 @@ applyBtn.addEventListener("mousedown",function(){applyTimer=setTimeout(function(
 applyBtn.addEventListener("mouseup",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
 applyBtn.addEventListener("mouseleave",function(){if(applyTimer){clearTimeout(applyTimer);applyTimer=null;}});
 document.getElementById("apply-btn").onclick=function(){var b=parseInt(document.getElementById("custom-beats").value)||4;var u=parseInt(document.getElementById("custom-unit").value)||4;var sig=b+"/"+u;setTS(sig);track('time_sig_custom',{beats:b,unit:u,result:sig});};
-function save(){if(_urlPreset)return;localStorage.setItem("metronome",JSON.stringify({bpm:s.bpm,bc:s.bc,bu:s.bu,sm:s.sm,vol:s.vol}));}
+function save(){if(_urlPreset)return;MetronomePrefs.safeSet(_ls,"metronome",JSON.stringify({bpm:s.bpm,bc:s.bc,bu:s.bu,sm:s.sm,vol:s.vol}));}
 function refreshNowPlaying(){
   var np=document.getElementById("now-playing");
   if(!np)return;
@@ -1155,7 +1150,7 @@ function refreshNowPlaying(){
 function setBpm(b,opts){
   opts=opts||{};
   var old=s.bpm;
-  s.bpm=Math.max(40,Math.min(208,b));
+  s.bpm=MetronomePrefs.clampBpm(b);
   document.getElementById("bpm-display").textContent=s.bpm;
   document.getElementById("bpm-slider").value=s.bpm;
   engine.setBpm(s.bpm);
@@ -1165,21 +1160,23 @@ function setBpm(b,opts){
 }
 function setVol(v,opts){
   opts=opts||{};
-  s.vol=Math.max(10,Math.min(100,v));
+  s.vol=MetronomePrefs.clampVol(v);
   document.getElementById("vol-slider").value=s.vol;
   document.getElementById("vol-display").textContent=s.vol;
   engine.setVolume(s.vol/100);
   if(opts.persist!==false)save();
 }
 function setMode(mode){
-  var prev=s.sm;s.sm=mode;
-  engine.setMode(mode);engine.resetBeat();
-  document.querySelectorAll(".mode-btn").forEach(function(e){e.classList.toggle("active",e.dataset.mode===mode);});
+  var next=MetronomePrefs.parseMode(mode);
+  if(['traditional','uniform','voice'].indexOf(mode)===-1)return;
+  var prev=s.sm;s.sm=next;
+  engine.setMode(next);engine.resetBeat();
+  document.querySelectorAll(".mode-btn").forEach(function(e){e.classList.toggle("active",e.dataset.mode===next);});
   updateBeats();refreshNowPlaying();save();
-  if(prev!==mode)track('sound_mode',{from:prev,to:mode});
+  if(prev!==next)track('sound_mode',{from:prev,to:next});
 }
 function setTS(sig){
-  var prev=s.bc+'/'+s.bu;var a=sig.split("/");s.bc=Math.max(1,Math.min(16,parseInt(a[0])||4));s.bu=Math.max(1,Math.min(16,parseInt(a[1])||4));
+  var prev=s.bc+'/'+s.bu;var a=sig.split("/");s.bc=MetronomePrefs.clampBeats(parseInt(a[0],10)||4);s.bu=MetronomePrefs.clampBeatUnit(parseInt(a[1],10)||4);
   engine.setBeats(s.bc);engine.resetBeat();
   document.querySelectorAll(".time-btn").forEach(function(e){e.classList.toggle("active",e.dataset.sig===sig);});
   updateBeats();refreshNowPlaying();save();
@@ -1240,13 +1237,13 @@ if("serviceWorker" in navigator){
     else if(e.code==="ArrowUp"){e.preventDefault();setBpm(s.bpm+(e.shiftKey?5:1));}
     else if(e.code==="ArrowDown"){e.preventDefault();setBpm(s.bpm-(e.shiftKey?5:1));}
   });
-  if(!localStorage.getItem("metronome_kbhint_v1")){
+  if(!MetronomePrefs.safeGet(_ls,"metronome_kbhint_v1")){
     var hint=document.createElement("div");
     hint.className="kb-hint";
     hint.innerHTML='<b>Space</b>播放/暂停 · <b>↑ ↓</b>BPM ±1 · <b>Shift+↑ ↓</b>±5';
     document.body.appendChild(hint);
     setTimeout(function(){hint.classList.add("show");},500);
-    var dismiss=function(){hint.classList.remove("show");setTimeout(function(){hint.remove();},300);localStorage.setItem("metronome_kbhint_v1","1");};
+    var dismiss=function(){hint.classList.remove("show");setTimeout(function(){hint.remove();},300);MetronomePrefs.safeSet(_ls,"metronome_kbhint_v1","1");};
     hint.addEventListener("click",dismiss);
     setTimeout(dismiss,5500);
   }
@@ -1284,7 +1281,7 @@ if("serviceWorker" in navigator){
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   if(!isIOS) return;
-  if(localStorage.getItem("metronome_silent_hint_v1")) return;
+  if(MetronomePrefs.safeGet(_ls,"metronome_silent_hint_v1")) return;
 
   var hint = document.getElementById("silent-hint");
   var close = document.getElementById("silent-hint-close");
@@ -1304,7 +1301,7 @@ if("serviceWorker" in navigator){
   function dismiss(){
     hint.classList.remove("show");
     if(dismissTimer){ clearTimeout(dismissTimer); dismissTimer = null; }
-    localStorage.setItem("metronome_silent_hint_v1","1");
+    MetronomePrefs.safeSet(_ls,"metronome_silent_hint_v1","1");
   }
 
   close.addEventListener("click", dismiss);

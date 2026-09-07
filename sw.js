@@ -1,7 +1,7 @@
 /* 小兔头节拍器 · service worker
  * HTML: network-first (so deploys show up), assets: cache-first.
  */
-var CACHE = 'xiaotutou-v3';
+var CACHE = 'xiaotutou-v6';
 
 var PRECACHE = [
   '/',
@@ -10,6 +10,7 @@ var PRECACHE = [
   '/en/index.html',
   '/manifest.json',
   '/js/engine.js',
+  '/js/prefs.js',
   '/images/bunny.png',
   '/images/bunny-192.png',
   '/images/bunny-512.png',
@@ -58,6 +59,25 @@ function isHtml(url) {
     path.endsWith('.html');
 }
 
+/** English paths stay English; do not dump every /en/* URL onto the homepage if a more specific cache hit exists. */
+function languageHome(pathname) {
+  if (pathname === '/en' || pathname.indexOf('/en/') === 0) {
+    return '/en/index.html';
+  }
+  return '/index.html';
+}
+
+function htmlOfflineFallback(request) {
+  var path = new URL(request.url).pathname;
+  return caches.match(request).then(function (exact) {
+    if (exact) return exact;
+    return caches.match(request, { ignoreSearch: true }).then(function (samePath) {
+      if (samePath) return samePath;
+      return caches.match(languageHome(path));
+    });
+  });
+}
+
 self.addEventListener('fetch', function (event) {
   var req = event.request;
   if (req.method !== 'GET') return;
@@ -71,9 +91,7 @@ self.addEventListener('fetch', function (event) {
         caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
         return res;
       }).catch(function () {
-        return caches.match(req).then(function (hit) {
-          return hit || caches.match('/index.html');
-        });
+        return htmlOfflineFallback(req);
       })
     );
     return;

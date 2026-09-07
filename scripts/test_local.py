@@ -63,6 +63,7 @@ def test_js_syntax():
         "miniapp/pages/index/index.js",
         "miniapp/app.js",
         "js/engine.js",
+        "js/prefs.js",
         "sw.js",
     ]
     for f in js_files:
@@ -249,6 +250,11 @@ def test_web_app_hooks():
     for rel in ("index.html", "en/index.html"):
         src = (PROJECT_ROOT / rel).read_text()
         check(f"  {rel} loads MetronomeEngine", "MetronomeEngine" in src and 'src="/js/engine.js"' in src)
+        check(f"  {rel} loads MetronomePrefs", "MetronomePrefs" in src and 'src="/js/prefs.js"' in src)
+        check(
+            f"  {rel} does not raw-parse metronome storage",
+            'JSON.parse(localStorage.getItem("metronome")' not in src,
+        )
         check(f"  {rel} has #vol-slider", 'id="vol-slider"' in src)
         check(f"  {rel} registers service worker", "serviceWorker.register" in src)
         check(f"  {rel} has play button", 'id="play-btn"' in src)
@@ -259,6 +265,45 @@ def test_web_app_hooks():
         "  en footer has no leaked CSS",
         "</style> 0.06)" not in en_html and "border-top-color: rgba(255, 255, 255, 0.1)" not in en_html,
         "en/index.html still leaks broken footer CSS into the page",
+    )
+
+
+def test_en_brand_bunny():
+    log("English brand (Bunny Metronome)")
+    log("-" * 40)
+    tpl = (PROJECT_ROOT / "tools/template_en.html").read_text()
+    check("  template_en og:site_name Bunny Metronome", 'og:site_name" content="Bunny Metronome"' in tpl)
+    check("  template_en JSON-LD name Bunny Metronome", '"name": "Bunny Metronome"' in tpl)
+    check(
+        "  template_en keeps historical alternateName",
+        '"alternateName": "Little Rabbit Metronome"' in tpl,
+    )
+    pages = sorted((PROJECT_ROOT / "en/p").glob("*.html"))
+    check("  en/p has 10 pages", len(pages) == 10)
+    for p in pages:
+        body = p.read_text()
+        check(f"  {p.name} site_name Bunny", 'og:site_name" content="Bunny Metronome"' in body)
+        check(f"  {p.name} JSON-LD name Bunny", '"name": "Bunny Metronome"' in body)
+        check(f"  {p.name} not titled Little Rabbit Metronome", "— Little Rabbit Metronome" not in body)
+        check(f"  {p.name} keeps slug path", f"/en/p/{p.stem}.html" in body)
+    en_index = (PROJECT_ROOT / "en/index.html").read_text()
+    check("  en/index.jsonld name Bunny", '"name": "Bunny Metronome"' in en_index)
+    landing = (PROJECT_ROOT / "en/landing.html").read_text()
+    check("  en/landing title Bunny", "Bunny Metronome" in landing.split("<title>", 1)[1][:80])
+    check("  en/landing alternateName history", '"alternateName": "Little Rabbit Metronome"' in landing)
+
+
+def test_sw_fetch_handler():
+    log("Service worker fetch handler")
+    log("-" * 40)
+    result = subprocess.run(
+        ["node", str(PROJECT_ROOT / "scripts" / "test_sw_fetch.js")],
+        capture_output=True, text=True
+    )
+    check(
+        "  scripts/test_sw_fetch.js executes sw.js fetch handler",
+        result.returncode == 0,
+        result.stdout + result.stderr or "sw fetch handler test failed",
     )
 
 
@@ -297,6 +342,10 @@ def main():
     test_wxml_buttons()
     print()
     test_web_app_hooks()
+    print()
+    test_en_brand_bunny()
+    print()
+    test_sw_fetch_handler()
     print()
     test_miniapp_config()
     print()
