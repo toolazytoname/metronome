@@ -679,3 +679,15 @@ JVM：`:policy:test` **53** FAIL 0（含 bind 对齐、toggle 在 service true/U
 - **D1-M1 Minor**：多个 Activity 同时存活时，前台恢复的旧实例可能未重新取得回调所有权；`onResume` 能读回播放状态，但后续 beat/stop 回调可能缺失。未做真机复现。
 - **D1-M2 Minor**：绑定时 keep-screen flag 先按旧值计算，再按 Service 状态纠正；两套亮屏逻辑可后续统一。
 - **D1-S1 Suggestion**：`PlaybackListenerGate.shouldDispatch()` 仅测试使用，可后续清理；本轮不扩修。
+
+## 2026-09-07 · D1 真机补充验收（部分通过，非发布验收）
+
+证据：`/tmp/metronome-device-20260907/RESULTS.md`、`android-result.json`、唯一新 UI XML 与命令日志。源码基线 `04246e6`；本轮未改产品代码。Android 用同 debug 签名保留数据覆盖安装 D1 APK `af4e0984d20a9cfa9bd75adeb1c5e128fedeef32cccba18300afa5b3ac7c9672`。
+
+- **Android UI/Service 部分通过**：启动显示 85 BPM / 3/4 / 默认童声；精确断言 40 BPM 后运行至少 60 秒，新鲜 UI dump 显示正在播放且 FGS / `jpq:metro` 同时存在；一次暂停后 UI 回待开始、FGS 与 WakeLock 释放。设置可见音色工坊和 sideload 限制文案，不等于 Play 购买或 Restore 验证。
+- **未完成**：120/208 的测试点击未达到目标值，因此没有启动对应 60 秒测试；这是测试操作失败，不是已确认的产品 BPM 缺陷。立即播放、HOME 等步骤遇到新 dump 文件缺失，按 UNKNOWN/BLOCKED 处理，未读取旧 XML。通知暂停、真实划掉任务、Activity configuration recreate 未完成。`am task remove` 返回 255、不支持，不能据此判产品缺陷。
+- 40 BPM 的时间对齐证据支持该场景下一次暂停正常；既不能替代 Activity recreate 验收，也不能解释或彻底排除前次 v2 的同实例观察。无新增源码缺陷定论。
+- **iOS 功能验证未完成**：现有 2.1.2/4 Development App 保留。本次错误地将模拟器 `.xctestrun` 用于真机 `test-without-building`，尝试安装 `Debug-iphonesimulator` 产物，返回 `0xe8008014`。这是测试产物/目标不匹配，不能认定 App 或现有 Development 证书无效，也不能证明真机测试不可行。没有可用的真机签名 UI runner 验证结果；播放、语言、BPM、后台仍未验。
+- **音频与清理**：状态验证不等于扬声器输出或节拍听感；Android 开始时媒体静音，结束观察到 Muted false / volume_music_speaker 10，工人报告未调用改音量或取消静音命令，变化原因未确认。偏好通过 UI 恢复到 85 / 3/4 / voice / zh。工人结束时确认 Android 无本 App 进程/Service/WakeLock，iOS 无 Bunny/WDA 残留进程。
+
+N1.25–N1.31 / N2.16 等完整发布条目保持未勾；真 Play/Sandbox 购买、物理静音键、目标速度听感与商店配置仍需验证。本节仅归档新增证据，不宣布全项目完工或可发布。
