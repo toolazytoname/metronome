@@ -22,7 +22,7 @@
 <body>
 <main>
   <h1>Privacy Policy</h1>
-  <p class="meta">Effective 2026-08-26 · Contact: <a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
+  <p class="meta">Updated 2026-09-07 · Contact: <a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
 
   <p>Bunny Metronome (web, WeChat mini-program, iOS / Android) is a <strong>no-account</strong> tool. There is no sign-up and no user profile.</p>
 
@@ -34,9 +34,10 @@
 
   <h2>Network</h2>
   <ul>
-    <li>Web / mini-program: anonymous analytics (Umeng, GA4). No name, email, or practice audio.</li>
+    <li>Web: Umeng CNZZ (site ID <code>1281476758</code>) and Google Analytics 4 (measurement ID <code>G-QH9CD00C0V</code>). Page views plus in-app events (play/pause, BPM, meter, sound mode, settings). Those vendors may set their own cookies / client IDs. No name, email, or practice audio. The site also ships a <strong>Content-Security-Policy-Report-Only</strong> header: it is an observation policy, <strong>not an enforced block</strong>, and there is no report endpoint.</li>
+    <li>WeChat mini-program: <code>umtrack-wx</code>, with <code>useOpenid = false</code> and <code>uploadUserInfo = false</code>. The SDK records page visits; BPM / mode / meter events are sent only when the SDK is present. Automatic PV is not the same as those events.</li>
     <li>iOS / Android: <strong>Firebase Analytics</strong> records in-app events (open, play/pause, BPM, meter, sound mode, settings). We use an app-instance ID, <strong>not advertising IDs (IDFA / GAID)</strong>, and not for cross-app ads. Events go to Google so we can see daily activity. IAP still talks only to the system store.</li>
-    <li>No microphone, contacts, or location permission.</li>
+    <li>No microphone, contacts, or location permission. No accounts on any surface.</li>
   </ul>
 
   <h2>Children</h2>

@@ -28,10 +28,19 @@ miniapp/
 
 ## 快速开始
 
-1. 下载 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
-2. 导入本目录（`miniapp/`）作为项目根目录
-3. 填入你的小程序 AppID（个人 AppID 即可）
-4. 点击"真机调试"在手机测试
+1. `npm ci`（需要 Node；`umtrack-wx` 走 npm）
+2. 下载 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+3. 导入本目录（`miniapp/`）作为项目根目录
+4. 工具 → **构建 npm**
+5. 基准基础库见 `project.config.json`（`libVersion` 3.4.6）。`project.private.config.json` 是本机覆盖，不要删
+6. 正式包必须配置业务域名；不要把「关闭域名检查」当成发布条件
+7. 填入小程序 AppID 后真机调试
+
+## 测试
+
+```bash
+npm test
+```
 
 ## 开发说明
 

@@ -22,7 +22,7 @@
 <body>
 <main>
   <h1>隐私政策</h1>
-  <p class="meta">生效日期：2026-08-26 · 联系：<a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
+  <p class="meta">更新日期：2026-09-07 · 联系：<a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
 
   <p>小兔头节拍器（网页、微信小程序、iOS / Android）是一个<strong>无账号</strong>工具。我们不要求注册，也不建立用户档案。</p>
 
@@ -34,9 +34,10 @@
 
   <h2>网络请求</h2>
   <ul>
-    <li>网页 / 小程序：匿名统计（友盟、GA4）。不含姓名、邮箱或练习音频。</li>
+    <li>网页：友盟 CNZZ（站长统计，站点 ID <code>1281476758</code>）与 Google Analytics 4（测量 ID <code>G-QH9CD00C0V</code>）。记录页面浏览，以及产品内事件（播放/暂停、BPM、拍号、音效模式、设置开合）。供应商可能设置自身 cookie / 客户端 ID。不含姓名、邮箱或练习音频。网页另有 <strong>Content-Security-Policy-Report-Only</strong> 观察策略，<strong>不是强制拦截</strong>，也没有集中报告端点。</li>
+    <li>微信小程序：<code>umtrack-wx</code>。当前 <code>useOpenid = false</code>、<code>uploadUserInfo = false</code>。SDK 会记页面访问；产品内事件（BPM、模式、拍号）在有 SDK 时才上报，不能把自动 PV 当成这些事件已经发生。</li>
     <li>iOS / Android：<strong>Firebase Analytics</strong> 记录产品内事件（打开、播放/暂停、BPM、拍号、音效模式、设置开合）。用应用实例 ID，<strong>不采广告标识（IDFA / GAID）</strong>，不用于跨 App 广告。事件会发到 Google，以便我们看日活。内购仍只与系统商店通信。</li>
-    <li>不申请麦克风、通讯录、定位。</li>
+    <li>不申请麦克风、通讯录、定位。各端都无账号。</li>
   </ul>
 
   <h2>儿童</h2>

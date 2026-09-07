@@ -1,6 +1,9 @@
 git
 node_modules
 README.md
+README.en.md
+DEPLOY.md
+Claude.md
 vercel.json
 metronome-v4.html
 metronome-v4.js
@@ -18,3 +21,9 @@ android/
 packages/
 AGENTS.md
 CLAUDE.md
+.github/
+tools/
+scripts/
+coverage
+**/__pycache__
+**/*.pyc
