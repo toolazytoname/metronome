@@ -54,7 +54,7 @@ function makeCaches(store) {
   };
 }
 
-function loadWorker(store) {
+function loadWorker(store, fetchImpl) {
   const listeners = { fetch: [], install: [], activate: [] };
   const ctx = {
     CACHE: null,
@@ -66,7 +66,7 @@ function loadWorker(store) {
       clients: { claim() { return Promise.resolve(); } }
     },
     caches: makeCaches(store),
-    fetch() { return Promise.reject(new Error('offline')); },
+    fetch: fetchImpl || function () { return Promise.reject(new Error('offline')); },
     URL,
     console
   };
@@ -102,13 +102,28 @@ async function main() {
     ['https://jpq.weichao.studio/p/piano-practice.html', zhTail]
   ]);
   const { ctx, listeners } = loadWorker(store);
-  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v6');
+  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v7');
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx), true);
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/privacy')", ctx), true);
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/support')", ctx), true);
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/en/privacy')", ctx), true);
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/js/engine.js')", ctx), false);
   assert.strictEqual(vm.runInContext("languageHome('/en/?x=1'.split('?')[0])", ctx) || vm.runInContext("languageHome('/en/')", ctx), '/en/index.html');
   assert.strictEqual(vm.runInContext("languageHome('/en/')", ctx), '/en/index.html');
   assert.strictEqual(vm.runInContext("languageHome('/en')", ctx), '/en/index.html');
   assert.strictEqual(vm.runInContext("languageHome('/en/p/x.html')", ctx), '/en/index.html');
   assert.strictEqual(vm.runInContext("languageHome('/')", ctx), '/index.html');
   assert.strictEqual(vm.runInContext("languageHome('/p/x.html')", ctx), '/index.html');
+
+  assert.ok(vm.runInContext("PRECACHE.includes('/en/manifest.json')", ctx));
+  const rewrites = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8')).rewrites;
+  for (const route of rewrites) {
+    assert.equal(ctx.isHtml('https://jpq.weichao.studio' + route.source), true, route.source);
+  }
+  for (const route of ['/about/en', '/about/en/']) {
+    const result = await dispatchFetch(listeners, 'https://jpq.weichao.studio' + route);
+    assert.ok((await result.text()).includes('EN_HOME'), route + ' offline fallback stays English');
+  }
 
   const enQuery = await dispatchFetch(listeners, 'https://jpq.weichao.studio/en/?bpm=80&mode=voice');
   assert.ok(enQuery, 'fetch handler must respondWith');
@@ -141,6 +156,28 @@ async function main() {
 
   const zhTailQ = await dispatchFetch(listeners, 'https://jpq.weichao.studio/p/piano-practice.html?x=1');
   assert.ok((await (await zhTailQ).text()).indexOf('ZH_TAIL') !== -1);
+
+  const aboutCached = new FakeResponse('https://jpq.weichao.studio/about/', '<html>ABOUT_OK</html>');
+  const store2 = new Map([
+    ['https://jpq.weichao.studio/about/', aboutCached],
+    ['https://jpq.weichao.studio/index.html', zh]
+  ]);
+  const err500 = new FakeResponse('https://jpq.weichao.studio/about/', 'error', 500);
+  err500.ok = false;
+  const { ctx: ctx2, listeners: listeners2 } = loadWorker(store2, () => Promise.resolve(err500));
+  const aboutRes = await dispatchFetch(listeners2, 'https://jpq.weichao.studio/about/');
+  assert.ok(aboutRes, '/about/ must be treated as HTML network-first');
+  const aboutBody = await (await aboutRes).text();
+  assert.ok(aboutBody.indexOf('error') !== -1, 'live 500 is still returned to the client');
+  await Promise.resolve();
+  const still = store2.get('https://jpq.weichao.studio/about/');
+  assert.ok(still, 'previous cache entry must remain');
+  assert.ok((await still.text()).indexOf('ABOUT_OK') !== -1, 'HTTP error must not overwrite a good HTML cache');
+  assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx2), true);
+
+  const { listeners: listeners3 } = loadWorker(store2);
+  const aboutOffline = await dispatchFetch(listeners3, 'https://jpq.weichao.studio/about/');
+  assert.ok((await (await aboutOffline).text()).indexOf('ABOUT_OK') !== -1, 'offline /about/ uses cached HTML');
 
   console.log('test_sw_fetch: ok');
 }
