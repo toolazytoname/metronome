@@ -8,6 +8,35 @@ import org.junit.Test
 
 class MetronomePolicyTest {
     @Test
+    fun beatRowsOmitEmptySlots() {
+        assertEquals(listOf(MetronomePolicy.BeatRow(0, 1)), MetronomePolicy.beatRows(1))
+        assertEquals(listOf(MetronomePolicy.BeatRow(0, 3)), MetronomePolicy.beatRows(3))
+        assertEquals(listOf(MetronomePolicy.BeatRow(0, 4)), MetronomePolicy.beatRows(4))
+        assertEquals(
+            listOf(MetronomePolicy.BeatRow(0, 4), MetronomePolicy.BeatRow(4, 1)),
+            MetronomePolicy.beatRows(5)
+        )
+        assertEquals(
+            listOf(MetronomePolicy.BeatRow(0, 4), MetronomePolicy.BeatRow(4, 3)),
+            MetronomePolicy.beatRows(7)
+        )
+        assertEquals(4, MetronomePolicy.beatRows(16).size)
+        assertEquals(4, MetronomePolicy.beatRows(16).last().count)
+    }
+
+    @Test
+    fun sliderTouchMatchesThumbCenter() {
+        val w = 200.0
+        val thumb = 24.0
+        assertEquals(0.0, MetronomePolicy.sliderThumbOrigin(0.0, w, thumb), 1e-9)
+        assertEquals(176.0, MetronomePolicy.sliderThumbOrigin(1.0, w, thumb), 1e-9)
+        assertEquals(88.0, MetronomePolicy.sliderThumbOrigin(0.5, w, thumb), 1e-9)
+        assertEquals(40.0, MetronomePolicy.sliderValueFromTouch(12.0, w, 40.0, 208.0, thumb), 1e-9)
+        assertEquals(208.0, MetronomePolicy.sliderValueFromTouch(200.0, w, 40.0, 208.0, thumb), 1e-9)
+        assertEquals(124.0, MetronomePolicy.sliderValueFromTouch(100.0, w, 40.0, 208.0, thumb), 1e-9)
+    }
+
+    @Test
     fun clampBpm() {
         assertEquals(40, MetronomePolicy.clampBpm(39))
         assertEquals(40, MetronomePolicy.clampBpm(40))

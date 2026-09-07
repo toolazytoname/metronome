@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,11 +53,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import studio.weichao.jpq.R
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
@@ -143,7 +145,7 @@ fun MacaronApp(
                     prefs = prefs,
                     playing = playing,
                     activeBeat = activeBeat,
-                    storeMessage = if (storeAvailable) storeMessage else "",
+                    storeMessage = storeMessage,
                     cb = cb,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -272,14 +274,14 @@ private fun HeroCard(
             Modifier.fillMaxWidth().padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LemonChip("−") { cb.onBpm(prefs.bpm - 1) }
+            LemonChip("−", enabled = prefs.bpm > MetronomePolicy.MIN_BPM) { cb.onBpm(prefs.bpm - 1) }
             MacaronSlider(
                 value = prefs.bpm.toFloat(),
                 onChange = { cb.onBpm(it.toInt()) },
-                range = 40f..208f,
+                range = MetronomePolicy.MIN_BPM.toFloat()..MetronomePolicy.MAX_BPM.toFloat(),
                 modifier = Modifier.weight(1f).padding(horizontal = 10.dp)
             )
-            LemonChip("+") { cb.onBpm(prefs.bpm + 1) }
+            LemonChip("+", enabled = prefs.bpm < MetronomePolicy.MAX_BPM) { cb.onBpm(prefs.bpm + 1) }
         }
         PlayButton(playing, cb.onToggle)
         if (storeMessage.isNotEmpty()) {
@@ -321,40 +323,48 @@ private fun StatusPill(prefs: MetronomePrefs, playing: Boolean, cb: MacaronCallb
 @Composable
 private fun BeatGrid(prefs: MetronomePrefs, playing: Boolean, activeBeat: Int, modifier: Modifier = Modifier) {
     val n = prefs.bc.coerceIn(1, 16)
-    val rows = (n + 3) / 4
+    val rows = MetronomePolicy.beatRows(n)
+    val gap = if (n >= 7) 6.dp else 8.dp
     val (fillTop, fillBot, text, ring) = when (prefs.mode) {
         SoundMode.TRADITIONAL -> Quad(Palette.lemonSoft, Palette.lemon, Palette.lemonDeep, Color(0xFFD9BF59))
         SoundMode.UNIFORM -> Quad(Palette.mintSoft, Color(0xFFC7EBD8), Palette.mintDeep, Color(0xFF8CD1B8))
         SoundMode.VOICE -> Quad(Palette.lavenderSoft, Color(0xFFE0D6F5), Palette.lavenderDeep, Palette.lavender)
     }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        repeat(rows) { r ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(4) { c ->
-                    val i = r * 4 + c
-                    Box(Modifier.weight(1f).aspectRatio(1f)) {
-                        if (i < n) {
-                            val active = playing && i == activeBeat
-                            val strong = prefs.mode == SoundMode.TRADITIONAL && i == 0
-                            Box(
-                                Modifier.fillMaxSize()
-                                    .graphicsLayer { val s = if (active) 1.05f else 1f; scaleX = s; scaleY = s }
-                                    .shadow(if (active) 8.dp else 3.dp, RoundedCornerShape(16.dp))
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        if (strong) Brush.verticalGradient(listOf(Palette.coral, Palette.coralDeep))
-                                        else Brush.linearGradient(listOf(fillTop, fillBot))
-                                    )
-                                    .border(1.5.dp, if (strong) Palette.coralDeep else ring, RoundedCornerShape(16.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "${i + 1}",
-                                    color = if (strong) Color.White else text,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = if (n >= 8) 16.sp else 20.sp
+    BoxWithConstraints(modifier) {
+        val cell = ((maxWidth - gap * (MetronomePolicy.BEAT_ROW_MAX - 1)) / MetronomePolicy.BEAT_ROW_MAX)
+            .coerceAtLeast(36.dp)
+        Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(gap)
+        ) {
+            rows.forEach { row ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)
+                ) {
+                    for (j in 0 until row.count) {
+                        val i = row.startIndex + j
+                        val active = playing && i == activeBeat
+                        val strong = prefs.mode == SoundMode.TRADITIONAL && i == 0
+                        Box(
+                            Modifier.size(cell)
+                                .graphicsLayer { val s = if (active) 1.05f else 1f; scaleX = s; scaleY = s }
+                                .shadow(if (active) 8.dp else 3.dp, RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (strong) Brush.verticalGradient(listOf(Palette.coral, Palette.coralDeep))
+                                    else Brush.linearGradient(listOf(fillTop, fillBot))
                                 )
-                            }
+                                .border(1.5.dp, if (strong) Palette.coralDeep else ring, RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "${i + 1}",
+                                color = if (strong) Color.White else text,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (n >= 8) 16.sp else 20.sp
+                            )
                         }
                     }
                 }
@@ -527,8 +537,6 @@ private fun SettingsSheet(
                             ) { Text(buy, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
                         }
                     }
-                    BankBlock(cb.t("click_bank"), false, prefs, unlocked, cb)
-                    BankBlock(cb.t("voice_bank"), true, prefs, unlocked, cb)
                     MacaronPress(onClick = cb.onRestore, enabled = !storeBusy) {
                         Box(
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.coralSoft).padding(vertical = 10.dp),
@@ -538,6 +546,8 @@ private fun SettingsSheet(
                     if (storeMessage.isNotEmpty()) {
                         Text(storeMessage, color = Palette.fg2, fontSize = 13.sp)
                     }
+                    BankBlock(cb.t("click_bank"), false, prefs, unlocked, cb)
+                    BankBlock(cb.t("voice_bank"), true, prefs, unlocked, cb)
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center) {
@@ -662,12 +672,30 @@ private fun RowScope.Stepper(label: String, value: Int, range: IntRange, onChang
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, color = Palette.muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        MacaronPress(onClick = { onChange((value - 1).coerceIn(range.first, range.last)) }) {
-            Text("−", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(horizontal = 8.dp))
+        MacaronPress(
+            onClick = { onChange((value - 1).coerceIn(range.first, range.last)) },
+            enabled = value > range.first
+        ) {
+            Text(
+                "−",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Palette.ink.copy(alpha = if (value > range.first) 1f else 0.38f),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
         }
         Text("$value", color = Palette.ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-        MacaronPress(onClick = { onChange((value + 1).coerceIn(range.first, range.last)) }) {
-            Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(horizontal = 8.dp))
+        MacaronPress(
+            onClick = { onChange((value + 1).coerceIn(range.first, range.last)) },
+            enabled = value < range.last
+        ) {
+            Text(
+                "+",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Palette.ink.copy(alpha = if (value < range.last) 1f else 0.38f),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
         }
     }
 }
@@ -695,12 +723,13 @@ private fun ToggleRow(title: String, on: Boolean, onChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun LemonChip(label: String, onClick: () -> Unit) {
-    MacaronPress(onClick = onClick) {
+private fun LemonChip(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    MacaronPress(onClick = onClick, enabled = enabled) {
         Box(
             Modifier.size(36.dp).shadow(4.dp, RoundedCornerShape(12.dp), spotColor = Palette.lemon.copy(alpha = 0.4f))
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.verticalGradient(listOf(Palette.lemonSoft, Palette.lemon))),
+                .background(Brush.verticalGradient(listOf(Palette.lemonSoft, Palette.lemon)))
+                .graphicsLayer { alpha = if (enabled) 1f else 0.38f },
             contentAlignment = Alignment.Center
         ) {
             Text(label, color = Palette.lemonDeep, fontWeight = FontWeight.Bold, fontSize = 20.sp)
@@ -716,9 +745,14 @@ fun MacaronSlider(
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(modifier.height(28.dp).fillMaxWidth()) {
-        val w = maxWidth
-        val t = ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
-        val thumb = 24.dp
+        val wPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+        val thumbPx = with(LocalDensity.current) { 24.dp.toPx() }
+        val t = MetronomePolicy.sliderFraction(
+            value.toDouble(),
+            range.start.toDouble(),
+            range.endInclusive.toDouble()
+        )
+        val originPx = MetronomePolicy.sliderThumbOrigin(t, wPx.toDouble(), thumbPx.toDouble()).toFloat()
         Box(
             Modifier.fillMaxWidth().height(10.dp).align(Alignment.Center)
                 .clip(RoundedCornerShape(50))
@@ -733,7 +767,7 @@ fun MacaronSlider(
                 )
         )
         Box(
-            Modifier.offset(x = (w - thumb) * t).size(thumb).align(Alignment.CenterStart)
+            Modifier.offset { IntOffset(originPx.roundToInt(), 0) }.size(24.dp).align(Alignment.CenterStart)
                 .shadow(5.dp, CircleShape, spotColor = Palette.coral.copy(alpha = 0.35f))
                 .clip(CircleShape)
                 .background(Color.White)
@@ -742,17 +776,31 @@ fun MacaronSlider(
         Box(
             Modifier
                 .fillMaxSize()
-                .pointerInput(range) {
+                .pointerInput(range, wPx, thumbPx) {
                     fun at(x: Float) {
-                        val p = (x / size.width).coerceIn(0f, 1f)
-                        onChange(range.start + p * (range.endInclusive - range.start))
+                        onChange(
+                            MetronomePolicy.sliderValueFromTouch(
+                                x.toDouble(),
+                                wPx.toDouble(),
+                                range.start.toDouble(),
+                                range.endInclusive.toDouble(),
+                                thumbPx.toDouble()
+                            ).toFloat()
+                        )
                     }
                     detectTapGestures { at(it.x) }
                 }
-                .pointerInput(range) {
+                .pointerInput(range, wPx, thumbPx) {
                     fun at(x: Float) {
-                        val p = (x / size.width).coerceIn(0f, 1f)
-                        onChange(range.start + p * (range.endInclusive - range.start))
+                        onChange(
+                            MetronomePolicy.sliderValueFromTouch(
+                                x.toDouble(),
+                                wPx.toDouble(),
+                                range.start.toDouble(),
+                                range.endInclusive.toDouble(),
+                                thumbPx.toDouble()
+                            ).toFloat()
+                        )
                     }
                     detectDragGestures { change, _ -> at(change.position.x) }
                 }

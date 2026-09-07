@@ -23,6 +23,48 @@ object MetronomePolicy {
     val packClickBanks = listOf("click-stick", "click-kick", "click-tip")
     val packVoiceBanks = listOf("voice-zh-yunxi", "voice-zh-soft", "voice-en-deep")
 
+    const val BEAT_ROW_MAX = 4
+    const val SLIDER_THUMB = 24.0
+
+    data class BeatRow(val startIndex: Int, val count: Int)
+
+    fun beatRows(beats: Int): List<BeatRow> {
+        val n = clampBeats(beats)
+        val out = ArrayList<BeatRow>()
+        var i = 0
+        while (i < n) {
+            val count = minOf(BEAT_ROW_MAX, n - i)
+            out.add(BeatRow(i, count))
+            i += count
+        }
+        return out
+    }
+
+    /** Track travel for a thumb of width [thumb] on a bar of [width]. */
+    fun sliderTravel(width: Double, thumb: Double = SLIDER_THUMB): Double =
+        (width - thumb).coerceAtLeast(1.0)
+
+    fun sliderFraction(value: Double, start: Double, end: Double): Double {
+        val span = end - start
+        if (span == 0.0) return 0.0
+        return ((value - start) / span).coerceIn(0.0, 1.0)
+    }
+
+    fun sliderThumbOrigin(fraction: Double, width: Double, thumb: Double = SLIDER_THUMB): Double =
+        sliderTravel(width, thumb) * fraction.coerceIn(0.0, 1.0)
+
+    /** Map a touch x to value so the thumb center, not the bar origin, is the sample point. */
+    fun sliderValueFromTouch(
+        x: Double,
+        width: Double,
+        start: Double,
+        end: Double,
+        thumb: Double = SLIDER_THUMB
+    ): Double {
+        val p = ((x - thumb / 2.0) / sliderTravel(width, thumb)).coerceIn(0.0, 1.0)
+        return start + p * (end - start)
+    }
+
     fun clampBpm(n: Int) = n.coerceIn(MIN_BPM, MAX_BPM)
     fun clampBeats(n: Int) = n.coerceIn(MIN_BEATS, MAX_BEATS)
     fun clampBeatUnit(n: Int) = n.coerceIn(1, 16)
