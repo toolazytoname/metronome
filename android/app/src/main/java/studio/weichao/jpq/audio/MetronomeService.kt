@@ -14,6 +14,8 @@ import androidx.core.app.NotificationCompat
 import studio.weichao.jpq.MainActivity
 import studio.weichao.jpq.MetronomeApp
 import studio.weichao.jpq.R
+import studio.weichao.jpq.policy.PlaybackBind
+import studio.weichao.jpq.policy.PlaybackListenerGate
 import studio.weichao.jpq.policy.SoundMode
 
 class MetronomeService : Service() {
@@ -27,14 +29,14 @@ class MetronomeService : Service() {
     var keepAwake = true
     var notificationTitle: String = "小兔头节拍器"
     var pauseLabel: String = "暂停"
-    var onStopped: (() -> Unit)? = null
+    private val uiGate = PlaybackListenerGate()
     private var wakeLock: PowerManager.WakeLock? = null
     private var stopped = true
     private var focusRequest: AudioFocusRequest? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
             stopPlayback()
-            onStopped?.invoke()
+            notifyStopped()
         }
     }
 
@@ -50,11 +52,11 @@ class MetronomeService : Service() {
         when (intent?.action) {
             ACTION_STOP -> {
                 stopPlayback()
-                onStopped?.invoke()
+                notifyStopped()
             }
-            ACTION_TOGGLE -> if (clock.scheduler.playing) {
+            ACTION_TOGGLE -> if (isPlaying()) {
                 stopPlayback()
-                onStopped?.invoke()
+                notifyStopped()
             } else {
                 startPlayback()
             }
@@ -74,6 +76,25 @@ class MetronomeService : Service() {
     }
 
     fun samplesReady(): Boolean = clock.ready
+
+    fun isPlaying(): Boolean {
+        val sched = this::clock.isInitialized && clock.scheduler.playing
+        return PlaybackBind.isPlaying(stopped, sched)
+    }
+
+    fun setUiListener(owner: Any, onStopped: () -> Unit, onBeat: ((Int) -> Unit)?) {
+        uiGate.set(owner, onStopped)
+        if (this::clock.isInitialized) clock.onBeat = onBeat
+    }
+
+    fun clearUiListener(owner: Any) {
+        uiGate.clear(owner)
+        if (uiGate.owner == null && this::clock.isInitialized) clock.onBeat = null
+    }
+
+    private fun notifyStopped() {
+        uiGate.dispatchStopped()
+    }
 
     fun startPlayback(): Boolean {
         if (!clock.ready) return false

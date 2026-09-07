@@ -640,10 +640,42 @@ rework2 复盘 **NEEDS_REWORK**，唯一 Major **B2-R10**。导演亲读：`onCr
 
 iOS：`iproxy`/`pymobiledevice3`/`wda` **无**。usbmuxd 在；Connect 8100 **Result Number=3**。xctrunner 曾因设备 **Locked** 启动失败（FBSOpenApplicationErrorDomain 7）；解锁后 `devicectl process launch` 成功，**仍** 8100 无监听。**单纯 process launch ≠ XCTest。** 已 terminate WDAProbe/Bunny 残留 pid。无 iOS 播放/BPM/锁屏 UI 证据。
 
-可能的源码观察（**不改已提交源码**，待协调）：Android UI「待开始」与 FGS/WakeLock/通知同时存在，点播放键与状态条可能不同步。
+可能的源码观察（v2 当时待协调）：Android UI「待开始」与 FGS 同时存在。**D1** 按基线源码链修复 recreate/rebind 脱钩，**不**把 v2 同实例 FAIL 当作已证。focused-playback 结论见 D1 节。
 
 ### 外部仍不能勾
 
 N1.25–N1.31 / N2.16 人耳；Sandbox / 真 Play 扣款；发行证书 / 商店账号；Firebase 真配置；pack 人耳。
 
 工人停止。**不** git add/commit/push。导演核对本文后单独提交报告。代码可提交 ≠ 可发布。
+
+---
+
+## D1 · Activity 重建与 Service 播放脱钩（代码独立验收 PASS · 不是 v2 同实例 FAIL 的实证）
+
+基线 `8cd9abf` 已有：`MainActivity.playing` 初始 `false`；`onServiceConnected` 不读回 Service；`toggle` 以 UI `playing` 分支；`onDestroy` 不按 owner 清回调。Service 仍播放时 Activity recreate/rebind → UI idle；第一下 toggle 当 Start（clock 幂等不双钟）只把 UI 设 true，第二下才 Stop。
+
+与 v2 play-pause FAIL **分开**：v2 不核 `uiautomator dump` 退出码且复用固定 XML，动画失败可假造 UI/Service 矛盾。focused-playback（`/tmp/device-validation/focused-playback/CONCLUSION.md`）**既未证实也未推翻** v2 同实例 FAIL；测量漏洞已确认。adb 掉线 **不是** 代码失败。
+
+### 本轮最小修复（与测试同一提交）
+
+- `PlaybackBind.isPlaying` / `uiFromService` / `toggleAction`：只读 `stopped` 与 `scheduler.playing`；toggle **不**用过期 UI `playing`。
+- `PlaybackListenerGate`：新 owner 覆盖后，旧 Activity `clear` 不得清掉新回调；`runOnUiThread` 检查 `isDestroyed` 与 `listenerGen`。
+- `MetronomeService.setUiListener` / `clearUiListener` / `isPlaying()`。`onDestroy` **不停** Service（后台/锁屏承诺）。
+- 未改 `AudioTrackClock`、拍钟、采样、`configChanges`、IAP、音频焦点。
+
+JVM：`:policy:test` **53** FAIL 0（含 bind 对齐、toggle 在 service true/UI false 时 Stop、旧 owner 释放、停后 clearBeat；MainActivity **调用** 这些 API 的接线测试）。**没有** instrumentation recreate（不把 JVM 冒充真机重建）。
+
+构建：`ANDROID_HOME` 下 `assembleDebug` EXIT 0（增量 9 executed / 29 up-to-date）。新 APK sha256 `af4e0984d20a9cfa9bd75adeb1c5e128fedeef32cccba18300afa5b3ac7c9672`。
+
+### 真机修复后验证
+
+**BLOCKED**（`adb devices` 空；按导演要求不轮询、不安装/启动手机 App、不改音量）。覆盖安装与 recreate 重验 **未做**。
+
+日志 `/tmp/metronome-audit-20260906/device-followup-d1/`。独立只读验收 **PASS：0 Blocker / 0 Major**；5/5 修改文件指纹一致。本轮基于 `237bfd9`，修复、必要测试与本节记录一起提交到 `develop`，`main` 不动。
+
+导演提交前复核：5/5 指纹匹配后，仅更新本节验收结论；`:policy:test` + `assembleDebug` 再次 EXIT 0（`/tmp/metronome-delivery-d1-android.txt`，增量 2 executed / 38 up-to-date）。真机状态仍为上文 **BLOCKED**，不因代码通过而勾上线清单。
+
+独立复盘仅记录、不返工：
+- **D1-M1 Minor**：多个 Activity 同时存活时，前台恢复的旧实例可能未重新取得回调所有权；`onResume` 能读回播放状态，但后续 beat/stop 回调可能缺失。未做真机复现。
+- **D1-M2 Minor**：绑定时 keep-screen flag 先按旧值计算，再按 Service 状态纠正；两套亮屏逻辑可后续统一。
+- **D1-S1 Suggestion**：`PlaybackListenerGate.shouldDispatch()` 仅测试使用，可后续清理；本轮不扩修。

@@ -31,6 +31,7 @@ import studio.weichao.jpq.billing.PlayStoreAdapter
 import studio.weichao.jpq.policy.EntitlementFlow
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
+import studio.weichao.jpq.policy.PlaybackBind
 import studio.weichao.jpq.policy.StoreRestoreResult
 import studio.weichao.jpq.ui.MacaronApp
 import studio.weichao.jpq.ui.MacaronCallbacks
@@ -48,27 +49,36 @@ class MainActivity : ComponentActivity() {
     private var productPrice by mutableStateOf<String?>(null)
     private var storeBusy by mutableStateOf(false)
     private var storeAvailable by mutableStateOf(false)
+    private var listenerGen = 0
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            service = (binder as MetronomeService.LocalBinder).service()
-            service?.onStopped = {
-                runOnUiThread {
-                    playing = false
-                    activeBeat = -1
-                    applyKeepAwake()
+            val svc = (binder as MetronomeService.LocalBinder).service()
+            service = svc
+            val gen = ++listenerGen
+            val owner = this@MainActivity
+            svc.setUiListener(
+                owner,
+                onStopped = {
+                    runOnUiThread {
+                        if (isDestroyed || gen != listenerGen) return@runOnUiThread
+                        applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
+                    }
+                },
+                onBeat = { beat ->
+                    runOnUiThread {
+                        if (isDestroyed || gen != listenerGen) return@runOnUiThread
+                        activeBeat = beat
+                        if (prefs.haptic) vibrate(beat == 0)
+                    }
                 }
-            }
-            service?.clock?.onBeat = { beat ->
-                runOnUiThread {
-                    activeBeat = beat
-                    if (prefs.haptic) vibrate(beat == 0)
-                }
-            }
+            )
             applyToService()
+            syncFromService()
         }
         override fun onServiceDisconnected(name: ComponentName?) {
             service = null
+            applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
         }
     }
 
@@ -195,9 +205,12 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshEntitlement()
+        if (service != null) syncFromService()
     }
 
     override fun onDestroy() {
+        listenerGen++
+        service?.clearUiListener(this)
         super.onDestroy()
         store.close()
         try { unbindService(conn) } catch (_: Exception) {}
@@ -265,6 +278,18 @@ class MainActivity : ComponentActivity() {
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
+    private fun applyPlaybackUi(ui: PlaybackBind.Ui) {
+        playing = ui.playing
+        if (ui.clearBeat) activeBeat = -1
+        if (ui.keepAwakeOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun syncFromService() {
+        val svc = service ?: return
+        applyPlaybackUi(PlaybackBind.uiFromService(svc.isPlaying(), prefs.keepAwake))
+    }
+
     private fun applyToService() {
         val gate = EntitlementFlow.State(prefs, unlocked)
         val click = gate.playbackClick
@@ -280,26 +305,28 @@ class MainActivity : ComponentActivity() {
     private fun toggle() {
         val svc = service ?: return
         applyToService()
-        if (playing) {
-            svc.stopPlayback()
-            playing = false
-            activeBeat = -1
-            AppAnalytics.event("play", playParams("pause"))
-        } else {
-            if (!svc.samplesReady()) {
-                storeMessage = t("play_error")
-                return
+        when (PlaybackBind.toggleAction(svc.isPlaying())) {
+            PlaybackBind.Toggle.Stop -> {
+                svc.stopPlayback()
+                applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
+                AppAnalytics.event("play", playParams("pause"))
             }
-            startForegroundService(Intent(this, MetronomeService::class.java))
-            if (!svc.startPlayback()) {
-                storeMessage = t("play_error")
-                return
+            PlaybackBind.Toggle.Start -> {
+                if (!svc.samplesReady()) {
+                    storeMessage = t("play_error")
+                    return
+                }
+                startForegroundService(Intent(this, MetronomeService::class.java))
+                if (!svc.startPlayback()) {
+                    storeMessage = t("play_error")
+                    applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
+                    return
+                }
+                applyPlaybackUi(PlaybackBind.uiFromService(svc.isPlaying(), prefs.keepAwake))
+                storeMessage = ""
+                AppAnalytics.event("play", playParams("play"))
             }
-            playing = true
-            storeMessage = ""
-            AppAnalytics.event("play", playParams("play"))
         }
-        applyKeepAwake()
     }
 
     private fun vibrate(strong: Boolean) {
