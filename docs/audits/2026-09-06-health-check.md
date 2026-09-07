@@ -723,3 +723,15 @@ N1.25–N1.31 / N2.16 等完整发布条目保持未勾；真 Play/Sandbox 购�
 - **仍未完成**：人耳 40/120/208 时钟与 pack、iOS 静音键/物理锁屏出声、Android 通知/真实划掉、Sandbox/Play 买与 Restore、发行证书及商店配置/上架。N1.25–N1.31 / N2.16 完整条目继续不勾；未上传商店、未发布、未宣称全项目完成。
 
 提交前离线闸门：`:policy:test :app:assembleDebug :app:assembleDebugAndroidTest --offline` **BUILD SUCCESSFUL / exit 0**（`android-reliable/final-gates.txt`）；JUnit XML 合计 **53 tests / 0 failures / 0 errors / 0 skipped**。两 Python 脚本 `py_compile`、`git diff --check` 通过；最终 wrapper 离线重读历史 a01 判真、instrument2/3 判假。未为此重跑设备。最终构建 app APK SHA256 仍与上文 clean install 相同。
+
+## 2026-09-07 · 原生视觉修复复核（部分通过，仍有返工项）
+
+复核对象：`e73c9ad` 上的原生 UI / policy / 测试改动；本节与相关修复分批提交。不宣称全部视觉验收通过。
+
+- iOS：独立 iPhone 17 / iOS 26.5 模拟器，新构建 App。三拍中英文居中、七拍尾行居中已查看新截图；不再保留透明空格或用旧宽高比压缩拍点。场景通过预设偏好建立，**不是**设置页点击或真机播放验收。
+- **待修 V-R1（高）**：固定多行尺寸使练琴页超高。七拍时分享/语言按钮与状态栏重叠；十六拍时顶部按钮及底部设置入口出屏。外层无滚动/高度适配，居中修复不代表整页布局通过。Android 多行画面尚未实测。
+- **待修 V-R2（中）**：Android 无价格购买按钮仍只按 `storeBusy` 禁用，缺少就近价格不可用说明，尚未对齐本次 AGENTS 新规则；iOS 已补说明。
+- 两端滑块绘制/触摸映射、边界按钮禁用、Restore/购买反馈前移已核代码；Android 旁加载过滤播放错误的问题已移除。完整拖动、购买和失败场景未做实机复验。
+- 旧 `ios-settings.png` 已加不可用于当前验收的警告，**未重出**截图。小屏、长英文设置、播放态拍点放大等仍需实际画面检查。
+- 离线检查：`swift test` **22 项 / 0 失败**；Android `:policy:test` **55 项 / 0 失败**及 `:app:assembleDebug --offline` 通过；iOS Simulator App BUILD SUCCEEDED；`git diff --check` 通过。政策单测不覆盖真实页面高度。
+- 本机临时证据：`/tmp/metronome-visual-review-20260907/`（`three.png`、`beats-3-en.png`、`beats-7-zh.png`、`beats-16-zh.png` 及构建/测试日志）。独立模拟器已关闭并删除；未操作用户真机。临时路径不是永久仓库附件。

@@ -57,6 +57,8 @@ From a signed simulator or device, 6.7" (and whatever size Connect currently req
 3. `docs/store/screenshots/ios-settings.png` — 设置（拍号 / 模式 / 音量）
 4. `docs/store/screenshots/ios-workshop.png` — 音色工坊（震动选项 + 解锁 + Restore）
 
+`ios-settings.png` 是 2026-08-25 模拟器草稿，顶部「设置」与状态栏重叠，导航结构也和当前源码不一致。 **不要拿它当当前视觉验收。** 提审前按 Connect 强制尺寸重出签名套。
+
 English shots are should-have, same three frames.
 
 ## Privacy / Data safety
