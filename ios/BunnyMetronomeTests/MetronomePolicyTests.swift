@@ -6,6 +6,39 @@ import XCTest
 #endif
 
 final class MetronomePolicyTests: XCTestCase {
+    func testBeatRowsOmitEmptySlots() {
+        XCTAssertEqual(MetronomePolicy.beatRows(beats: 1), [MetronomePolicy.BeatRow(startIndex: 0, count: 1)])
+        XCTAssertEqual(MetronomePolicy.beatRows(beats: 3), [MetronomePolicy.BeatRow(startIndex: 0, count: 3)])
+        XCTAssertEqual(MetronomePolicy.beatRows(beats: 4), [MetronomePolicy.BeatRow(startIndex: 0, count: 4)])
+        XCTAssertEqual(
+            MetronomePolicy.beatRows(beats: 5),
+            [
+                MetronomePolicy.BeatRow(startIndex: 0, count: 4),
+                MetronomePolicy.BeatRow(startIndex: 4, count: 1)
+            ]
+        )
+        XCTAssertEqual(
+            MetronomePolicy.beatRows(beats: 7),
+            [
+                MetronomePolicy.BeatRow(startIndex: 0, count: 4),
+                MetronomePolicy.BeatRow(startIndex: 4, count: 3)
+            ]
+        )
+        XCTAssertEqual(MetronomePolicy.beatRows(beats: 16).count, 4)
+        XCTAssertEqual(MetronomePolicy.beatRows(beats: 16).last?.count, 4)
+    }
+
+    func testSliderTouchMatchesThumbCenter() {
+        let w = 200.0
+        let thumb = 24.0
+        XCTAssertEqual(MetronomePolicy.sliderThumbOrigin(fraction: 0, width: w, thumb: thumb), 0, accuracy: 1e-9)
+        XCTAssertEqual(MetronomePolicy.sliderThumbOrigin(fraction: 1, width: w, thumb: thumb), 176, accuracy: 1e-9)
+        XCTAssertEqual(MetronomePolicy.sliderThumbOrigin(fraction: 0.5, width: w, thumb: thumb), 88, accuracy: 1e-9)
+        XCTAssertEqual(MetronomePolicy.sliderValueFromTouch(x: 12, width: w, start: 40, end: 208, thumb: thumb), 40, accuracy: 1e-9)
+        XCTAssertEqual(MetronomePolicy.sliderValueFromTouch(x: 200, width: w, start: 40, end: 208, thumb: thumb), 208, accuracy: 1e-9)
+        XCTAssertEqual(MetronomePolicy.sliderValueFromTouch(x: 100, width: w, start: 40, end: 208, thumb: thumb), 124, accuracy: 1e-9)
+    }
+
     func testClampBpm() {
         XCTAssertEqual(MetronomePolicy.clampBpm(39), 40)
         XCTAssertEqual(MetronomePolicy.clampBpm(40), 40)

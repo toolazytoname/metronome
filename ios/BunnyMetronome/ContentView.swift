@@ -31,9 +31,17 @@ private struct MacaronPressStyle: ButtonStyle {
     }
 }
 
+private struct BeatGridWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var model: MetronomeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var beatGridWidth: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -202,36 +210,30 @@ struct ContentView: View {
     }
 
     private var beatGrid: some View {
-        let n = max(1, model.prefs.bc)
-        let cols = beatColumns(n)
+        let n = max(1, min(16, model.prefs.bc))
         let spacing: CGFloat = n >= 7 ? 6 : 10
-        let rows = max(1, Int(ceil(Double(n) / Double(cols))))
-        return GeometryReader { geo in
-            let cell = max(44, (geo.size.width - spacing * CGFloat(cols - 1)) / CGFloat(cols))
-            VStack(spacing: spacing) {
-                ForEach(0..<rows, id: \.self) { r in
-                    HStack(spacing: spacing) {
-                        ForEach(0..<cols, id: \.self) { c in
-                            let i = r * cols + c
-                            if i < n {
-                                beatCell(i, corner: min(18, cell * 0.28))
-                                    .frame(width: cell, height: cell)
-                            } else {
-                                Color.clear.frame(width: cell, height: cell)
-                            }
-                        }
+        let rows = MetronomePolicy.beatRows(beats: n)
+        let measured = beatGridWidth > 1 ? beatGridWidth : 300
+        let cell = max(36, (measured - spacing * CGFloat(MetronomePolicy.beatRowMax - 1)) / CGFloat(MetronomePolicy.beatRowMax))
+        return VStack(spacing: spacing) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: spacing) {
+                    ForEach(0..<row.count, id: \.self) { j in
+                        beatCell(row.startIndex + j, corner: min(18, cell * 0.28))
+                            .frame(width: cell, height: cell)
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
-        .aspectRatio(CGFloat(cols) / CGFloat(rows), contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: BeatGridWidthKey.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(BeatGridWidthKey.self) { beatGridWidth = $0 }
         .transaction { $0.animation = nil }
-    }
-
-    private func beatColumns(_ n: Int) -> Int {
-        // Lock to 4-wide so 2/4 and 4/4 keep the same cell size (no layout morph).
-        _ = n
-        return 4
     }
 
     private func beatCell(_ i: Int, corner: CGFloat) -> some View {
@@ -318,23 +320,23 @@ struct ContentView: View {
 
     private var sliderRow: some View {
         HStack(spacing: 10) {
-            macaronButton("−") { model.setBpm(model.prefs.bpm - 1) }
+            macaronButton("−", enabled: model.prefs.bpm > MetronomePolicy.minBpm) { model.setBpm(model.prefs.bpm - 1) }
                 .accessibilityLabel("BPM -1")
             MacaronSlider(
                 value: Binding(
                     get: { Double(model.prefs.bpm) },
                     set: { model.setBpm(Int($0.rounded())) }
                 ),
-                range: 40...208
+                range: Double(MetronomePolicy.minBpm)...Double(MetronomePolicy.maxBpm)
             )
             .frame(height: 28)
             .accessibilityLabel("BPM")
-            macaronButton("+") { model.setBpm(model.prefs.bpm + 1) }
+            macaronButton("+", enabled: model.prefs.bpm < MetronomePolicy.maxBpm) { model.setBpm(model.prefs.bpm + 1) }
                 .accessibilityLabel("BPM +1")
         }
     }
 
-    private func macaronButton(_ title: String, action: @escaping () -> Void) -> some View {
+    private func macaronButton(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 20, weight: .bold))
@@ -348,7 +350,9 @@ struct ContentView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .shadow(color: Palette.lemon.opacity(0.35), radius: 4, y: 2)
+                .opacity(enabled ? 1 : 0.38)
         }
+        .disabled(!enabled)
         .buttonStyle(MacaronPressStyle())
     }
 
@@ -450,9 +454,10 @@ private struct MacaronSlider: View {
 
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let t = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
-            let x = t * w
+            let w = Double(geo.size.width)
+            let thumb = MetronomePolicy.sliderThumb
+            let t = MetronomePolicy.sliderFraction(value: value, start: range.lowerBound, end: range.upperBound)
+            let origin = MetronomePolicy.sliderThumbOrigin(fraction: t, width: w, thumb: thumb)
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(
@@ -465,17 +470,22 @@ private struct MacaronSlider: View {
                     .opacity(0.7)
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 24, height: 24)
+                    .frame(width: CGFloat(thumb), height: CGFloat(thumb))
                     .overlay(Circle().stroke(Palette.coral, lineWidth: 2.5))
                     .shadow(color: Palette.coral.opacity(0.35), radius: 5, y: 2)
-                    .offset(x: min(max(0, x - 12), w - 24))
+                    .offset(x: CGFloat(origin))
             }
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0).onChanged { g in
-                    let p = min(max(0, g.location.x / w), 1)
-                    value = range.lowerBound + p * (range.upperBound - range.lowerBound)
+                    value = MetronomePolicy.sliderValueFromTouch(
+                        x: Double(g.location.x),
+                        width: w,
+                        start: range.lowerBound,
+                        end: range.upperBound,
+                        thumb: thumb
+                    )
                 }
             )
         }
@@ -635,9 +645,16 @@ private struct SettingsPanel: View {
                         }
                         .buttonStyle(MacaronPressStyle())
                         .disabled(model.storeBusy || model.productPrice == nil)
+                        if model.storeBusy {
+                            Text(model.t("buying"))
+                                .font(.footnote)
+                                .foregroundStyle(Palette.fg2)
+                        } else if model.productPrice == nil {
+                            Text(model.t("buy_unavailable"))
+                                .font(.footnote)
+                                .foregroundStyle(Palette.fg2)
+                        }
                     }
-                    bankChips(title: model.t("click_bank"), voice: false)
-                    bankChips(title: model.t("voice_bank"), voice: true)
                     Button {
                         Task { await model.restorePurchases() }
                     } label: {
@@ -656,6 +673,8 @@ private struct SettingsPanel: View {
                             .font(.footnote)
                             .foregroundStyle(Palette.fg2)
                     }
+                    bankChips(title: model.t("click_bank"), voice: false)
+                    bankChips(title: model.t("voice_bank"), voice: true)
                 }
             }
 
@@ -728,7 +747,9 @@ private struct SettingsPanel: View {
                 .foregroundStyle(Palette.muted)
             Button { set(max(range.lowerBound, value - 1)) } label: {
                 Text("−").font(.headline).frame(width: 28, height: 28)
+                    .opacity(value > range.lowerBound ? 1 : 0.38)
             }
+            .disabled(value <= range.lowerBound)
             .buttonStyle(MacaronPressStyle())
             Text("\(value)")
                 .font(.system(size: 17, weight: .bold, design: .rounded))
@@ -736,7 +757,9 @@ private struct SettingsPanel: View {
                 .frame(minWidth: 22)
             Button { set(min(range.upperBound, value + 1)) } label: {
                 Text("+").font(.headline).frame(width: 28, height: 28)
+                    .opacity(value < range.upperBound ? 1 : 0.38)
             }
+            .disabled(value >= range.upperBound)
             .buttonStyle(MacaronPressStyle())
         }
         .foregroundStyle(Palette.ink)

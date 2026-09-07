@@ -27,6 +27,51 @@ enum MetronomePolicy {
     static let packClickBanks = ["click-stick", "click-kick", "click-tip"]
     static let packVoiceBanks = ["voice-zh-yunxi", "voice-zh-soft", "voice-en-deep"]
 
+    static let beatRowMax = 4
+    static let sliderThumb = 24.0
+
+    struct BeatRow: Equatable {
+        let startIndex: Int
+        let count: Int
+    }
+
+    static func beatRows(beats: Int) -> [BeatRow] {
+        let n = clampBeats(beats)
+        var out: [BeatRow] = []
+        var i = 0
+        while i < n {
+            let count = min(beatRowMax, n - i)
+            out.append(BeatRow(startIndex: i, count: count))
+            i += count
+        }
+        return out
+    }
+
+    static func sliderTravel(width: Double, thumb: Double = sliderThumb) -> Double {
+        max(width - thumb, 1)
+    }
+
+    static func sliderFraction(value: Double, start: Double, end: Double) -> Double {
+        let span = end - start
+        if span == 0 { return 0 }
+        return min(1, max(0, (value - start) / span))
+    }
+
+    static func sliderThumbOrigin(fraction: Double, width: Double, thumb: Double = sliderThumb) -> Double {
+        sliderTravel(width: width, thumb: thumb) * min(1, max(0, fraction))
+    }
+
+    static func sliderValueFromTouch(
+        x: Double,
+        width: Double,
+        start: Double,
+        end: Double,
+        thumb: Double = sliderThumb
+    ) -> Double {
+        let p = min(1, max(0, (x - thumb / 2) / sliderTravel(width: width, thumb: thumb)))
+        return start + p * (end - start)
+    }
+
     static func clampBpm(_ n: Int) -> Int { min(maxBpm, max(minBpm, n)) }
     static func clampBeats(_ n: Int) -> Int { min(maxBeats, max(minBeats, n)) }
     static func clampBeatUnit(_ n: Int) -> Int { min(16, max(1, n)) }
