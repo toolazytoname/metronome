@@ -6,14 +6,46 @@ const { getI18n, detectDefaultLang } = require('../../utils/i18n');
 // ============================================================
 // 音频管理器（鼓点采样播放，无延迟）
 // ============================================================
+const VOICE_CLICK_GAIN = 0.28;
+const OVERLAY_KEY = 'weakOverlay';
+
+function parseStrictInt(raw) {
+  if (typeof raw === 'number') {
+    if (!Number.isFinite(raw) || Math.round(raw) !== raw) return null;
+    return raw;
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (!/^-?\d+$/.test(t)) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function clampBpmInput(raw) {
+  const n = parseStrictInt(raw);
+  if (n == null) return null;
+  return Math.max(40, Math.min(208, n));
+}
+
+function clampVolInput(raw) {
+  const n = parseStrictInt(raw);
+  if (n == null) return null;
+  return Math.max(10, Math.min(100, n));
+}
+
 class AudioManager {
   constructor() {
     this._inited = false;
     this._vol = 0.85;
     this._pool = {};
-    this._ready = {};
     this._index = {};
+    this._scale = {};
+    this._src = {};
+    this._size = {};
     this._voiceLang = null;
+    this._playAllowed = false;
     this.POOL_SIZE = 3;
     this.VOICE_POOL = 2;
   }
@@ -21,27 +53,43 @@ class AudioManager {
   init() {
     if (this._inited) return;
     this._inited = true;
-    const files = {
-      strong: '/assets/sounds/click-strong.mp3',
-      weak: '/assets/sounds/click-weak.mp3',
-      uniform: '/assets/sounds/click-uniform.mp3',
-    };
-    Object.keys(files).forEach((key) => this._makePool(key, files[key], this.POOL_SIZE));
+    this._playAllowed = false;
+    this._makePool('strong', '/assets/sounds/click-strong.mp3', this.POOL_SIZE, 1);
+    this._makePool('weak', '/assets/sounds/click-weak.mp3', this.POOL_SIZE, 1);
+    this._makePool('uniform', '/assets/sounds/click-uniform.mp3', this.POOL_SIZE, 1);
+    this._makePool(OVERLAY_KEY, '/assets/sounds/click-weak.mp3', this.POOL_SIZE, VOICE_CLICK_GAIN);
   }
 
-  _makePool(key, src, size) {
+  _makePool(key, src, size, scale) {
+    const gain = scale == null ? 1 : scale;
+    this._scale[key] = gain;
+    this._src[key] = src;
+    this._size[key] = size;
     this._pool[key] = [];
-    this._ready[key] = false;
     this._index[key] = 0;
     for (let i = 0; i < size; i++) {
       const ctx = wx.createInnerAudioContext();
       ctx.src = src;
-      ctx.volume = this._vol;
+      ctx.volume = this._vol * gain;
       ctx.autoplay = false;
       ctx.loop = false;
-      ctx.onError(() => {});
-      ctx.onCanplay(() => { this._ready[key] = true; });
+      ctx._slotReady = false;
+      ctx._slotFailed = false;
+      ctx._dead = false;
+      ctx._poolKey = key;
       this._pool[key].push(ctx);
+      ctx.onError(() => {
+        if (ctx._dead) return;
+        const live = this._pool[key];
+        if (!live || live.indexOf(ctx) < 0) return;
+        ctx._slotFailed = true;
+      });
+      ctx.onCanplay(() => {
+        if (ctx._dead) return;
+        const live = this._pool[key];
+        if (!live || live.indexOf(ctx) < 0) return;
+        ctx._slotReady = true;
+      });
     }
   }
 
@@ -49,53 +97,164 @@ class AudioManager {
     const ctxs = this._pool[key];
     if (!ctxs) return;
     ctxs.forEach((ctx) => {
+      ctx._dead = true;
       try { ctx.destroy(); } catch (e) { /* ignore */ }
     });
     delete this._pool[key];
-    delete this._ready[key];
     delete this._index[key];
+    delete this._scale[key];
+    delete this._src[key];
+    delete this._size[key];
+  }
+
+  _rebuildKey(key) {
+    const src = this._src[key];
+    const size = this._size[key];
+    const scale = this._scale[key];
+    if (!src) return;
+    const ctxs = this._pool[key];
+    if (ctxs) {
+      ctxs.forEach((ctx) => {
+        ctx._dead = true;
+        try { ctx.destroy(); } catch (e) { /* ignore */ }
+      });
+    }
+    this._makePool(key, src, size == null ? this.POOL_SIZE : size, scale);
+  }
+
+  _liveCtx(key) {
+    const ctxs = this._pool[key];
+    if (!ctxs || ctxs.length === 0) return null;
+    const n = ctxs.length;
+    for (let i = 0; i < n; i++) {
+      const idx = (this._index[key] + i) % n;
+      if (!ctxs[idx]._dead && ctxs[idx]._slotReady && !ctxs[idx]._slotFailed) {
+        this._index[key] = (idx + 1) % n;
+        return ctxs[idx];
+      }
+    }
+    return null;
+  }
+
+  keyReady(key) {
+    const ctxs = this._pool[key];
+    return !!(ctxs && ctxs.some((c) => !c._dead && c._slotReady && !c._slotFailed));
+  }
+
+  keyFailed(key) {
+    const ctxs = this._pool[key];
+    return !!(ctxs && ctxs.length && ctxs.every((c) => c._dead || c._slotFailed));
+  }
+
+  keyStatus(key) {
+    if (this.keyReady(key)) return 'ready';
+    if (this.keyFailed(key)) return 'error';
+    return 'loading';
+  }
+
+  neededKeys(sm, beatIndex) {
+    if (sm === 'traditional') return [beatIndex === 0 ? 'strong' : 'weak'];
+    if (sm === 'voice') return ['v' + (beatIndex + 1), OVERLAY_KEY];
+    return ['uniform'];
+  }
+
+  modeStatus(sm, beatIndex) {
+    const sts = this.neededKeys(sm, beatIndex).map((k) => this.keyStatus(k));
+    if (sts.some((s) => s === 'error')) return 'error';
+    if (sts.some((s) => s === 'loading')) return 'loading';
+    return 'ready';
+  }
+
+  ensurePlayable(key) {
+    if (this.keyReady(key)) return;
+    if (!this._src[key] && !this._pool[key]) return;
+    if (!this._pool[key] || this.keyFailed(key)) this._rebuildKey(key);
+  }
+
+  ensureMode(sm) {
+    if (sm === 'traditional') {
+      this.ensurePlayable('strong');
+      this.ensurePlayable('weak');
+    } else if (sm === 'voice') {
+      this.ensurePlayable(OVERLAY_KEY);
+      this.ensureFailedVoiceKeys();
+    } else {
+      this.ensurePlayable('uniform');
+    }
+  }
+
+  ensureFailedVoiceKeys() {
+    const lang = this._voiceLang;
+    if (!lang) return;
+    for (let i = 1; i <= 16; i++) {
+      const key = 'v' + i;
+      if (!this._pool[key]) {
+        const id = i < 10 ? '0' + i : String(i);
+        this._makePool(key, `/assets/sounds/voice/${lang}/${id}.mp3`, this.VOICE_POOL, 1);
+      } else if (this.keyFailed(key)) {
+        this.ensurePlayable(key);
+      }
+    }
   }
 
   ensureVoice(lang) {
     const next = lang === 'en' ? 'en' : 'zh';
-    if (this._voiceLang === next && this._pool.v1) return;
+    if (this._voiceLang === next && this._pool.v1) {
+      this.ensureFailedVoiceKeys();
+      return;
+    }
     if (this._voiceLang && this._voiceLang !== next) {
       for (let i = 1; i <= 16; i++) this._destroyPool('v' + i);
     }
     this._voiceLang = next;
     for (let i = 1; i <= 16; i++) {
       const id = i < 10 ? '0' + i : String(i);
-      this._makePool('v' + i, `/assets/sounds/voice/${next}/${id}.mp3`, this.VOICE_POOL);
+      this._makePool('v' + i, `/assets/sounds/voice/${next}/${id}.mp3`, this.VOICE_POOL, 1);
     }
   }
 
   setVolume(v) {
     this._vol = Math.max(0.05, Math.min(1, v));
     Object.keys(this._pool).forEach((key) => {
-      this._pool[key].forEach((ctx) => { ctx.volume = this._vol; });
+      const g = this._vol * (this._scale[key] == null ? 1 : this._scale[key]);
+      this._pool[key].forEach((ctx) => { ctx.volume = g; });
     });
   }
 
   play(key) {
-    const ctxs = this._pool[key];
-    if (!ctxs || ctxs.length === 0) return;
-    if (!this._ready[key]) {
-      this._retryPlay(key, 40);
-      return;
-    }
-    const idx = this._index[key];
-    const ctx = ctxs[idx];
-    this._index[key] = (idx + 1) % ctxs.length;
+    if (!this._playAllowed) return false;
+    const ctx = this._liveCtx(key);
+    if (!ctx) return false;
     ctx.seek(0);
     ctx.play();
+    return true;
   }
 
-  _retryPlay(key, attemptsLeft) {
-    if (attemptsLeft <= 0) return;
-    setTimeout(() => {
-      if (this._ready[key]) this.play(key);
-      else this._retryPlay(key, attemptsLeft - 1);
-    }, 50);
+  playVoiceBeat(beatIndex) {
+    const vKey = 'v' + (beatIndex + 1);
+    if (!this.keyReady(vKey) || !this.keyReady(OVERLAY_KEY)) return false;
+    const okV = this.play(vKey);
+    const okO = this.play(OVERLAY_KEY);
+    return okV && okO;
+  }
+
+  allowPlay() {
+    this._playAllowed = true;
+  }
+
+  invalidate() {
+    this._playAllowed = false;
+  }
+
+  destroy() {
+    this._playAllowed = false;
+    Object.keys(this._pool).forEach((key) => this._destroyPool(key));
+    this._inited = false;
+    this._voiceLang = null;
+  }
+
+  ctxCount() {
+    return Object.keys(this._pool).reduce((n, k) => n + this._pool[k].length, 0);
   }
 }
 
@@ -150,6 +309,7 @@ Page({
 
     // v2.2 UI 增强
     nowPlayingText: '',  // _refreshNowPlaying 在 onLoad 里填
+    audioNote: '',
     silentHintShow: false,
 
     // i18n
@@ -162,6 +322,8 @@ Page({
   // ========================================================
   onLoad() {
     this._loadState();
+    audioManager.init();
+    audioManager.setVolume(this.data.vol / 100);
     this._updateBeats();
     this._refreshNowPlaying();
   },
@@ -175,15 +337,20 @@ Page({
     // 切后台自动停止（平台限制，音频本就不能在后台播放）
     if (this.data.running) {
       this._stop();
+    } else {
+      audioManager.invalidate();
     }
   },
 
   onUnload() {
-    this._stopTick();
+    this._stop();
+    this._runId = (this._runId || 0) + 1;
+    this._starting = false;
     if (this._silentHintTimer) {
       clearTimeout(this._silentHintTimer);
       this._silentHintTimer = null;
     }
+    audioManager.destroy();
   },
 
 
@@ -236,7 +403,10 @@ Page({
       i18n: newI18n,
       timeSigs: buildTimeSigs(newI18n),
     });
-    if (this.data.soundMode === 'voice') audioManager.ensureVoice(newLang);
+    if (this.data.soundMode === 'voice') {
+      audioManager.ensureVoice(newLang);
+      if (this.data.running) audioManager.allowPlay();
+    }
     this._refreshNowPlaying();
     try {
       wx.setStorageSync('metronome_lang', newLang);
@@ -252,16 +422,18 @@ Page({
   _loadState() {
     try {
       const saved = wx.getStorageSync('metronome');
-      if (saved) {
-        const bpm = saved.bpm || DEFAULT_STATE.bpm;
-        const bc = saved.bc || DEFAULT_STATE.bc;
-        const bu = saved.bu || DEFAULT_STATE.bu;
+      if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+        const bpmClamped = clampBpmInput(saved.bpm);
+        const bcN = parseStrictInt(saved.bc);
+        const buN = parseStrictInt(saved.bu);
+        const volN = parseStrictInt(saved.vol);
+        const bpm = bpmClamped == null ? DEFAULT_STATE.bpm : bpmClamped;
+        const bc = bcN == null ? DEFAULT_STATE.bc : Math.max(1, Math.min(16, bcN));
+        const bu = buN == null ? DEFAULT_STATE.bu : Math.max(1, Math.min(16, buN));
         const sm = (saved.sm === 'traditional' || saved.sm === 'uniform' || saved.sm === 'voice')
           ? saved.sm
           : DEFAULT_STATE.sm;
-        const vol = typeof saved.vol === 'number'
-          ? Math.max(10, Math.min(100, saved.vol))
-          : DEFAULT_STATE.vol;
+        const vol = volN == null ? DEFAULT_STATE.vol : Math.max(10, Math.min(100, volN));
         const sig = `${bc}/${bu}`;
         this.setData({
           bpm,
@@ -340,31 +512,29 @@ Page({
   },
 
   onBpmChange(e) {
-    // 松手时触发。**不能**走 _setBpm 因为 onBpmChanging 已经把
-    // this.data.bpm 同步到新值，_setBpm 里 newBpm===old 会 early return，
-    // 导致 tick 不被重启，听到的节奏不变。这里直接 clamp + 重启 tick。
-    const newBpm = Math.max(40, Math.min(208, parseInt(e.detail.value)));
+    const newBpm = clampBpmInput(e && e.detail ? e.detail.value : undefined);
+    if (newBpm == null) return;
     if (newBpm !== this.data.bpm) {
       this.setData({ bpm: newBpm });
     }
     this._saveState();
     this._refreshNowPlaying();
-    if (this.data.running) {
-      this._stopTick();
-      this._startTick();
-    }
   },
 
   onBpmChanging(e) {
-    // 实时跟随滑块拖动（松开时才重启 tick + 保存状态）
-    this.setData({ bpm: parseInt(e.detail.value) });
+    const newBpm = clampBpmInput(e && e.detail ? e.detail.value : undefined);
+    if (newBpm == null) return;
+    this.setData({ bpm: newBpm });
   },
 
   onModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
     if (mode !== 'traditional' && mode !== 'uniform' && mode !== 'voice') return;
     this.setData({ soundMode: mode });
-    if (mode === 'voice') audioManager.ensureVoice(this.data.lang);
+    if (mode === 'voice') {
+      audioManager.ensureVoice(this.data.lang);
+      audioManager.ensureMode('voice');
+    }
     this._updateBeats();
     this._saveState();
     this._refreshNowPlaying();
@@ -459,12 +629,15 @@ Page({
   },
 
   onVolChanging(e) {
-    this.setData({ vol: parseInt(e.detail.value, 10) });
-    audioManager.setVolume(this.data.vol / 100);
+    const vol = clampVolInput(e && e.detail ? e.detail.value : undefined);
+    if (vol == null) return;
+    this.setData({ vol });
+    audioManager.setVolume(vol / 100);
   },
 
   onVolChange(e) {
-    const vol = Math.max(10, Math.min(100, parseInt(e.detail.value, 10)));
+    const vol = clampVolInput(e && e.detail ? e.detail.value : undefined);
+    if (vol == null) return;
     this.setData({ vol });
     audioManager.setVolume(vol / 100);
     this._saveState();
@@ -475,20 +648,14 @@ Page({
   // BPM 设置
   // ========================================================
   _setBpm(b) {
-    const newBpm = Math.max(40, Math.min(208, b));
+    const newBpm = clampBpmInput(b);
+    if (newBpm == null) return;
     const old = this.data.bpm;
     if (newBpm === old) return;
 
     this.setData({ bpm: newBpm });
     this._saveState();
     this._refreshNowPlaying();
-
-    // 如果正在播放，重设定时器间隔
-    if (this.data.running) {
-      this._stopTick();
-      // _startTick 内部已通过 _scheduleNextTick 立即触发一次 _tick
-      this._startTick();
-    }
   },
 
 
@@ -496,43 +663,62 @@ Page({
   // 播放 / 停止
   // ========================================================
   _start() {
-    // 首次启动时初始化音频（必须在用户点击后调用，避免被系统拦截）
+    if (this.data.running || this._starting) return;
+    this._starting = true;
+    this._runId = (this._runId || 0) + 1;
     audioManager.init();
+    audioManager.allowPlay();
     audioManager.setVolume(this.data.vol / 100);
     if (this.data.soundMode === 'voice') audioManager.ensureVoice(this.data.lang);
+    audioManager.ensureMode(this.data.soundMode);
     this._currentBeat = 0;
-    // 注意：setData 必须先于 _startTick——setTimeout 链的第一次同步调用
-    // 会读 this.data.running 来判断要不要排下一拍，否则会被早退。
     this.setData({ running: true });
     this._refreshNowPlaying(true);
     this._startTick();
+    this._starting = false;
   },
 
   _stop() {
+    this._runId = (this._runId || 0) + 1;
+    this._starting = false;
     this._stopTick();
-    // 重置所有节拍指示器
+    audioManager.invalidate();
     const beats = this.data.beats.map(b => ({ ...b, active: false }));
-    this.setData({ running: false, beats });
+    this.setData({ running: false, beats, audioNote: '' });
     this._refreshNowPlaying(false);
   },
 
   _startTick() {
-    const interval = 60000 / this.data.bpm;
-    this._tickBase = Date.now();
-    this._tickCount = 0;
-    this._prevActive = undefined;
-    this._driftMax = 0;
-    this._driftSum = 0;
-    this._scheduleNextTick(interval);
+    this._stopTick();
+    const now = Date.now();
+    this._tick();
+    this._nextAt = now + (60000 / this.data.bpm);
+    this._armNext();
   },
 
-  _scheduleNextTick(interval) {
+  _intervalMs() {
+    return 60000 / this.data.bpm;
+  },
+
+  _armNext() {
     if (!this.data.running) return;
-    this._tick();
-    this._tickCount += 1;
-    const target = this._tickBase + this._tickCount * interval;
-    const delay = Math.max(0, target - Date.now());
-    this._timer = setTimeout(() => this._scheduleNextTick(interval), delay);
+    const delay = Math.max(0, this._nextAt - Date.now());
+    const runId = this._runId;
+    this._timer = setTimeout(() => {
+      if (!this.data.running || this._runId !== runId) return;
+      this._tick();
+      const interval = this._intervalMs();
+      this._nextAt += interval;
+      const now = Date.now();
+      if (this._nextAt <= now) {
+        this._nextAt = now + interval;
+      }
+      this._armNext();
+    }, delay);
+  },
+
+  _scheduleNextTick() {
+    this._armNext();
   },
 
   _stopTick() {
@@ -551,13 +737,15 @@ Page({
     const bc = this._getBeatCount();
     const cb = this._currentBeat;
 
+    let sounded = false;
     if (sm === 'traditional') {
-      audioManager.play(cb === 0 ? 'strong' : 'weak');
+      sounded = audioManager.play(cb === 0 ? 'strong' : 'weak');
     } else if (sm === 'uniform') {
-      audioManager.play('uniform');
+      sounded = audioManager.play('uniform');
     } else if (sm === 'voice') {
-      audioManager.play('v' + (cb + 1));
+      sounded = audioManager.playVoiceBeat(cb);
     }
+    this._onAudioStatus(sounded ? 'ready' : audioManager.modeStatus(sm, cb));
 
     const beats = this.data.beats.map((b, i) => ({
       ...b,
@@ -572,6 +760,14 @@ Page({
   // ========================================================
   // Now-playing 状态条
   // ========================================================
+  _onAudioStatus(st) {
+    const i18n = this.data.i18n || getI18n('zh');
+    let note = '';
+    if (st === 'loading') note = i18n.audio_loading || '';
+    else if (st === 'error') note = i18n.audio_error || '';
+    if (note !== this.data.audioNote) this.setData({ audioNote: note });
+  },
+
   _refreshNowPlaying(runningOverride) {
     const running = runningOverride === undefined ? this.data.running : runningOverride;
     const i18n = this.data.i18n || getI18n('zh'); // 防御：测试 mock 可能缺
@@ -628,3 +824,13 @@ Page({
   },
 
 });
+
+module.exports = {
+  AudioManager,
+  getAudioManager: () => audioManager,
+  VOICE_CLICK_GAIN,
+  OVERLAY_KEY,
+  parseStrictInt,
+  clampBpmInput,
+  clampVolInput,
+};

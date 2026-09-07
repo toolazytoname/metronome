@@ -368,6 +368,13 @@
   background: #ff7b7b;
   box-shadow: 0 0 0 6rpx rgba(255, 123, 123, 0.30);
 }
+.audio-note {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #c45c4a;
+  text-align: center;
+}
 
 /* ============================================================
    滑块 + ± 按钮

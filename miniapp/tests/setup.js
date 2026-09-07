@@ -1,17 +1,30 @@
 // Mock WeChat miniprogram globals
+global.__audioAutoCanplay = true;
 global.wx = {
-  createInnerAudioContext: () => ({
-    src: '',
-    volume: 0.8,
-    autoplay: false,
-    loop: false,
-    onError() {},
-    onCanplay() {},
-    play() {},
-    seek() {},
-    stop() {},
-    destroy() {},
-  }),
+  createInnerAudioContext: () => {
+    let canplayFn = null;
+    let errorFn = null;
+    const ctx = {
+      src: '',
+      volume: 0.8,
+      autoplay: false,
+      loop: false,
+      _played: 0,
+      onError(fn) { errorFn = fn; ctx._errorFn = fn; },
+      onCanplay(fn) {
+        canplayFn = fn;
+        ctx._canplayFn = fn;
+        if (fn && global.__audioAutoCanplay !== false) fn();
+      },
+      play() { ctx._played += 1; },
+      seek() {},
+      stop() {},
+      destroy() {},
+      __fireCanplay() { if (canplayFn) canplayFn(); },
+      __fireError() { if (errorFn) errorFn(); },
+    };
+    return ctx;
+  },
   getStorageSync: () => null,
   setStorageSync: () => {},
 };
@@ -60,3 +73,12 @@ global.__clearAllTimers = () => {
   _timers.interval.clear();
   _timers.timeout.clear();
 };
+
+global.__timeoutIds = () => Array.from(_timers.timeout.keys());
+
+global.__peekTimeout = (id) => {
+  const t = _timers.timeout.get(id);
+  return t ? t.fn : null;
+};
+
+global.__timeoutEntries = () => Array.from(_timers.timeout.entries()).map(([id, t]) => ({ id, ms: t.ms }));

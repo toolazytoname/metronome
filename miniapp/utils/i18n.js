@@ -60,9 +60,11 @@ const I18N = {
     share_title: '小兔头节拍器 · 练琴节奏稳了',
     share_timeline: '小兔头节拍器 · 在线练琴神器',
     lang_btn: 'EN', // 按钮显示的"对面语言"
+    audio_loading: '声音加载中…',
+    audio_error: '声音加载失败，可稍后重试',
   },
   en: {
-    title: 'Little Rabbit',
+    title: 'Bunny Metronome',
     subtitle: 'WeChat mini-program · Forever free',
     bpm: 'BPM',
     np_idle: 'Idle',
@@ -89,7 +91,7 @@ const I18N = {
     silent_msg_part1: 'Flip the ',
     silent_msg_em: 'silent switch',
     silent_msg_part2: ' on your iPhone, or turn up the volume',
-    info_title: 'Little Rabbit Metronome · v2.2',
+    info_title: 'Bunny Metronome · v2.2',
     info_content: [
       'How to use:',
       '· Drag slider or ± to adjust BPM',
@@ -106,14 +108,16 @@ const I18N = {
     ].join('\n'),
     info_btn: 'Got it',
     donate_title: 'Support us',
-    donate_desc: 'If Little Rabbit helped your practice, pop over to a browser to support the ongoing development.',
+    donate_desc: 'If Bunny Metronome helped your practice, pop over to a browser to support the ongoing development.',
     donate_btn_open: 'Open in browser',
     donate_btn_copy: 'Copy project URL',
     donate_copied: 'Copied — paste in a browser',
     donate_tip: 'In-app QR payment is restricted in mini-programs. Please use a browser.',
-    share_title: 'Little Rabbit Metronome · steady tempo for practice',
-    share_timeline: 'Little Rabbit Metronome · in-browser practice tool',
+    share_title: 'Bunny Metronome · steady tempo for practice',
+    share_timeline: 'Bunny Metronome · in-browser practice tool',
     lang_btn: '中',
+    audio_loading: 'Loading sounds…',
+    audio_error: 'Sound failed to load; try again later',
   },
 };
 

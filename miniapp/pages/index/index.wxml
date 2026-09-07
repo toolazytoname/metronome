@@ -41,6 +41,7 @@
           <view class="np-dot"></view>
           <text>{{nowPlayingText}}</text>
         </view>
+        <view class="audio-note" wx:if="{{audioNote}}">{{audioNote}}</view>
       </view>
     </view>
 
