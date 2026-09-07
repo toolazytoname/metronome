@@ -70,7 +70,10 @@ AGENTS.md  CLAUDE.md  DEPLOY.md
 - 语言另存：小程序 `metronome_lang`；Web 靠 `/` vs `/en/`；原生 `lang` 在同一份偏好里
 - 改 BPM **不得插入额外一拍**，只改下一拍间隔
 - Web 时钟：`js/engine.js`（`LOOKAHEAD_MS = 25`，`SCHEDULE_AHEAD = 0.1`）。小程序时钟：`miniapp/pages/index/index.js`。禁止 `setInterval` / `speechSynthesis` 当拍钟
+- 小程序若一次回调已落后超过一个间隔：**最多发当前这一拍**，然后把下一拍时刻拨到 `now + interval`，**丢弃过期拍、不 delay=0 追赶连发**。这条只约束小程序；Web / 原生仍走音频时间线预约，不在此改语义
+- BPM 入口只接受完整有限整数（整个字符串都是十进制数字）；非法/空/NaN **忽略**，不写进 data 或时钟
 - 童声：`assets/sounds/voice/{zh|en}/01.mp3`–`16.mp3`，和弱 click 叠在同一拍（弱 click 增益 0.28）
+- 小程序 voice 与弱 click **都就绪才同拍触发**；未就绪的当前拍不排队补发。stop / onHide / onUnload / 切语言或模式必须作废进行中的加载回调，禁止迟到出声。池内每个 InnerAudio 自己的就绪态，不能「池里任意一个 canplay 就算整池就绪」。播放键不得假装在响：加载中或失败要有可见提示，恢复后可再点
 - 采样失败时 Web 回退合成 click，不要让播放键假死。原生播放失败必须有可见错误，禁止按钮空转
 
 细节见 `docs/engine-contract.md`。
@@ -131,6 +134,7 @@ cd android && ./gradlew assembleDebug
 
 ## 发布
 
+- 开发提交走 `develop`，见「提交与推送节奏」。不要把日常修复直接推 `main`。
 - Web：推 `main` → Vercel。忽略 `miniapp/`、`ios/`、`android/`
 - 小程序：开发者工具上传 → 微信公众平台审核
 - iOS：本机签名 → TestFlight → App Store（先于 Android）。打 `v*` tag 会在 GitHub Release 挂 **unsigned IPA**（CI `CODE_SIGNING_ALLOWED=NO`，不能装真机、不能传商店）。TestFlight 仍要本机发行证书。
@@ -258,7 +262,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 }
 ```
 
-非法值 clamp。未知 `sm` → `uniform`。解锁布尔不是这份 JSON 的权威。
+非法值 clamp。未知 `sm` → `uniform`。解锁布尔不是这份 JSON 的权威。未知/失败的商店查询不得把 resolve 后的 default 写回 clickBank/voiceBank/haptic*；播放时仍 resolve 门控。只有权威成功账本（含 OK 空列表撤销）才持久化归默认。
 
 ### 音频 / 生命周期
 
@@ -464,3 +468,22 @@ Android
 5. 发现说明书不够：改本节，不要在 Android 加功能。
 6. 政策单测（clamp、bank 门闩、不插拍、0.28 增益）改钟时要绿；不要为上线新写一堆测试当阻断。
 7. 密钥不进 git。图标 1024 和采样可以进仓库。
+8. 提交与推送见本文「提交与推送节奏」。默认走 `develop`，不要自造远端分支。
+
+---
+
+## 提交与推送节奏
+
+默认开发线是 **`develop`**。开发修复的提交和推送都复用它。除用户明确另行指定，**不创建**额外 task / audit / feature 分支。隔离工作树可以用，但不得因为 worktree 自动发明远端分支。
+
+`main` 只是发布合并关口（Web：推 `main` → Vercel）。默认不推 `main`、不 force、不改写已推历史、不自动打 tag / 合并 / 触发发布。发布另经发布关口授权。
+
+按**可独立解释、验证、回退**的逻辑修复单元提交。代码和必要测试/契约一起走，不按返工次数或每个文件碎片提交，也不长期堆成全项目巨型提交。
+
+实现期间可以改工作树。**stage/commit 只在协调人确认写入停止，且该单元的检查、测试和独立复盘都通过之后。** 独立复盘保持只读，不在复盘里提交。写入期间不切分支、不移动 refs。
+
+提交前：看 `git diff` 和新文件；**显式路径**暂存，避免 `git add .` 卷走无关用户改动；`git diff --cached --check`；检查内容、密钥、锁文件、覆盖率门槛。不为「看起来干净」reset 或删别人的改动。推送前重查远端，只允许快进，拒绝非快进，绝不覆盖他人提交。
+
+用户已授权时，一组通过验收的提交推 **`origin/develop`**。报告 commit SHA、分组、测试、目标远端分支。现有 CI 的 `push` / `pull_request` 只监听 `main`（`.github/workflows/ci.yml`）；Native packages 只监听 `v*` tag（`release.yml`）。**不要**为 develop 自动扩 CI / 发布范围，也不要声称推 develop 会跑这些 workflow。提交门槛仍是本地测试与独立复盘。
+
+**代码可提交 ≠ 可发布。** 外部真机 / 账号 / 签名未验证的上线项保持未勾。

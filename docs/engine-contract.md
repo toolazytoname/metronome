@@ -48,7 +48,7 @@ Web 现实现（`js/engine.js`）：
 - `SCHEDULE_AHEAD = 0.1`
 - `src.start(time)` 用 `AudioContext.currentTime`
 
-小程序现实现：`_tickBase + _tickCount * interval - Date.now()` 排 `setTimeout`。切后台必须 `stop`（平台限制）。
+小程序现实现：`_nextAt` 绝对时刻 + `setTimeout`。切后台必须 `stop`（平台限制）。播放中改 BPM 只改**下一拍**间隔，不重启、不插拍。若回调时已经落后超过一个间隔：只打当前这一拍，然后将 `_nextAt` 设为 `now + interval`，**丢弃过期拍，禁止 delay=0 循环补发**（与 Web/iOS/Android 的音频时间线预约不同，只约束小程序 JS 钟）。BPM 输入必须是完整有限整数；非法值忽略。
 
 iOS：`AVAudioEngine` + `scheduleBuffer`；`AVAudioSession.category = .playback`。禁止录音类别，不要申请麦克风。
 
@@ -60,7 +60,7 @@ Android：音频线程填 `AudioTrack` / AAudio；UI 进程用前台 Service 保
 |---|---|
 | `traditional` | 拍 0 → `click-strong`，其余 → `click-weak` |
 | `uniform` | 每拍 `click-uniform` |
-| `voice` | `voice/{lang}/{beat+1 padded}.mp3` + 低增益 `click-weak`（Web 增益 0.28） |
+| `voice` | `voice/{lang}/{beat+1 padded}.mp3` + 低增益 `click-weak`（增益 0.28；小程序用独立 overlay 池，不改主音量） |
 
 `lang` 为 `zh` 或 `en`。数拍文件：`01.mp3` … `16.mp3`。`bc > 16` 不允许。
 
@@ -104,6 +104,8 @@ isSoundPackUnlocked() -> bool
 ```
 
 `start` 必须可重入安全：连点播放不能开两个 scheduler。Web 用 `_runId` / `_starting` 做到了，其它端照做。
+
+小程序采样：每个 InnerAudio 自己的 canplay/error。voice 拍必须数拍与 overlay **都就绪**才叠；未就绪则跳过这一拍、不排队重试。stop / 切语言 / destroy 使旧回调失效。加载失败要可见，禁止空转播放键。
 
 ## 验收
 
