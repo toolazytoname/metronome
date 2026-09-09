@@ -39,7 +39,7 @@ npm ci
 
 1. 工具 → 构建 npm（生成 `miniprogram_npm/`）
 2. 基准基础库以仓库里的 `miniapp/project.config.json` 为准（当前 `libVersion` **3.4.6**）。本机 `project.private.config.json` 可能不同，那是本地覆盖，不要当成发布基准，也不要为了对齐去删别人的 private 配置
-3. 本地可以把 `urlCheck` 关掉方便调试；**正式预览 / 提审必须配置业务域名**，不能依赖关闭域名检查
+3. 当前个人主体不使用 `web-view`，支持区只复制网站链接，无需为此配置业务域名。网络请求仍按 request 等服务器域名要求配置；本地关闭 `urlCheck` 不能替代真机 / 正式版验证
 
 ### 第三步：导入项目
 

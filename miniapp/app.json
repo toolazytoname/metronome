@@ -1,7 +1,6 @@
 {
   "pages": [
-    "pages/index/index",
-    "pages/webview/webview"
+    "pages/index/index"
   ],
   "window": {
     "navigationBarTitleText": "小兔头节拍器",

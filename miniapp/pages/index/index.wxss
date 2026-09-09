@@ -755,19 +755,8 @@ slider {
     inset 0 2rpx 0 rgba(255, 255, 255, 0.4),
     0 8rpx 20rpx -6rpx rgba(211, 57, 68, 0.5);
 }
-.donate-btn.secondary {
-  background: rgba(255, 255, 255, 0.6);
-  color: #d33944;
-  border: 1.5rpx solid #f6c5b3;
-  box-shadow: 0 2rpx 6rpx rgba(37, 22, 20, 0.06);
-}
 .donate-btn-text {
   display: block;
-  line-height: 1;
-}
-.donate-btn-arrow {
-  display: block;
-  font-size: 28rpx;
   line-height: 1;
 }
 .donate-btn-hover {

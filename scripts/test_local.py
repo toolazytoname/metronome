@@ -177,14 +177,17 @@ def test_dead_code():
         "miniapp/app.js must ship with umeng debug: false",
     )
 
-    webview = (PROJECT_ROOT / "miniapp/pages/webview/webview.js").read_text()
+    app_config = json.loads((PROJECT_ROOT / "miniapp/app.json").read_text())
+    wxml = (PROJECT_ROOT / "miniapp/pages/index/index.wxml").read_text()
     check(
-        "  donate titles have distinct zh/en keys",
-        "about#donate" in webview
-        and "about/en#donate" in webview
-        and "支持我们" in webview
-        and "Support us" in webview,
-        "webview donate title map must have distinct zh and en keys",
+        "  personal miniapp uses copy-only support entry",
+        app_config["pages"] == ["pages/index/index"]
+        and 'bindtap="onCopyUrl"' in wxml
+        and 'onDonate' not in content
+        and 'donate_btn_open' not in wxml
+        and not any("<web-view" in p.read_text()
+                    for p in (PROJECT_ROOT / "miniapp/pages").rglob("*.wxml")),
+        "personal miniapp must copy support links, not open a web-view",
     )
 
     for rel in ("index.html", "en/index.html", "js/engine.js"):

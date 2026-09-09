@@ -44,7 +44,7 @@ v1 不上共享 C++ / KMP 引擎。漂移成为问题再抽。
 - Vercel 按仓库根发布
 - `sw.js` 预缓存 `/js/engine.js`、`/assets/sounds/...`
 - 规范 URL：`/`、`/en/`、`/p/piano-practice.html`、`/about`
-- 小程序 donate 深链到 `https://jpq.weichao.studio/about#donate`
+- 个人主体小程序支持区只复制网站链接，由用户自行在外部浏览器粘贴访问；不使用 `web-view`。中文 `https://jpq.weichao.studio/about#donate`，英文 `https://jpq.weichao.studio/about/en#donate`
 
 搬到 `apps/web/` 只是目录好看，会同时改部署、SW、sitemap、hreflang。不要搬。
 

@@ -166,20 +166,16 @@
           <text class="vol-val">{{vol}}</text>
         </view>
 
-        <!-- 支持我们 —— 跳转 web-view 看捐赠页（小程序不允许直接扫码支付） -->
+        <!-- 支持我们 —— 复制链接后由用户自行在外部浏览器访问 -->
         <view class="donate-card">
           <text class="donate-title">❤️ {{i18n.donate_title}}</text>
           <text class="donate-desc">{{i18n.donate_desc}}</text>
           <view class="donate-btns">
-            <view class="donate-btn primary" bindtap="onDonate" hover-class="donate-btn-hover">
-              <text class="donate-btn-text">{{i18n.donate_btn_open}}</text>
-              <text class="donate-btn-arrow">→</text>
-            </view>
-            <view class="donate-btn secondary" bindtap="onCopyUrl" hover-class="donate-btn-hover">
+            <view class="donate-btn primary" bindtap="onCopyUrl" hover-class="donate-btn-hover">
               <text class="donate-btn-text">{{i18n.donate_btn_copy}}</text>
             </view>
           </view>
-          <text class="donate-tip">⚠ {{i18n.donate_tip}}</text>
+          <text class="donate-tip">{{i18n.donate_tip}}</text>
         </view>
 
       </view>

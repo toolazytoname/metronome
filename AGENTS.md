@@ -27,6 +27,12 @@
 
 iOS / Android 可卖一次性「音色工坊」（SKU `studio.weichao.jpq.soundpack`，¥12 / $1.99），解锁额外音色和震动拍选项。默认童声保持免费。震动开/关免费。Web / 小程序 v1 不卖包，继续打赏。
 
+## 小程序支持页入口
+
+- 当前小程序为个人主体；支持区只提供「复制网站链接」，由用户自行打开 Safari 或其他浏览器粘贴访问。
+- 不使用 `web-view` 承载支持页，不把复制操作写成「在浏览器中打开」；request 合法域名不等于业务域名权限。
+- 中文复制 `https://jpq.weichao.studio/about#donate`，英文复制 `https://jpq.weichao.studio/about/en#donate`；复制成功和失败均提供对应语言的可见提示。
+
 ## 端矩阵
 
 | 端 | 路径 | 时钟 | 分发 |

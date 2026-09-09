@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Capture the real Page definition from index.js
 let RealPageDef = null;
@@ -607,30 +607,41 @@ describe('Silent hint', () => {
 });
 
 describe('Donate and share hooks', () => {
-  it('onDonate navigates to zh donate url', () => {
+  it.each(['zh', 'en'])('copies the %s support URL without navigation', (lang) => {
     const p = makePage();
-    let url = null;
-    global.wx.navigateTo = (opts) => { url = opts.url; };
-    p.onDonate();
-    expect(url).toContain(encodeURIComponent('https://jpq.weichao.studio/about#donate'));
-  });
-
-  it('onDonate falls back to modal when navigate fails', () => {
-    const p = makePage();
-    let modal = false;
-    global.wx.navigateTo = (opts) => { opts.fail(new Error('domain')); };
-    global.wx.showModal = () => { modal = true; };
-    p.onDonate();
-    expect(modal).toBe(true);
-  });
-
-  it('onCopyUrl copies the donate link', () => {
-    const p = makePage();
-    let copied = null;
-    global.wx.setClipboardData = (opts) => { copied = opts.data; if (opts.success) opts.success(); };
-    global.wx.showToast = () => {};
+    p.data.lang = lang;
+    p.data.i18n = getI18n(lang);
+    const clipboard = vi.fn();
+    const navigate = vi.fn();
+    const toast = vi.fn();
+    global.wx.setClipboardData = clipboard;
+    global.wx.navigateTo = navigate;
+    global.wx.showToast = toast;
     p.onCopyUrl();
-    expect(copied).toBe('https://jpq.weichao.studio/about#donate');
+    const options = clipboard.mock.calls[0][0];
+    expect(options.data).toBe(lang === 'en'
+      ? 'https://jpq.weichao.studio/about/en#donate'
+      : 'https://jpq.weichao.studio/about#donate');
+    expect(toast).not.toHaveBeenCalled();
+    options.success();
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({
+      title: getI18n(lang).donate_copied, icon: 'none',
+    }));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(p.onDonate).toBeUndefined();
+  });
+
+  it.each(['zh', 'en'])('reports clipboard failure in %s without claiming success', (lang) => {
+    const p = makePage();
+    p.data.lang = lang;
+    p.data.i18n = getI18n(lang);
+    global.wx.setClipboardData = (options) => options.fail({ errMsg: 'denied' });
+    const toast = vi.fn();
+    global.wx.showToast = toast;
+    p.onCopyUrl();
+    expect(toast).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      title: getI18n(lang).donate_copy_failed, icon: 'none',
+    }));
   });
 
   it('onShareAppMessage returns a path', () => {
