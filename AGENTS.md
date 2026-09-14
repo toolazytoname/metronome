@@ -452,9 +452,9 @@ iOS
 
 Android
 
-- [ ] N4.9 Play Console 建应用 **阻断**（相对 Android 上线）
+- [x] N4.9 Play Console 建应用 **阻断**（2026-09-14；内部测试已建）
 - [ ] N4.10 同一 SKU；Data safety 声明应用活动 + Firebase 实例 ID（与 Google 共享，非广告） **阻断**
-- [ ] N4.11 内部测试轨先于生产 **阻断**
+- [x] N4.11 内部测试轨先于生产 **阻断**（2026-09-14；2.1.4 / code 6 已发布）
 - [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机练琴 / 播放 / 设置 1080×1920 已拍。工坊 Restore 需 Play 安装包再拍 **阻断**
 - [x] N4.13 国内商店 / 软著 **不做**
 - [ ] N4.14 生产轨上架 **应当**（iOS Ready for Sale 之后）
