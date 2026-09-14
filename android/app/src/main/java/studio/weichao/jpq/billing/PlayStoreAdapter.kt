@@ -227,9 +227,10 @@ class PlayStoreAdapter(
                         .build()
                 )
             ).build()
-        client.queryProductDetailsAsync(params) { result, details ->
+        client.queryProductDetailsAsync(params) { result, queryResult ->
+            val details = queryResult.productDetailsList
             if (!session.isLivePurchaseGen(gen)) return@queryProductDetailsAsync
-            if (result.responseCode != BillingClient.BillingResponseCode.OK || details.isNullOrEmpty()) {
+            if (result.responseCode != BillingClient.BillingResponseCode.OK || details.isEmpty()) {
                 if (session.failPurchase(gen)) {
                     emitBusy()
                     onMessage("buy_unavailable")
@@ -292,9 +293,9 @@ class PlayStoreAdapter(
                         .build()
                 )
             ).build()
-        client.queryProductDetailsAsync(params) { _, details ->
+        client.queryProductDetailsAsync(params) { _, queryResult ->
             if (!session.canApplyPrice(seq)) return@queryProductDetailsAsync
-            formattedPrice = details.firstOrNull()?.oneTimePurchaseOfferDetails?.formattedPrice
+            formattedPrice = queryResult.productDetailsList.firstOrNull()?.oneTimePurchaseOfferDetails?.formattedPrice
             onPrice(formattedPrice)
         }
     }

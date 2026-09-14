@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import java.util.Locale
 import android.graphics.Color as AndroidColor
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -252,12 +253,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadPrefs(): MetronomePrefs {
-        val raw = getSharedPreferences("metro", MODE_PRIVATE).getString("metronome", null) ?: return MetronomePrefs()
+        val raw = getSharedPreferences("metro", MODE_PRIVATE).getString("metronome", null)
+            ?: return MetronomePrefs(lang = defaultLanguage())
         val obj = JSONObject(raw)
         val map = mutableMapOf<String, Any?>()
         obj.keys().forEach { map[it] = obj.get(it) }
         return MetronomePrefs.from(map)
     }
+
+    private fun defaultLanguage(): String =
+        if (Locale.getDefault().language.equals("zh", ignoreCase = true)) "zh" else "en"
 
     private fun savePrefs() {
         val obj = JSONObject(prefs.coreMap() + mapOf(

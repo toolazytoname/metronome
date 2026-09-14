@@ -73,7 +73,7 @@ AGENTS.md  CLAUDE.md  DEPLOY.md
 ```
 
 - `bpm` 40–208；`bc` 1–16；`sm` 只能是 `traditional` | `uniform` | `voice`；`vol` 10–100
-- 语言另存：小程序 `metronome_lang`；Web 靠 `/` vs `/en/`；原生 `lang` 在同一份偏好里
+- 语言另存：小程序 `metronome_lang`；Web 靠 `/` vs `/en/`；原生 `lang` 在同一份偏好里。小程序 / iOS / Android 首次启动均跟随系统首选语言：中文语言环境用 `zh`，其他语言环境用 `en`；用户手动切换后以已保存选择为准
 - 改 BPM **不得插入额外一拍**，只改下一拍间隔
 - Web 时钟：`js/engine.js`（`LOOKAHEAD_MS = 25`，`SCHEDULE_AHEAD = 0.1`）。小程序时钟：`miniapp/pages/index/index.js`。禁止 `setInterval` / `speechSynthesis` 当拍钟
 - 小程序若一次回调已落后超过一个间隔：**最多发当前这一拍**，然后把下一拍时刻拨到 `now + interval`，**丢弃过期拍、不 delay=0 追赶连发**
@@ -114,6 +114,10 @@ cd android && ./gradlew :policy:test
 
 # Android APK（需要完整 Android SDK）
 cd android && ./gradlew assembleDebug
+
+# Play 上传用 AAB（本机 keystore，密钥不进 git）
+# ANDROID_KEYSTORE_PATH=... ANDROID_STORE_PASSWORD=... ANDROID_KEY_ALIAS=... ANDROID_KEY_PASSWORD=...
+# cd android && ./gradlew :app:bundleRelease
 ```
 
 ## 禁止
@@ -147,7 +151,7 @@ cd android && ./gradlew assembleDebug
 - Web：推 `main` → Vercel。忽略 `miniapp/`、`ios/`、`android/`
 - 小程序：开发者工具上传 → 微信公众平台审核
 - iOS：本机签名 → TestFlight → App Store（先于 Android）。打 `v*` tag 会在 GitHub Release 挂 **unsigned IPA**（CI `CODE_SIGNING_ALLOWED=NO`，不能装真机、不能传商店）。TestFlight 仍要本机发行证书。
-- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。官网 APK 下载页仍是上线后。国内商店等软著。**不要**自动把 APK 传到 Play。
+- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内商店等软著。**不要**自动把包传到 Play。
 - 安全问题不要开公开 issue，邮件 lazywc@gmail.com
 
 ---
@@ -441,7 +445,7 @@ iOS
 - [ ] N4.2 建 IAP `studio.weichao.jpq.soundpack` 非消耗型 **阻断**
 - [ ] N4.3 隐私营养：无账户无跟踪；分析勾产品交互 + 应用实例 ID **阻断**
 - [ ] N4.4 隐私 / 支持 URL 指现网 **阻断**
-- [x] N4.5 中文模拟器截图在 `docs/store/screenshots/`（默认 / 播放 / 设置）。提审前按 Connect 强制尺寸再出签名套 **阻断**
+- [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当 **阻断**
 - [x] N4.6 审核备注写在 `docs/store/README.md` **阻断**
 - [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**
 - [x] N4.8 `DEPLOY.md` 补 TestFlight / 提审步骤（不含证书） **应当**
@@ -451,7 +455,7 @@ Android
 - [ ] N4.9 Play Console 建应用 **阻断**（相对 Android 上线）
 - [ ] N4.10 同一 SKU；Data safety 声明应用活动 + Firebase 实例 ID（与 Google 共享，非广告） **阻断**
 - [ ] N4.11 内部测试轨先于生产 **阻断**
-- [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机截图未拍 **阻断**
+- [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机练琴 / 播放 / 设置 1080×1920 已拍。工坊 Restore 需 Play 安装包再拍 **阻断**
 - [x] N4.13 国内商店 / 软著 **不做**
 - [ ] N4.14 生产轨上架 **应当**（iOS Ready for Sale 之后）
 
@@ -464,7 +468,7 @@ Android
 - [x] N5.3 CI 继续禁止 speechSynthesis /「无内购」/ 录音类别 / 缺隐私页
 - [x] N5.4 无签名 `xcodebuild` 在 `Native packages` workflow（iphoneos `CODE_SIGNING_ALLOWED=NO`）**应当**
 - [x] N5.5 gitignore 已排除 `local.properties`、`.jks`、`Secrets.xcconfig`、Play JSON
-- [x] N5.6 打 `v*` tag → GitHub Release：Android APK + iOS unsigned IPA。keystore secrets 才签 Android release。不传 App Store / Play **应当**
+- [x] N5.6 打 `v*` tag → GitHub Release：Android APK（有 keystore 再挂 AAB）+ iOS unsigned IPA。keystore secrets 才签 Android release。不传 App Store / Play **应当**
 - [x] N5.6 练琴屏有 bunny / 豆子 / 珊瑚（iOS 模拟器核验）
 - [ ] N5.7 无障碍（VoiceOver / TalkBack / Dynamic Type / Reduce Motion）
 - [ ] N5.8 来电 / 焦点 / 国产 ROM

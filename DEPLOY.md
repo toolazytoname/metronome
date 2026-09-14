@@ -115,16 +115,18 @@ metronome/
 
 ## 🍎 iOS（TestFlight / 提审）
 
-证书、Team ID、`Secrets.xcconfig` **不进 git**。CI 保持 `CODE_SIGNING_ALLOWED=NO`。
+证书、Team ID、`Secrets.xcconfig` **不进 git**。CI 保持 `CODE_SIGNING_ALLOWED=NO`。CI 出的 unsigned IPA **不能**装真机、也不能传 App Store Connect。
+
+商店名称、副标题、关键词、描述、隐私营养点选项、IAP 字段、审核备注、6.9" 截图路径：见 `docs/store/README.md`「App Store Connect 粘贴稿」。
 
 1. 本机用个人/公司 Team 打开 `ios/BunnyMetronome.xcodeproj`，把 Debug/Release 的签名改成 Automatic（不要提交这步）。
 2. Scheme 已挂 `Configuration.storekit`，本地可测 IAP。
 3. 真机过完 `AGENTS.md` N1.25–N1.30。
-4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`。
-5. 建非消耗型 IAP `studio.weichao.jpq.soundpack`。价格档对齐 ¥12 / $1.99。
-6. 隐私营养：无账户、无跟踪（Analytics ≠ Tracking）。勾产品交互 + 设备 ID（应用实例，非 IDFA）。隐私 / 支持 URL 见 `docs/store/README.md`。
-7. 截图按商店清单。审核备注也在那份文件。
-8. Archive → 上传 → 内部 TestFlight → 提审。
+4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`，只选 iPhone。
+5. 先签付费协议 + 税务/银行，再建非消耗型 IAP `studio.weichao.jpq.soundpack`。价格档对齐 ¥12 / $1.99。第一个 IAP 必须跟这一版 App 一起送审。
+6. 隐私营养：无账户、无跟踪（Analytics ≠ Tracking）。勾产品交互 + 设备 ID（应用实例，非 IDFA）。出口合规选否（工程已 `ITSAppUsesNonExemptEncryption = NO`）。
+7. 截图上传 1320×2868 那四张 `docs/store/screenshots/ios-*.png`。不要传 iPad。
+8. Archive → 上传 → 内部 TestFlight → 过完真机清单再提审。
 
 ## 🤖 Android（Play 内测 / 签名 APK）
 
@@ -132,20 +134,22 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
 
 功能面已按 iOS 冻结说明书对齐（含工坊震动）。视觉不 1:1 搬马卡龙，不挡内测。
 
+2026-08-31 起 Play **新应用必须 `targetSdk` 36**（Android 16）。工程已是 `compileSdk` / `targetSdk` 36。新应用上传 **AAB**，不要传 APK。
+
 ### 自动出 GitHub Release 包
 
 1. 推 tag：`git tag v2.1.0 && git push origin v2.1.0`
 2. GitHub Actions `Native packages` 并行出：
-   - Android：`:policy:test` + `assembleDebug`（有 keystore secrets 再加 `assembleRelease`）
+   - Android：`:policy:test` + `assembleDebug`（有 keystore secrets 再加 `assembleRelease` + `bundleRelease`）
    - iOS：`swift test` + iphoneos `CODE_SIGNING_ALLOWED=NO`，打成 **unsigned IPA**
 3. tag 会建 GitHub Release 并挂上这些文件。`workflow_dispatch` 只出 artifact、不建 Release。
 4. iOS unsigned IPA **不能**装真机，也 **不能** 传 App Store Connect。TestFlight 仍要本机发行证书 Archive。
-5. 要签 **Android release** APK，把这些塞进 GitHub Secrets（**不要进 git**）：
+5. 要签 **Android release** APK / AAB，把这些塞进 GitHub Secrets（**不要进 git**）：
    - `ANDROID_KEYSTORE_BASE64`（`.jks` 的 base64）
    - `ANDROID_STORE_PASSWORD`
    - `ANDROID_KEY_ALIAS`
    - `ANDROID_KEY_PASSWORD`
-6. 没有 keystore 时只出 debug APK，能装，不能上 Play。
+6. 没有 keystore 时只出 debug APK，能装，不能上 Play。有 keystore 时 AAB 才是传 Console 的那份。
 
 不要自动把包传到 App Store / Play：证书、`.p8`、服务账号 JSON 不进仓库。Console 仍要你点一次。
 
@@ -155,9 +159,20 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
 
 1. `cd android && ./gradlew :policy:test`
 2. `./gradlew assembleDebug` 做功能核验。
-3. Release 用本地 keystore 签（`*.jks` 不进 git）。
-4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。
-5. Data safety：应用内活动 + Firebase 实例 ID，与 Google 共享；广告标识关闭。IAP 由 Google Play 处理。详见 `docs/store/README.md`。
+3. Release / Play 用本地 keystore 签（`*.jks` 不进 git）：
+
+   ```bash
+   export ANDROID_KEYSTORE_PATH=/absolute/path/to/release.jks
+   export ANDROID_STORE_PASSWORD=...
+   export ANDROID_KEY_ALIAS=...
+   export ANDROID_KEY_PASSWORD=...
+   cd android && ./gradlew :app:bundleRelease
+   # 产物：android/app/build/outputs/bundle/release/app-release.aab
+   ```
+
+4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。商店文案、1024×500 宣传图、512 图标、Data safety 点选项见 `docs/store/README.md`「Play Console 粘贴稿」。
+5. Data safety：应用内活动 + Firebase 实例 ID，与 Google 共享；广告标识关闭。IAP 由 Google Play 处理。
+6. 不要把 iOS 截图传到 Play。Android 真机截图仍要你拍。
 
 ### Firebase Analytics
 

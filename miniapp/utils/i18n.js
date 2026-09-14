@@ -137,11 +137,11 @@ function detectDefaultLang() {
   try {
     const sys = wx.getSystemInfoSync();
     const lang = (sys && sys.language) || '';
-    if (lang.toLowerCase().indexOf('en') === 0) return 'en';
+    if (lang.toLowerCase().indexOf('zh') === 0) return 'zh';
   } catch (e) {
     // ignore
   }
-  return 'zh';
+  return 'en';
 }
 
 module.exports = {

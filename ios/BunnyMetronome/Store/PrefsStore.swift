@@ -5,7 +5,9 @@ enum PrefsStore {
 
     static func load() -> MetronomePrefs {
         guard let data = UserDefaults.standard.data(forKey: key) else {
-            return .default
+            var prefs = MetronomePrefs.default
+            prefs.lang = Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "zh" : "en"
+            return prefs
         }
         return MetronomePrefs.decode(data)
     }

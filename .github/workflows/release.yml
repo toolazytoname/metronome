@@ -59,11 +59,11 @@ jobs:
           cd android
           tasks=":policy:test :app:assembleDebug"
           if [ -n "${ANDROID_KEYSTORE_PATH:-}" ]; then
-            tasks="$tasks :app:assembleRelease"
+            tasks="$tasks :app:assembleRelease :app:bundleRelease"
           fi
           ./gradlew $tasks --no-daemon
 
-      - name: Collect APKs
+      - name: Collect APKs and AAB
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk \
@@ -72,11 +72,15 @@ jobs:
             cp android/app/build/outputs/apk/release/app-release.apk \
               "dist/BunnyMetronome-${VERSION_NAME}.apk"
           fi
+          if [ -f android/app/build/outputs/bundle/release/app-release.aab ]; then
+            cp android/app/build/outputs/bundle/release/app-release.aab \
+              "dist/BunnyMetronome-${VERSION_NAME}.aab"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
           name: android
-          path: dist/*.apk
+          path: dist/*
 
   ios:
     needs: version
@@ -145,7 +149,8 @@ jobs:
           notes="Native packages for ${VERSION_NAME}.
 
           - Android debug APK: sideload OK. Sound Workshop stays locked unless Play Billing is available. Same package name as Play: do not give the pack away.
-          - Android signed APK: only present if keystore secrets are set. Still not uploaded to Play.
+          - Android signed APK: only present if keystore secrets are set. Sideload / GitHub Release. Still not uploaded to Play.
+          - Android signed AAB: only present if keystore secrets are set. This is the Play Console upload. New apps must use an App Bundle, not an APK.
           - iOS unsigned IPA: CI build with CODE_SIGNING_ALLOWED=NO. Cannot install on a device and cannot upload to App Store Connect. Re-sign locally for TestFlight.
 
           This workflow does not submit to App Store or Play."
