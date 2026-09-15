@@ -55,12 +55,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import studio.weichao.jpq.AppCopy
+import studio.weichao.jpq.BuildConfig
 import studio.weichao.jpq.R
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
@@ -559,6 +563,17 @@ private fun SettingsSheet(
                     Text(cb.t("privacy"), color = Palette.coral, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                 }
             }
+            val versionLabel = AppCopy.versionLine(cb.t, BuildConfig.VERSION_NAME)
+            Text(
+                versionLabel,
+                color = Palette.muted,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 8.dp)
+                    .semantics { testTag = "app_version" }
+            )
         }
     }
 }

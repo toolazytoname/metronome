@@ -14,8 +14,8 @@ android {
         applicationId = "studio.weichao.jpq"
         minSdk = 26
         targetSdk = 36
-        versionCode = (System.getenv("VERSION_CODE") ?: "7").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "2.1.5"
+        versionCode = (System.getenv("VERSION_CODE") ?: "8").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "2.1.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
@@ -35,7 +35,10 @@ android {
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -65,5 +65,6 @@
   "share_text": "免下载、免注册，浏览器打开即用。",
   "support": "支持我们",
   "privacy": "隐私政策",
-  "default_bank": "默认"
+  "default_bank": "默认",
+  "app_version": "版本 %s"
 }

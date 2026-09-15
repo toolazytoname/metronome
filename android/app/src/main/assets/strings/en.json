@@ -65,5 +65,6 @@
   "share_text": "No download. Open in any browser.",
   "support": "Support",
   "privacy": "Privacy policy",
-  "default_bank": "Default"
+  "default_bank": "Default",
+  "app_version": "Version %s"
 }

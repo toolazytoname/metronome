@@ -20,6 +20,11 @@ object AppCopy {
 
     fun t(table: Map<String, String>, key: String): String = table[key] ?: key
 
+    fun versionLine(translate: (String) -> String, versionName: String): String {
+        val template = translate("app_version")
+        return if (template.contains("%s")) template.replace("%s", versionName) else "$template $versionName"
+    }
+
     fun bankLabel(table: Map<String, String>, bank: String, voice: Boolean): String =
         t(table, MetronomePolicy.bankLabelKey(bank, voice))
 }
