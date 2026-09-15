@@ -142,26 +142,18 @@ class MainActivity : ComponentActivity() {
                     bankLabel = { bank, voice -> AppCopy.bankLabel(copy, bank, voice) },
                     onToggle = { toggle() },
                     onBpm = {
-                        val old = prefs.bpm
-                        val next = MetronomePolicy.clampBpm(it)
-                        prefs = prefs.copy(bpm = next)
-                        if (old != next) AppAnalytics.event("bpm_change", mapOf("from" to old, "to" to next))
+                        prefs = prefs.copy(bpm = MetronomePolicy.clampBpm(it))
                         applyToService()
                     },
                     onMode = {
-                        val prev = prefs.sm
                         prefs = prefs.copy(sm = it.raw)
-                        if (prev != it.raw) AppAnalytics.event("sound_mode", mapOf("from" to prev, "to" to it.raw))
                         applyToService()
                     },
                     onSignature = { bc, bu ->
-                        val prev = "${prefs.bc}/${prefs.bu}"
                         prefs = prefs.copy(
                             bc = MetronomePolicy.clampBeats(bc),
                             bu = MetronomePolicy.clampBeatUnit(bu)
                         )
-                        val sig = "${prefs.bc}/${prefs.bu}"
-                        if (prev != sig) AppAnalytics.event("time_sig", mapOf("from" to prev, "to" to sig))
                         applyToService()
                     },
                     onVolume = {
@@ -180,14 +172,8 @@ class MainActivity : ComponentActivity() {
                     onShare = { share() },
                     onSupport = { openUrl("/support", "/en/support") },
                     onPrivacy = { openUrl("/privacy", "/en/privacy") },
-                    onOpenSettings = {
-                        settings = true
-                        AppAnalytics.event("settings_panel", mapOf("action" to "open"))
-                    },
-                    onCloseSettings = {
-                        settings = false
-                        AppAnalytics.event("settings_panel", mapOf("action" to "close"))
-                    }
+                    onOpenSettings = { settings = true },
+                    onCloseSettings = { settings = false }
                 )
             )
         }
@@ -218,13 +204,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun t(key: String) = AppCopy.t(copy, key)
-
-    private fun playParams(action: String) = mapOf(
-        "action" to action,
-        "bpm" to prefs.bpm,
-        "beats" to "${prefs.bc}/${prefs.bu}",
-        "sound_mode" to prefs.sm
-    )
 
     private fun refreshEntitlement() {
         lifecycleScope.launch {
@@ -314,7 +293,6 @@ class MainActivity : ComponentActivity() {
             PlaybackBind.Toggle.Stop -> {
                 svc.stopPlayback()
                 applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
-                AppAnalytics.event("play", playParams("pause"))
             }
             PlaybackBind.Toggle.Start -> {
                 if (!svc.samplesReady()) {
@@ -329,7 +307,6 @@ class MainActivity : ComponentActivity() {
                 }
                 applyPlaybackUi(PlaybackBind.uiFromService(svc.isPlaying(), prefs.keepAwake))
                 storeMessage = ""
-                AppAnalytics.event("play", playParams("play"))
             }
         }
     }

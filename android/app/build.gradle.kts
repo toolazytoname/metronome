@@ -3,10 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
-}
-
 android {
     namespace = "studio.weichao.jpq"
     compileSdk = 36
@@ -14,8 +10,8 @@ android {
         applicationId = "studio.weichao.jpq"
         minSdk = 26
         targetSdk = 36
-        versionCode = (System.getenv("VERSION_CODE") ?: "8").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "2.1.6"
+        versionCode = (System.getenv("VERSION_CODE") ?: "9").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "2.1.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
@@ -65,8 +61,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
     implementation("com.android.billingclient:billing:8.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

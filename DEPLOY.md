@@ -170,20 +170,19 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
    # 产物：android/app/build/outputs/bundle/release/app-release.aab
    ```
 
-4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。商店文案、1024×500 宣传图、512 图标、Data safety 点选项见 `docs/store/README.md`「Play Console 粘贴稿」。
-5. Data safety：应用内活动 + Firebase 实例 ID，与 Google 共享；广告标识关闭。IAP 由 Google Play 处理。
+4. Play Console 建应用 `studio.weichao.jpq`，同一 SKU，内部测试轨先于生产。**默认语言 English (United States)**；默认官网 / 隐私 / 支持 URL 用英文页 `https://jpq.weichao.studio/en/`、`/en/privacy`、`/en/support`。中文作为本地化列表。网站根路径仍默认中文；App 内链接随当前语言跳转。商店文案、1024×500 宣传图、512 图标、Data safety 点选项见 `docs/store/README.md`「Play Console 粘贴稿」。
+5. Data safety **提交时依据实际 AAB、Play Billing SDK 官方 Data safety 指引和 Console 提示逐项确认**。Android 2.1.7+ 无 Firebase Analytics、无广告/归因 SDK、不发送开发者定义的产品分析事件，但不要预先勾「完全不采集/不共享」。音色工坊 / Restore 走 Google Play Billing；Billing SDK / Google Play 可能为交易、反欺诈、服务运行或诊断向 Google 处理必要数据（这不是 Firebase Analytics）。付款界面由 Google Play 提供，不要把信用卡/支付详情写成 App 直接收集。粘贴稿不是 Console 已提交证明，不要勾完成。
 6. 不要把 iOS 截图传到 Play。Android 真机截图仍要你拍。
 
-### Firebase Analytics
+### Firebase Analytics（仅 iOS）
 
-控制台建项目，包名 / Bundle ID 都是 `studio.weichao.jpq`：
+Android **不要**加 `google-services.json`，也不要接 Firebase / Google Services 插件。iOS 暂时仍用 Firebase Analytics（产品内事件，广告标识关）：
 
-1. [Firebase Console](https://console.firebase.google.com) 加 Android + iOS App。
-2. 把 `google-services.json` 放到 `android/app/`（有这个文件 Gradle 才应用 Google Services 插件）。
-3. 把 `GoogleService-Info.plist` 放到 `ios/BunnyMetronome/`（已列入 Xcode 资源；占位文件里的 `YOUR_` 前缀会跳过初始化）。
-4. 客户端配置可以进 git。不要提交 Firebase **Admin** 密钥。
-5. 控制台关闭 Google Analytics 广告功能 / 数据共享（能关的都关）。App 里已关 ADID 采集。
-6. 商店文案 / 截图见 `docs/store/README.md`。国内商店与软著不做。
+1. [Firebase Console](https://console.firebase.google.com) 只加 iOS App（包名 / Bundle ID `studio.weichao.jpq`）。不要为 Android 建客户端配置。
+2. `GoogleService-Info.plist` 放在 `ios/BunnyMetronome/`（已列入 Xcode 资源；占位文件里的 `YOUR_` 前缀会跳过初始化）。
+3. iOS 客户端配置可以进 git。不要提交 Firebase **Admin** 密钥，也不要提交 Play 服务账号 JSON。
+4. iOS 控制台关闭 Google Analytics 广告功能 / 数据共享（能关的都关）。
+5. 商店文案 / 截图见 `docs/store/README.md`。国内商店与软著不做。
 
 ---
 

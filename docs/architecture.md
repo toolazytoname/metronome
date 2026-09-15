@@ -50,7 +50,7 @@ v1 不上共享 C++ / KMP 引擎。漂移成为问题再抽。
 
 ## 数据
 
-没有服务器。偏好是一份小 JSON，见契约。分析：Web 友盟 CNZZ + GA4；小程序 `umtrack-wx`；原生 Firebase Analytics（产品内事件，无广告标识）。没有自建用户表。
+没有服务器。偏好是一份小 JSON，见契约。分析：Web 友盟 CNZZ + GA4；小程序 `umtrack-wx`；Android 2.1.7+ 无 Firebase Analytics、无广告/归因 SDK、不发送开发者定义的产品分析事件；音色工坊 / Restore 走 Google Play Billing（Billing SDK / Google Play 可能为交易、反欺诈、服务运行或诊断向 Google 处理必要数据，不是 Firebase Analytics）。iOS 暂时仍用 Firebase Analytics（产品内事件，无广告标识）。没有自建用户表。付款界面由商店提供，App 不直接收集信用卡/支付详情。
 
 ## 视觉 token（原生对照用）
 

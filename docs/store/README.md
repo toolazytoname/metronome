@@ -3,7 +3,7 @@
 Bundle / application id: `studio.weichao.jpq`
 Name: 小兔头节拍器 / Bunny Metronome
 SKU: `studio.weichao.jpq.soundpack` (non-consumable, ¥12 / $1.99)
-Version: `2.1.6` (build 8). iPhone only — do not upload iPad screenshots.
+Version: Android Play next upload `2.1.7` (versionCode 9). Current internal-test high is `2.1.6` (code 8), not this source. iPhone only — do not upload iPad screenshots.
 
 提审当天把本节贴进 App Store Connect / Play Console。代码待办在 [AGENTS.md](../../AGENTS.md) P4。
 
@@ -62,9 +62,13 @@ iPhone **6.9"**（Connect 2026 主尺寸 **1320×2868**，无透明）。iPhone 
 
 ## Privacy / Data safety
 
-No account. Local preferences stay on device. Optional IAP recorded by Apple / Google.
+No account. Local preferences stay on device. Optional IAP recorded by Apple / Google Play.
 
-Analytics (not tracking): Firebase Analytics for in-app events (open, play, BPM, meter, mode, settings). App-instance ID only — advertising ID collection off. Data is sent to Google to measure usage. No name, email, or audio.
+Analytics is **per platform**:
+
+- Web / mini-program: those surfaces only (Umeng / GA4 / umtrack-wx).
+- iOS: Firebase Analytics for in-app events (open, play, BPM, meter, mode, settings). App-instance ID only — advertising ID collection off. Data is sent to Google to measure usage. No name, email, or audio.
+- Android 2.1.7+: **no Firebase Analytics**, no advertising / attribution SDK, no developer-defined product analytics events. Sound Workshop / Restore use Google Play Billing. Privacy / Support links open in the system browser.
 
 App Store privacy nutrition:
 - Data types: Product Interaction, Device ID (app instance, not IDFA)
@@ -72,22 +76,26 @@ App Store privacy nutrition:
 - Used for tracking: No
 - Third-party advertising: No
 
-Play Data safety:
-- Collected: App activity (in-app actions), App info and performance / Device or other IDs (Firebase instance ID)
-- Shared: Yes — with Google (Firebase)
-- Encrypted in transit: Yes
-- Users can request deletion: No (anonymous instance; uninstall stops new events)
-- Optional: No (collected when the app runs)
+Play Data safety (**paste is a reminder, not a submitted form; do not mark N4.10 done**):
+- Android 2.1.7+: no Firebase Analytics, no advertising / attribution SDK, no developer-defined product analytics events; no account; no crash-reporter SDK.
+- Sound Workshop purchase and Restore use Google Play Billing. The Billing SDK / Google Play may process data Google needs for the transaction, fraud prevention, service operation, or diagnostics. That is not Firebase Analytics.
+- Payment UI is provided by Google Play; do not declare that the app itself collects credit-card or payment details.
+- Do **not** pre-answer “collects/shares no data.” Confirm each Console row against the shipped AAB, Google’s Play Billing SDK Data safety guidance, and in-Console prompts.
 
 Contact lazywc@gmail.com.
 
-Privacy URL: https://jpq.weichao.studio/privacy
-Support URL: https://jpq.weichao.studio/support
-EN: `/en/privacy`, `/en/support`
+Play default listing language **English (United States)**. Default URLs (English):
+- Website: https://jpq.weichao.studio/en/
+- Privacy: https://jpq.weichao.studio/en/privacy
+- Support: https://jpq.weichao.studio/en/support
+
+Chinese localization URLs: `https://jpq.weichao.studio/` , `/privacy`, `/support`. Website root stays Chinese. In-app links still follow the app language.
+
+App Store Connect default URLs may stay Chinese-first (`/privacy`, `/support`); English listing uses `/en/privacy`, `/en/support`.
 
 ## Review notes (paste)
 
-Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (`studio.weichao.jpq.soundpack`) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads.
+Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (`studio.weichao.jpq.soundpack`) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. Platform-specific analytics: see Privacy / Data safety above (iOS Firebase in-app events; Android 2.1.7+ has no Firebase Analytics and no developer product events; IAP uses Play Billing).
 
 ## Age
 
@@ -227,7 +235,7 @@ Connect 先签付费协议 + 税务/银行，否则建不了商品。
 无登录、无演示账号。联系 `lazywc@gmail.com`。电话你自己填。
 
 ```
-Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads. iPhone only; portrait only. Silent switch and lock screen should still click — AVAudioSession is .playback with UIBackgroundModes audio.
+Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. iOS Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads. iPhone only; portrait only. Silent switch and lock screen should still click — AVAudioSession is .playback with UIBackgroundModes audio.
 ```
 
 ### 你还得在本机做的
@@ -243,7 +251,7 @@ CI 打出来的 unsigned IPA **不能**传 Connect。
 
 ## Play Console 粘贴稿
 
-默认商店语言 **English**，再加 **中文（简体）**。分类 **Music & Audio**。联系邮箱 `lazywc@gmail.com`。网站 `https://jpq.weichao.studio`。不要再加日/韩/西等语种。
+默认商店语言 **English (United States)**，再加 **中文（简体）** 作为本地化。分类 **Music & Audio**。联系邮箱 `lazywc@gmail.com`。默认网站 `https://jpq.weichao.studio/en/`。不要再加日/韩/西等语种。网站根路径仍默认中文；这只改 Play 默认 URL。
 
 ### 名称（≤30）
 
@@ -322,19 +330,23 @@ Sound Workshop is an optional one-time unlock on this store for extra clicks, vo
 - 目标年龄勾 13+ / 成人即可。童声是数拍音色，不是儿童 App。**不要**勾 Designed for Families / 专为儿童设计（有 IAP 会加一堆政策）。
 - 新闻 App：否。COVID：否。
 
-### Data safety（点选项）
+### Data safety（点选项；粘贴稿，不是已提交，不要勾完成）
 
-收集，且与 Google 共享（Firebase Analytics）：
+Android 2.1.7+：**无 Firebase Analytics**、无广告/归因 SDK、不发送开发者定义的产品分析事件；无账号、无崩溃上报 SDK。
 
-- App activity → App interactions（打开、播放、BPM、拍号、模式、设置）
-- Device or other IDs → 应用实例 ID（不是广告 ID）
+音色工坊购买 / Restore 走 Google Play Billing。Billing SDK / Google Play 可能为交易、反欺诈、服务运行或诊断向 Google 处理必要数据。不要把 Billing 遥测写成 Firebase Analytics。付款界面由 Google Play 提供，不要勾成 App 直接收集信用卡/支付详情。
 
-都是：非可选、传输中加密、用户不能申请删除（匿名实例；卸载即停新事件）。
+不要预先勾「完全不采集 / 不共享」。提交时依据实际 AAB、Play Billing SDK 官方 Data safety 指引和 Console 提示逐项确认。
 
-不要勾：财务信息（购买走 Play 账本，App 不读卡号）、广告 ID、位置、通讯录、音频、账号。广告标识已关。
+默认 URL（English (United States)）：
 
-隐私政策：https://jpq.weichao.studio/privacy
-英文：https://jpq.weichao.studio/en/privacy
+- 网站：https://jpq.weichao.studio/en/
+- 隐私政策：https://jpq.weichao.studio/en/privacy
+- 支持：https://jpq.weichao.studio/en/support
+
+中文本地化：https://jpq.weichao.studio/ 、https://jpq.weichao.studio/privacy 、https://jpq.weichao.studio/support
+
+App 内链接仍随当前语言打开对应页面。
 
 ### IAP
 
@@ -343,7 +355,7 @@ SKU `studio.weichao.jpq.soundpack`，非消耗型，价格档对齐 ¥12 / $1.99
 ### 审核备注（Play）
 
 ```
-Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads.
+Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. There is no account, so purchases do not cross stores. No WeChat/Alipay QR codes in the app. This Android build does not include Firebase Analytics or advertising / attribution SDKs. The app does not send developer-defined product analytics events. Sound Workshop / Restore use Google Play Billing; Google Play provides the payment UI. Purchases stay in the Google Play ledger.
 ```
 
 ### 上传

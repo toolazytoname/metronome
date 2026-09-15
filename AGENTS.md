@@ -132,7 +132,7 @@ cd android && ./gradlew assembleDebug
 - Android 在冻结说明书之外自行加功能
 - 让文档和代码分叉（先改 `AGENTS.md`）
 - 空 App Icon、系统播放三角当启动图标、写死 ¥12 的购买按钮、App 内收款码 —— 这些过不了审，不要送
-- 原生接广告 / 归因 SDK，打开 IDFA / OAID / ATT（Firebase Analytics 只做产品内事件，广告标识关掉）
+- 原生接广告 / 归因 SDK，打开 IDFA / OAID / ATT。**Android 不接 Firebase Analytics / 归因 SDK**，也不要放 `google-services.json`。iOS 暂时仍可保留 Firebase Analytics：只做产品内事件，广告标识关掉，不弹 ATT
 - 为原生发明深色模式、iPad 专属布局、小组件、Watch、CarPlay
 - 把无障碍打磨、1:1 复刻 Web、CI 原生单测当成上线阻断（那些是上线后）
 
@@ -151,7 +151,7 @@ cd android && ./gradlew assembleDebug
 - Web：推 `main` → Vercel。忽略 `miniapp/`、`ios/`、`android/`
 - 小程序：开发者工具上传 → 微信公众平台审核
 - iOS：本机签名 → TestFlight → App Store（先于 Android）。打 `v*` tag 会在 GitHub Release 挂 **unsigned IPA**（CI `CODE_SIGNING_ALLOWED=NO`，不能装真机、不能传商店）。TestFlight 仍要本机发行证书。
-- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内商店等软著。**不要**自动把包传到 Play。
+- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内商店等软著。**不要**自动把包传到 Play。Google Play **默认语言**是 **English (United States)**；默认官网 / 隐私 / 支持 URL 指向 `https://jpq.weichao.studio/en/`、`/en/privacy`、`/en/support`。中文作为本地化列表。网站根路径仍默认中文；App 内链接随当前语言跳转，不要改 Web 根首页语言架构。
 - 安全问题不要开公开 issue，邮件 lazywc@gmail.com
 
 ---
@@ -176,7 +176,7 @@ cd android && ./gradlew assembleDebug
 - App Store Connect 建 App + IAP；Play Console 内测 + 本地 keystore
 - pack 人耳听一遍
 
-分析：Web 友盟 + GA4；小程序 `umtrack-wx`；原生 **Firebase Analytics**（产品内事件：打开、播放、BPM、模式、拍号、设置）。关掉广告标识，`NSPrivacyTracking = false`，不弹 ATT。配置文件 `google-services.json` / `GoogleService-Info.plist` 来自 Firebase 控制台，客户端配置可以进仓库；Play 服务账号 JSON 仍不进 git。
+分析：Web 友盟 + GA4；小程序 `umtrack-wx`。**Android 2.1.7+ 无 Firebase Analytics、无广告/归因 SDK、不发送开发者定义的产品分析事件**，也不要 `google-services.json`。音色工坊购买 / Restore 走 Google Play Billing；Billing SDK / Google Play 可能为交易、反欺诈、服务运行或诊断向 Google 处理必要数据。不要把 Billing 遥测说成 Firebase Analytics。Play Data safety **提交时依据实际 AAB、Play Billing SDK 官方 Data safety 指引和 Console 提示逐项确认**，不要预先武断写「完全不采集/不共享」。付款界面由 Google Play 提供，不要把信用卡/支付详情说成 App 直接收集。**尚未在 Play Console 提交的 Data safety 不要勾成已完成。** iOS 暂时保持 Firebase Analytics（产品内事件：打开、播放、BPM、模式、拍号、设置）；关掉广告标识，`NSPrivacyTracking = false`，不弹 ATT。iOS `GoogleService-Info.plist` 可进仓库；不要为 Android 加 Google Services。Play 服务账号 JSON 仍不进 git。
 
 提审前容易漏（不是新功能）：
 
@@ -247,7 +247,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - Restore 和购买反馈放在购买按钮附近，不要沉在音色列表下面
    - 设置里能点到隐私 / 支持链接 = 上线应当（商店 Connect 里的 URL 才是阻断）
    - 保持亮屏开关 = 上线应当（默认亮着也行）
-   - Android 设置页最底部显示动态版本号，次要淡色，不进练琴屏：中文「版本 2.1.6」、英文「Version 2.1.6」这种格式；数字必须来自 `BuildConfig.VERSION_NAME`，禁止写死。文案前缀走 `packages/strings` 的 `app_version`
+   - Android 设置页最底部显示动态版本号，次要淡色，不进练琴屏：中文「版本 2.1.7」、英文「Version 2.1.7」这种格式；数字必须来自 `BuildConfig.VERSION_NAME`，禁止写死。文案前缀走 `packages/strings` 的 `app_version`
 3. **不做的屏**：账号、主题、复节奏、谱面、社交、打赏码。
 
 ### 音色工坊
@@ -332,7 +332,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [ ] 同样 40 / 120 / 208 × 60 秒、不插拍、未购童声、Restore
 - [x] 解锁后 click **和** 数拍都能选；sideload **不**送包（代码侧）
 - [x] 自适应图标，不是系统播放三角
-- [ ] Play 内部测试轨能装；IAP 商品 + Data safety 已填
+- [ ] Play 内部测试轨能装；IAP 商品 + Data safety 已按实际 AAB 与 Play Billing SDK 官方指引填写（2.1.7+ 无 Firebase Analytics；Console 尚未提交，不要勾本条）
 - [ ] 本地 keystore 能签同包名 APK（密钥不进 git）
 
 ### 卖 IAP 的共同阻断
@@ -426,7 +426,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [x] N2.10 停播 / destroy / 划掉任务释放 WakeLock **阻断**
 - [x] N2.11 `start()` 可重入；解码失败不假死 **阻断**
 - [x] N2.12 音频焦点 **应当**
-- [x] N2.13 运行时权限只有通知（33+）、震动、前台媒体；联网给 Firebase **阻断**
+- [x] N2.13 应用主清单不主动申请网络权限；Play Billing 传递依赖会合并 `INTERNET` / `ACCESS_NETWORK_STATE`（不要 `tools:node="remove"`）。运行时危险权限只有通知（33+）；震动 / 前台媒体不是运行时弹窗。外链走系统浏览器 **阻断**
 - [x] N2.14 同包名 APK 不送包后门 **阻断**
 - [x] N2.15 `:policy:test` 绿（2026-08-25） **应当**
 - [ ] N2.16 真机：通知暂停、划掉即停、40/120/208、未购/Restore **阻断**
@@ -454,8 +454,8 @@ iOS
 Android
 
 - [x] N4.9 Play Console 建应用 **阻断**（2026-09-14；内部测试已建）
-- [ ] N4.10 同一 SKU；Data safety 声明应用活动 + Firebase 实例 ID（与 Google 共享，非广告） **阻断**
-- [x] N4.11 内部测试轨先于生产 **阻断**（2026-09-15；2.1.6 / code 8 已面向内部测试人员发布，尚未审核）
+- [ ] N4.10 同一 SKU；Data safety **提交时依据实际 AAB、Play Billing SDK 官方指引和 Console 提示逐项确认**（2.1.7+ 无 Firebase Analytics / 无开发者产品事件，但 Billing 可能向 Google 处理交易相关数据；付款界面由 Play 提供，不要勾 App 直接收集卡号）。粘贴稿已写，**尚未在 Console 提交，不要勾完成** **阻断**
+- [x] N4.11 内部测试轨先于生产 **阻断**（2026-09-15；2.1.6 / code 8 已面向内部测试人员发布，尚未审核。下一包源码 `2.1.7` / versionCode 9，未当作已上传）
 - [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机练琴 / 播放 / 设置 1080×1920 已拍。工坊 Restore 需 Play 安装包再拍 **阻断**
 - [x] N4.13 国内商店 / 软著 **不做**
 - [ ] N4.14 生产轨上架 **应当**（iOS Ready for Sale 之后）

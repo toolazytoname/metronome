@@ -22,7 +22,7 @@
 <body>
 <main>
   <h1>Privacy Policy</h1>
-  <p class="meta">Updated 2026-09-07 · Contact: <a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
+  <p class="meta">Updated 2026-09-15 · Contact: <a href="mailto:lazywc@gmail.com">lazywc@gmail.com</a></p>
 
   <p>Bunny Metronome (web, WeChat mini-program, iOS / Android) is a <strong>no-account</strong> tool. There is no sign-up and no user profile.</p>
 
@@ -30,13 +30,14 @@
   <p>Settings live only on your device (web <code>localStorage</code>, mini-program storage, App UserDefaults / DataStore): BPM, time signature, sound mode, volume, language, haptic and keep-awake. Clearing app data resets them. <strong>There is no cloud sync</strong>.</p>
 
   <h2>Optional sound pack</h2>
-  <p>The iOS / Android “Sound Workshop” is a one-time optional product (SKU <code>studio.weichao.jpq.soundpack</code>). Default voice counting and the basic clicks stay <strong>free</strong>. Purchase and <strong>Restore purchases</strong> are recorded by Apple StoreKit or Google Play Billing. We do not keep a user table and cannot share one receipt across stores.</p>
+  <p>The iOS / Android “Sound Workshop” is a one-time optional product (SKU <code>studio.weichao.jpq.soundpack</code>). Default voice counting and the basic clicks stay <strong>free</strong>. Purchase and <strong>Restore purchases</strong> are recorded by Apple StoreKit or Google Play Billing. The payment UI is provided by the system store; this app does not collect credit-card or payment details itself. We do not keep a user table and cannot share one receipt across stores.</p>
 
   <h2>Network</h2>
   <ul>
     <li>Web: Umeng CNZZ (site ID <code>1281476758</code>) and Google Analytics 4 (measurement ID <code>G-QH9CD00C0V</code>). Page views plus in-app events (play/pause, BPM, meter, sound mode, settings). Those vendors may set their own cookies / client IDs. No name, email, or practice audio. The site also ships a <strong>Content-Security-Policy-Report-Only</strong> header: it is an observation policy, <strong>not an enforced block</strong>, and there is no report endpoint.</li>
     <li>WeChat mini-program: <code>umtrack-wx</code>, with <code>useOpenid = false</code> and <code>uploadUserInfo = false</code>. The SDK records page visits; BPM / mode / meter events are sent only when the SDK is present. Automatic PV is not the same as those events.</li>
-    <li>iOS / Android: <strong>Firebase Analytics</strong> records in-app events (open, play/pause, BPM, meter, sound mode, settings). We use an app-instance ID, <strong>not advertising IDs (IDFA / GAID)</strong>, and not for cross-app ads. Events go to Google so we can see daily activity. IAP still talks only to the system store.</li>
+    <li>iOS: <strong>Firebase Analytics</strong> records in-app events (open, play/pause, BPM, meter, sound mode, settings). We use an app-instance ID, <strong>not advertising IDs (IDFA)</strong>, and not for cross-app ads. Events go to Google so we can see daily activity. IAP still talks only to the system store.</li>
+    <li>Android 2.1.7+: <strong>no Firebase Analytics</strong> and no advertising / attribution SDK. The app does not send developer-defined product analytics events. Sound Workshop purchase and Restore use Google Play Billing; Google Play provides the payment UI, and this app does not collect credit-card or payment details itself. The Billing SDK / Google Play may process data Google needs for the transaction, fraud prevention, service operation, or diagnostics — that is not Firebase Analytics. Privacy / Support links in Settings open in the system browser. There is no account.</li>
     <li>No microphone, contacts, or location permission. No accounts on any surface.</li>
   </ul>
 
