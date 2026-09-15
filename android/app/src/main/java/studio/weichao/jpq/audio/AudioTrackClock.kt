@@ -26,7 +26,7 @@ class AudioTrackClock(private val assets: AssetManager) {
     var voiceBank: String = MetronomePolicy.DEFAULT_BANK
     var volume: Float = 0.85f
     var onBeat: ((Int) -> Unit)? = null
-    var ready: Boolean = false
+    @Volatile var ready: Boolean = false
         private set
 
     private val sampleRate = 44100

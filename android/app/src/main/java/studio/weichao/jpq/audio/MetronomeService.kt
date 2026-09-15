@@ -17,6 +17,7 @@ import studio.weichao.jpq.R
 import studio.weichao.jpq.policy.PlaybackBind
 import studio.weichao.jpq.policy.PlaybackListenerGate
 import studio.weichao.jpq.policy.SoundMode
+import kotlin.concurrent.thread
 
 class MetronomeService : Service() {
     inner class LocalBinder : Binder() {
@@ -43,7 +44,7 @@ class MetronomeService : Service() {
     override fun onCreate() {
         super.onCreate()
         clock = AudioTrackClock(assets)
-        clock.load()
+        thread(name = "metro-sample-loader", isDaemon = true) { clock.load() }
     }
 
     override fun onBind(intent: Intent?): IBinder = binder

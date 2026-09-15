@@ -288,7 +288,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 上线必须：
 
 - iOS：`AVAudioSession.category = .playback`；`UIBackgroundModes = audio`；不要麦克风
-- Android：音频线程填 `AudioTrack`；前台 Service `mediaPlayback`；禁止 `Handler.postDelayed` 当拍钟
+- Android：音频线程填 `AudioTrack`；前台 Service `mediaPlayback`；禁止 `Handler.postDelayed` 当拍钟；首次采样解码不得阻塞主线程，必须后台加载，未就绪时播放键显示可见错误且可重试
 - `start()` 可重入，连点不开两个钟
 - 采样失败：播放键不假死（可见错误或回退）
 

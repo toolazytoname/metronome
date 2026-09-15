@@ -3,7 +3,7 @@
 Bundle / application id: `studio.weichao.jpq`
 Name: 小兔头节拍器 / Bunny Metronome
 SKU: `studio.weichao.jpq.soundpack` (non-consumable, ¥12 / $1.99)
-Version: `2.1.4` (build 6). iPhone only — do not upload iPad screenshots.
+Version: `2.1.5` (build 7). iPhone only — do not upload iPad screenshots.
 
 提审当天把本节贴进 App Store Connect / Play Console。代码待办在 [AGENTS.md](../../AGENTS.md) P4。
 

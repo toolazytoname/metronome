@@ -14,8 +14,8 @@ android {
         applicationId = "studio.weichao.jpq"
         minSdk = 26
         targetSdk = 36
-        versionCode = (System.getenv("VERSION_CODE") ?: "6").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "2.1.4"
+        versionCode = (System.getenv("VERSION_CODE") ?: "7").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "2.1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     val ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
