@@ -25,7 +25,7 @@
 
 不做：广告、账号、订阅、付费墙挡播放。
 
-iOS / Android 可卖一次性「音色工坊」（SKU `studio.weichao.jpq.soundpack`，¥12 / $1.99），解锁额外音色和震动拍选项。默认童声保持免费。震动开/关免费。Web / 小程序 v1 不卖包，继续打赏。
+iOS / Google Play 包可卖一次性「音色工坊」（SKU `studio.weichao.jpq.soundpack`，¥12 / $1.99），解锁额外音色和震动拍选项。默认童声保持免费。震动开/关免费。Web / 小程序 / 国内安卓市场包**不卖包**：全功能免费 + 打赏入口（见 P6）。
 
 ## 小程序支持页入口
 
@@ -41,7 +41,7 @@ iOS / Android 可卖一次性「音色工坊」（SKU `studio.weichao.jpq.soundp
 | 落地页 / 长尾 | `landing.html`、`p/`、`en/p/` | 不播，只带 `?bpm=&sig=&mode=` | 同上 |
 | 微信小程序 | `miniapp/` | `setTimeout` 绝对时刻链 + InnerAudio | 微信搜索「小兔头节拍器」 |
 | iOS | `ios/` | AVAudioEngine 预约 · session `.playback` | App Store（先发） |
-| Android | `android/` | AudioTrack + 前台 Service | Play 内测 + 官网 APK |
+| Android | `android/` | AudioTrack + 前台 Service | Play 内测 + 国内市场（P6，首批华为/小米）+ 官网 APK |
 
 **不要把 Web 搬到 `apps/web/`。** `sw.js`、hreflang、长尾 URL、Vercel 根发布都绑在仓库根上。
 
@@ -125,13 +125,13 @@ cd android && ./gradlew assembleDebug
 - 给 Web 加框架、加构建步骤、加账号、加广告
 - 用 `speechSynthesis` 或 `setInterval` 当 Web 拍钟
 - iOS 音频会话不要走录音类别（会要麦克风，也搞乱静音键）；只允许 `.playback`
-- 在 iOS / Play 包里放微信/支付宝收款码卖数字内容（Guideline 3.1.1）
+- 在 iOS / Play 包里放微信/支付宝收款码卖数字内容（Guideline 3.1.1）。收款码打赏只允许出现在 Web / 小程序 / 国内安卓市场包（P6），且不解锁任何功能
 - 把默认童声改成付费
 - 做订阅、社交、录音上传、复节奏、谱面跟随
 - 提交密钥、`.jks`、`Secrets.xcconfig`、Play 服务账号 JSON
 - Android 在冻结说明书之外自行加功能
 - 让文档和代码分叉（先改 `AGENTS.md`）
-- 空 App Icon、系统播放三角当启动图标、写死 ¥12 的购买按钮、App 内收款码 —— 这些过不了审，不要送
+- 空 App Icon、系统播放三角当启动图标、写死 ¥12 的购买按钮、iOS / Play 包内收款码 —— 这些过不了审，不要送
 - 原生接广告 / 归因 SDK，打开 IDFA / OAID / ATT。**Android 不接 Firebase Analytics / 归因 SDK**，也不要放 `google-services.json`。iOS 暂时仍可保留 Firebase Analytics：只做产品内事件，广告标识关掉，不弹 ATT
 - 为原生发明深色模式、iPad 专属布局、小组件、Watch、CarPlay
 - 把无障碍打磨、1:1 复刻 Web、CI 原生单测当成上线阻断（那些是上线后）
@@ -151,7 +151,7 @@ cd android && ./gradlew assembleDebug
 - Web：推 `main` → Vercel。忽略 `miniapp/`、`ios/`、`android/`
 - 小程序：开发者工具上传 → 微信公众平台审核
 - iOS：本机签名 → TestFlight → App Store（先于 Android）。打 `v*` tag 会在 GitHub Release 挂 **unsigned IPA**（CI `CODE_SIGNING_ALLOWED=NO`，不能装真机、不能传商店）。TestFlight 仍要本机发行证书。
-- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内商店等软著。**不要**自动把包传到 Play。Google Play **默认语言**是 **English (United States)**；默认官网 / 隐私 / 支持 URL 指向 `https://jpq.weichao.studio/en/`、`/en/privacy`、`/en/support`。中文作为本地化列表。网站根路径仍默认中文；App 内链接随当前语言跳转，不要改 Web 根首页语言架构。
+- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内安卓市场走 P6（APP 备案 + 逐家资质，首批华为/小米），**不要**自动把包传到 Play 或国内市场。
 - 安全问题不要开公开 issue，邮件 lazywc@gmail.com
 
 ---
@@ -196,6 +196,7 @@ cd android && ./gradlew assembleDebug
 |---|---|
 | iOS | App Store **Ready for Sale**（含音色工坊 IAP） |
 | Android | Play **内部测试轨可装** + 同包名本地签名 APK 能装（生产轨紧随 iOS，不挡 iOS 先发） |
+| 国内安卓市场 | 华为能搜到、能装、打开能练；小米暂缓（个人注册通道关闭，见 P6） |
 | Web / 小程序 | 已经在线上，本清单不重新定义 |
 
 上线 **必须**（缺一条不准提审 / 不准点发布）：
@@ -248,7 +249,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - 设置里能点到隐私 / 支持链接 = 上线应当（商店 Connect 里的 URL 才是阻断）
    - 保持亮屏开关 = 上线应当（默认亮着也行）
    - Android 设置页最底部显示动态版本号，次要淡色，不进练琴屏：中文「版本 2.1.7」、英文「Version 2.1.7」这种格式；数字必须来自 `BuildConfig.VERSION_NAME`，禁止写死。文案前缀走 `packages/strings` 的 `app_version`
-3. **不做的屏**：账号、主题、复节奏、谱面、社交、打赏码。
+3. **不做的屏**：账号、主题、复节奏、谱面、社交。打赏码：iOS / Play 包不做（3.1.1）；国内安卓包按 P6 设打赏入口（纯自愿，不解锁任何功能）。
 
 ### 音色工坊
 
@@ -343,7 +344,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 ### 明确不做（上线范围外）
 
-小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、华为/小米商店、软著、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、官网 APK 下载页、落地页商店徽章（没有链接先别改口）。
+小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、官网 APK 下载页、落地页商店徽章（没有链接先别改口）。华为/小米等国内市场原在「不做」内，2026-09-17 立项，见 P6。
 
 ---
 
@@ -457,7 +458,7 @@ Android
 - [ ] N4.10 同一 SKU；Data safety **提交时依据实际 AAB、Play Billing SDK 官方指引和 Console 提示逐项确认**（2.1.7+ 无 Firebase Analytics / 无开发者产品事件，但 Billing 可能向 Google 处理交易相关数据；付款界面由 Play 提供，不要勾 App 直接收集卡号）。粘贴稿已写，**尚未在 Console 提交，不要勾完成** **阻断**
 - [x] N4.11 内部测试轨先于生产 **阻断**（2026-09-15；2.1.6 / code 8 已面向内部测试人员发布，尚未审核。下一包源码 `2.1.7` / versionCode 9，未当作已上传）
 - [x] N4.12 商店文案中英已写在 `docs/store/README.md`；Android 真机练琴 / 播放 / 设置 1080×1920 已拍。工坊 Restore 需 Play 安装包再拍 **阻断**
-- [x] N4.13 国内商店 / 软著 **不做**
+- [x] N4.13 国内商店 / 软著：原判「不做」，2026-09-17 移交 **P6** 立项
 - [ ] N4.14 生产轨上架 **应当**（iOS Ready for Sale 之后）
 
 （原 N5.* 商店项并入本段，编号改成 N4，避免和「上线后 CI」抢 P5。旧 N4 CI 全部改为上线后 N5。）
@@ -479,11 +480,57 @@ Android
 
 ---
 
+### P6 · 国内安卓市场（2026-09-17 立项）
+
+商业策略与 Web / 小程序对齐：**国内包全功能免费 + 打赏入口，不卖任何东西**。「音色工坊」段在国内包**整段不出现**（不灰、不锁、设置里不渲染），比灰按钮干净、审核少一个问点。打赏纯自愿、不解锁任何功能；iOS / Play 包内收款码禁令不变。
+
+上线定义：**华为**能搜到、能装、打开能练。小米：2026-09-19 实测注册向导仅开放企业 / 政府事业单位 / 港澳台企业 / 其他组织，**无「个人」选项**（个人注册通道关闭），后置到个人通道重开再评估。OPPO / vivo / 荣耀随华为过审后跟进；应用宝等软著规则明朗再上（见 N6.7）；魅族 / 360 / 百度不做。P6 不插队 iOS / Play 关口，工程按独立单元提交。
+
+#### 包体差量（冻结说明书之外唯一允许的渠道差量）
+
+- 新增 `market` 维度：`play`（现状）与 `cn`
+- `cn` 包：无 Play Billing、无 Firebase（**不收集任何数据**）、工坊段整段不渲染、设置加「投喂打赏」入口
+- 打赏入口：设置一行 + 弹层展示 `images/qr-wechat.jpg` / `qr-alipay.jpg`（Web 同款），文案沿用 Web「投喂打赏」风格，中英一等公民
+- 同一把本地 release keystore 签名、同包名 `studio.weichao.jpq`、与 play 包共用 versionCode 序列；各市场收 release APK（华为可收 AAB）
+- 不做渠道包统计（Walle / VasDolly 不引入）
+- policy 层不动：clamp / resolve 门控照旧，cn 包只是不暴露工坊入口
+
+#### 资质（关键路径，先启动；只能用户本人办）
+
+- **APP 备案**：接入商定为**阿里云**（用户已有大陆实例；域名 `weichao.studio` 也在阿里云注册，NS = hichina，无境外注册商障碍）。备案 App 域名填 `jpq.weichao.studio`（`.studio` 在工信部可备案名单内）；管局审核最长约 20 个工作日
+- **软著**：应用宝硬要求；若将来登记，名称仍须 备案名 = 应用名 = 软著名 =「小兔头节拍器」。2026-09-17 定走正常渠道，**同日改搁置**：2026-03 起中国版权保护中心新版申请表要求手抄承诺「未使用 AI 编写代码 / 撰写文档 / 生成登记材料」，失实进失信名单并挂钩征信；本项目为 AI 辅助开发，不签不实承诺。只挡应用宝（N6.12 一并后置），不挡华为 / 小米；待规则细化或「如实声明」口径出现再启动
+- 华为 AGC + 小米开发者账号：个人主体实名注册，注册时逐家确认个人可上工具类
+
+#### 上传（首提网页后台即可，自动化是上线后）
+
+- 华为：AGC Publishing API（官方）；小米：开放平台「自动发布接口」；OPPO / vivo / 荣耀：网页后台，浏览器自动化兜底
+- 第三方 CLI（apkgo 等）用前过一遍源码，再交凭据
+- 商店粘贴稿进 `docs/store/README.md` 新节（像 iOS / Play 那节）
+
+#### 待办
+
+- [x] N6.1 立项（本节，2026-09-17） **阻断**
+- [ ] N6.2 `market` flavor：cn 包无 Billing / Firebase / 工坊段 + 打赏入口 **阻断**
+- [x] N6.3 `packages/strings` 补打赏 key（中英；2026-09-17 packages/android/ios 三副本 72 键对齐） **阻断**
+- [x] N6.4 `privacy.html` / `en/privacy.html` 补国内渠道「不收集数据」口径（2026-09-17） **阻断**
+- [ ] N6.5 cn release APK 构建链路（本地 keystore；不自动传任何市场） **阻断**
+- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19：阿里云工单 **00047SKZFN** 已提交并回复客服——确认是本账号问题、附报错原文与诉求（查北京主体备案号/类型/接入商 + 注销途径），**等售后工程师答复**。背景：草稿齐（App/个人/天津南开），「下一步」被「证件已备案，主体属北京」拦；已排除同名网站类（公开查询仅粤/蜀他人）与 `weichao.studio` 域名历史（0 条）；剩余假设=证件下 APP/小程序类北京备案。后续：工程师答复 → 注销 → 重提草稿。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码存 Bitwarden——CLI 导入脚本 `~/keystores/bw-import-jpq.sh` 已修好参数，等用户重跑）
+- [x] N6.7 软著：**搁置**（2026-09-17，理由见「资质」节；待规则细化或如实声明口径） **应当**
+- [x] N6.8 华为 AGC 开发者实名 + 创建应用（2026-09-18：个人实名完成；应用「小兔头节拍器」已建，**AppID `119044997`**，状态准备提交，包名待首传 APK 时绑定为 `studio.weichao.jpq`） **阻断**
+  - 小米：2026-09-19 注册向导无个人选项（仅企业类主体），**暂缓**，个人通道重开再启动
+- [ ] N6.9 国内市场商店粘贴稿（`docs/store/README.md` 新节） **阻断**
+- [ ] N6.10 华为首次提审过审（小米暂缓） **阻断**
+- [ ] N6.11 OPPO / vivo / 荣耀跟进 **应当**
+- [ ] N6.12 应用宝（等软著规则明朗或替代口径，见 N6.7） **应当**
+- [ ] N6.13 上传自动化（华为 API / 小米接口 / 浏览器自动化） **上线后**
+
+---
+
 ## 干活时的顺序（Agent 必守）
 
 1. 改规则先改本文，再改代码。
 2. 只做 **阻断** 也能提审；**应当** 顺手做；**上线后** 不要插队挡 TestFlight。
-3. 原生先 iOS 阻断（P1 + P3 + P4.1–P4.7），Android 抄功能阻断（P2 + P4.9–P4.12）。
+3. 原生先 iOS 阻断（P1 + P3 + P4.1–P4.7），Android 抄功能阻断（P2 + P4.9–P4.12）。国内安卓市场按 P6 独立单元推进，不插队 iOS / Play 关口。
 4. iOS 真机 N1.25–N1.30 没勾，不准提审。
 5. 发现说明书不够：改本节，不要在 Android 加功能。
 6. 政策单测（clamp、bank 门闩、不插拍、0.28 增益）改钟时要绿；不要为上线新写一堆测试当阻断。

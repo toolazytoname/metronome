@@ -63,6 +63,11 @@
   "play_error": "采样没加载好，先检查音量后再试",
   "share": "分享",
   "share_text": "免下载、免注册，浏览器打开即用。",
+  "donate": "投喂打赏",
+  "donate_title": "☕ 投喂打赏 · 持续更新动力",
+  "donate_wechat": "微信打赏",
+  "donate_alipay": "支付宝打赏",
+  "donate_blurb": "打赏完全自愿，不解锁任何功能；所有功能永久免费。",
   "support": "支持我们",
   "privacy": "隐私政策",
   "default_bank": "默认"

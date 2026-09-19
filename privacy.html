@@ -38,6 +38,7 @@
     <li>微信小程序：<code>umtrack-wx</code>。当前 <code>useOpenid = false</code>、<code>uploadUserInfo = false</code>。SDK 会记页面访问；产品内事件（BPM、模式、拍号）在有 SDK 时才上报，不能把自动 PV 当成这些事件已经发生。</li>
     <li>iOS：<strong>Firebase Analytics</strong> 记录产品内事件（打开、播放/暂停、BPM、拍号、音效模式、设置开合）。用应用实例 ID，<strong>不采广告标识（IDFA）</strong>，不用于跨 App 广告。事件会发到 Google，以便我们看日活。内购仍只与系统商店通信。</li>
     <li>Android 2.1.7+：<strong>不接 Firebase Analytics</strong>，也不接广告 / 归因 SDK，不发送开发者定义的产品分析事件。音色工坊购买与 Restore 使用 Google Play Billing；付款界面由 Google Play 提供，本 App 不直接收集信用卡或支付详情。Billing SDK / Google Play 可能为交易、反欺诈、服务运行或诊断向 Google 处理必要数据；这不是 Firebase Analytics。设置里的隐私 / 支持链接用系统浏览器打开。没有账号。</li>
+    <li>国内安卓市场发布的安装包：功能全部免费、无内购，<strong>不内置任何统计或分析 SDK</strong>，不收集任何数据。设置里的「投喂打赏」只展示微信 / 支付宝收款二维码；打赏由你自愿在那两个 App 里完成，节拍器不经手任何支付信息。</li>
     <li>不申请麦克风、通讯录、定位。各端都无账号。</li>
   </ul>
 

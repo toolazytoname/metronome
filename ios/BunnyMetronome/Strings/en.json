@@ -63,6 +63,11 @@
   "play_error": "Samples failed to load. Check volume and try again.",
   "share": "Share",
   "share_text": "No download. Open in any browser.",
+  "donate": "Support us",
+  "donate_title": "☕ Support — coffee for the dev",
+  "donate_wechat": "WeChat",
+  "donate_alipay": "Alipay",
+  "donate_blurb": "Tips are voluntary and unlock nothing. Everything stays free.",
   "support": "Support",
   "privacy": "Privacy policy",
   "default_bank": "Default"
