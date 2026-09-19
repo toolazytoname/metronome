@@ -28,7 +28,9 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import studio.weichao.jpq.audio.MetronomeService
-import studio.weichao.jpq.billing.PlayStoreAdapter
+import studio.weichao.jpq.market.MarketHooks
+import studio.weichao.jpq.market.MarketStore
+import studio.weichao.jpq.market.createMarketStore
 import studio.weichao.jpq.policy.EntitlementFlow
 import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
@@ -39,7 +41,7 @@ import studio.weichao.jpq.ui.MacaronCallbacks
 
 class MainActivity : ComponentActivity() {
     private var service: MetronomeService? = null
-    private lateinit var store: PlayStoreAdapter
+    private lateinit var store: MarketStore
     private var prefs by mutableStateOf(MetronomePrefs())
     private var playing by mutableStateOf(false)
     private var activeBeat by mutableIntStateOf(-1)
@@ -94,29 +96,31 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = AndroidColor.TRANSPARENT
         prefs = loadPrefs()
         copy = AppCopy.load(assets, prefs.lang)
-        store = PlayStoreAdapter(
+        store = createMarketStore(
             this,
-            onEntitlementChange = { owned ->
-                runOnUiThread {
-                    val next = EntitlementFlow.authoritative(EntitlementFlow.State(prefs, unlocked), owned)
-                    unlocked = next.unlocked
-                    prefs = next.stored
-                    applyToService()
-                    if (owned) storeMessage = t("owned")
+            MarketHooks(
+                onEntitlementChange = { owned ->
+                    runOnUiThread {
+                        val next = EntitlementFlow.authoritative(EntitlementFlow.State(prefs, unlocked), owned)
+                        unlocked = next.unlocked
+                        prefs = next.stored
+                        applyToService()
+                        if (owned) storeMessage = t("owned")
+                    }
+                },
+                onMessage = { key ->
+                    runOnUiThread { storeMessage = t(key) }
+                },
+                onPrice = { price ->
+                    runOnUiThread { productPrice = price }
+                },
+                onAvailable = { ok ->
+                    runOnUiThread { storeAvailable = ok }
+                },
+                onBusy = { busy ->
+                    runOnUiThread { storeBusy = busy }
                 }
-            },
-            onMessage = { key ->
-                runOnUiThread { storeMessage = t(key) }
-            },
-            onPrice = { price ->
-                runOnUiThread { productPrice = price }
-            },
-            onAvailable = { ok ->
-                runOnUiThread { storeAvailable = ok }
-            },
-            onBusy = { busy ->
-                runOnUiThread { storeBusy = busy }
-            }
+            )
         )
         refreshEntitlement()
         if (Build.VERSION.SDK_INT >= 33 &&

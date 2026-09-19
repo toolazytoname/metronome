@@ -140,7 +140,7 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
 
 1. 推 tag：`git tag v2.1.0 && git push origin v2.1.0`
 2. GitHub Actions `Native packages` 并行出：
-   - Android：`:policy:test` + `assembleDebug`（有 keystore secrets 再加 `assembleRelease` + `bundleRelease`）
+   - Android：`:policy:test` + `assemblePlayDebug`（有 keystore secrets 再加 `assemblePlayRelease` + `bundlePlayRelease`）
    - iOS：`swift test` + iphoneos `CODE_SIGNING_ALLOWED=NO`，打成 **unsigned IPA**
 3. tag 会建 GitHub Release 并挂上这些文件。`workflow_dispatch` 只出 artifact、不建 Release。
 4. iOS unsigned IPA **不能**装真机，也 **不能** 传 App Store Connect。TestFlight 仍要本机发行证书 Archive。
@@ -158,7 +158,7 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
 ### 本机 / Console
 
 1. `cd android && ./gradlew :policy:test`
-2. `./gradlew assembleDebug` 做功能核验。
+2. `./gradlew assemblePlayDebug`（Play 变体）或 `assembleCnDebug`（国内/官网变体）做功能核验。
 3. Release / Play 用本地 keystore 签（`*.jks` 不进 git）：
 
    ```bash
@@ -166,7 +166,7 @@ Play **不是免费**。开发者账号一次性约 **US$25**，无年费。2023
    export ANDROID_STORE_PASSWORD=...
    export ANDROID_KEY_ALIAS=...
    export ANDROID_KEY_PASSWORD=...
-   cd android && ./gradlew :app:bundleRelease
+   cd android && ./gradlew :app:bundlePlayRelease
    # 产物：android/app/build/outputs/bundle/release/app-release.aab
    ```
 

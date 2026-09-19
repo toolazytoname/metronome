@@ -497,63 +497,15 @@ private fun SettingsSheet(
                 Box(Modifier.fillMaxWidth().height(1.dp).background(Palette.border))
                 ToggleRow(cb.t("keep_awake"), prefs.keepAwake, cb.onKeepAwake)
             }
-            SettingsGroup(cb.t("sound_workshop")) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (!storeAvailable && !unlocked) {
-                        Text(cb.t("workshop_play_only"), color = Palette.fg2, fontSize = 13.sp)
-                        return@Column
-                    }
-                    Text(cb.t("sound_workshop_blurb"), color = Palette.fg2, fontSize = 13.sp)
-                    Text(cb.t("haptic_pack_blurb"), color = Palette.fg2, fontSize = 13.sp)
-                    OptionRow(
-                        cb.t("haptic_pattern"),
-                        listOf(
-                            MetronomePolicy.HAPTIC_PATTERN_ALL to cb.t("haptic_all"),
-                            MetronomePolicy.HAPTIC_PATTERN_DOWNBEAT to cb.t("haptic_downbeat")
-                        ),
-                        MetronomePolicy.resolveHapticPattern(prefs.hapticPattern, unlocked),
-                        unlocked,
-                        MetronomePolicy.HAPTIC_PATTERN_ALL,
-                        cb.onHapticPattern
-                    )
-                    OptionRow(
-                        cb.t("haptic_feel"),
-                        listOf(
-                            MetronomePolicy.HAPTIC_FEEL_LIGHT to cb.t("haptic_light"),
-                            MetronomePolicy.HAPTIC_FEEL_STANDARD to cb.t("haptic_standard"),
-                            MetronomePolicy.HAPTIC_FEEL_HEAVY to cb.t("haptic_heavy")
-                        ),
-                        MetronomePolicy.resolveHapticFeel(prefs.hapticFeel, unlocked),
-                        unlocked,
-                        MetronomePolicy.HAPTIC_FEEL_STANDARD,
-                        cb.onHapticFeel
-                    )
-                    if (unlocked) {
-                        Text(cb.t("owned"), color = Palette.mintDeep, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    } else {
-                        val buy = if (productPrice.isNullOrBlank()) cb.t("buy") else "${cb.t("buy")} $productPrice"
-                        MacaronPress(onClick = cb.onBuy, enabled = !storeBusy) {
-                            Box(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                                    .background(Brush.verticalGradient(listOf(Palette.coral, Palette.coralDeep)))
-                                    .padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) { Text(buy, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
-                        }
-                    }
-                    MacaronPress(onClick = cb.onRestore, enabled = !storeBusy) {
-                        Box(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.coralSoft).padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) { Text(cb.t("restore"), color = Palette.coralDeep, fontWeight = FontWeight.SemiBold) }
-                    }
-                    if (storeMessage.isNotEmpty()) {
-                        Text(storeMessage, color = Palette.fg2, fontSize = 13.sp)
-                    }
-                    BankBlock(cb.t("click_bank"), false, prefs, unlocked, cb)
-                    BankBlock(cb.t("voice_bank"), true, prefs, unlocked, cb)
-                }
-            }
+            MarketSection(
+                prefs = prefs,
+                unlocked = unlocked,
+                productPrice = productPrice,
+                storeBusy = storeBusy,
+                storeMessage = storeMessage,
+                storeAvailable = storeAvailable,
+                cb = cb
+            )
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center) {
                 MacaronPress(onClick = cb.onSupport) {
                     Text(cb.t("support"), color = Palette.coral, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -580,7 +532,7 @@ private fun SettingsSheet(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun BankBlock(title: String, voice: Boolean, prefs: MetronomePrefs, unlocked: Boolean, cb: MacaronCallbacks) {
+internal fun BankBlock(title: String, voice: Boolean, prefs: MetronomePrefs, unlocked: Boolean, cb: MacaronCallbacks) {
     val current = if (voice) prefs.voiceBank else prefs.clickBank
     val banks = listOf(MetronomePolicy.DEFAULT_BANK) + if (voice) MetronomePolicy.packVoiceBanks else MetronomePolicy.packClickBanks
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -599,7 +551,7 @@ private fun BankBlock(title: String, voice: Boolean, prefs: MetronomePrefs, unlo
 }
 
 @Composable
-private fun OptionRow(
+internal fun OptionRow(
     title: String,
     options: List<Pair<String, String>>,
     current: String,
@@ -620,7 +572,7 @@ private fun OptionRow(
 }
 
 @Composable
-private fun SettingsGroup(title: String, content: @Composable () -> Unit) {
+internal fun SettingsGroup(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, color = Palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
         Column(

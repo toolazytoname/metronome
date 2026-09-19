@@ -31,6 +31,12 @@ android {
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
+    // 渠道维度（P6）：play = Play 分发（带内购）；cn = 国内市场 / 官网分发（全免费 + 打赏，无 Billing）
+    flavorDimensions += "market"
+    productFlavors {
+        create("play") { dimension = "market" }
+        create("cn") { dimension = "market" }
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,7 +65,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.6.8")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
-    implementation("com.android.billingclient:billing:8.0.0")
+    "playImplementation"("com.android.billingclient:billing:8.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")

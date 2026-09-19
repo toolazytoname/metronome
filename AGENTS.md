@@ -113,11 +113,12 @@ xcodebuild -project ios/BunnyMetronome.xcodeproj -scheme BunnyMetronome -destina
 cd android && ./gradlew :policy:test
 
 # Android APK（需要完整 Android SDK）
-cd android && ./gradlew assembleDebug
+cd android && ./gradlew assemblePlayDebug   # Play 变体
+# cn 变体（国内/官网分发）：./gradlew assembleCnDebug / assembleCnRelease
 
 # Play 上传用 AAB（本机 keystore，密钥不进 git）
 # ANDROID_KEYSTORE_PATH=... ANDROID_STORE_PASSWORD=... ANDROID_KEY_ALIAS=... ANDROID_KEY_PASSWORD=...
-# cd android && ./gradlew :app:bundleRelease
+# cd android && ./gradlew :app:bundlePlayRelease
 ```
 
 ## 禁止
@@ -151,7 +152,7 @@ cd android && ./gradlew assembleDebug
 - Web：推 `main` → Vercel。忽略 `miniapp/`、`ios/`、`android/`
 - 小程序：开发者工具上传 → 微信公众平台审核
 - iOS：本机签名 → TestFlight → App Store（先于 Android）。打 `v*` tag 会在 GitHub Release 挂 **unsigned IPA**（CI `CODE_SIGNING_ALLOWED=NO`，不能装真机、不能传商店）。TestFlight 仍要本机发行证书。
-- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页仍是上线后。国内安卓市场走 P6（APP 备案 + 逐家资质，首批华为/小米），**不要**自动把包传到 Play 或国内市场。
+- Android：打 `v*` tag → GitHub Actions 出 APK（Release 资产；有 keystore 再出签过名的 AAB）。Play 内测仍要你在 Console 建应用；**Play 开发者账号一次性约 US$25，不是免费**。新应用必须 `targetSdk` 36，上传 **AAB 不是 APK**。官网 APK 下载页见 P6 下载分发节。国内安卓市场走 P6（APP 备案 + 逐家资质，首批华为/小米），**不要**自动把包传到 Play 或国内市场。
 - 安全问题不要开公开 issue，邮件 lazywc@gmail.com
 
 ---
@@ -214,7 +215,7 @@ cd android && ./gradlew assembleDebug
 - 练琴屏 1:1 复刻 Web、bunny 摆位、Launch 白闪
 - VoiceOver / TalkBack 打磨、Dynamic Type、Reduce Motion
 - 来电中断单测、CI 跑 `swift test` / `:policy:test`
-- 国产 ROM 保活、官网 APK 下载页、落地页换成商店链接
+- 国产 ROM 保活、落地页换成商店链接
 
 Android 功能面仍只许抄冻结说明书，但 **视觉打磨不挡 Play 内测**。
 
@@ -344,7 +345,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 ### 明确不做（上线范围外）
 
-小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、官网 APK 下载页、落地页商店徽章（没有链接先别改口）。华为/小米等国内市场原在「不做」内，2026-09-17 立项，见 P6。
+小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、落地页商店徽章（没有链接先别改口）。华为/小米等国内市场与官网 APK 下载页原在「不做」内，分别于 2026-09-17 / 2026-09-19 立项，见 P6。
 
 ---
 
@@ -476,7 +477,7 @@ Android
 - [ ] N5.8 来电 / 焦点 / 国产 ROM
 - [ ] N5.9 生产 IAP 真钱走通后再把落地页换成商店链接（FAQ 已去掉「即将上线」，仍无商店徽章）
 - [x] N5.10 `privacy.html` / `en/privacy.html` 现时态（2026-08-26）
-- [ ] N5.11 官网 APK 下载页（有签名包再挂）
+- [x] N5.11 官网 APK 下载页：2026-09-19 转正移交 P6（有签名包即挂；只发 cn release 包，见 P6「下载分发」）
 
 ---
 
@@ -493,6 +494,7 @@ Android
 - 打赏入口：设置一行 + 弹层展示 `images/qr-wechat.jpg` / `qr-alipay.jpg`（Web 同款），文案沿用 Web「投喂打赏」风格，中英一等公民
 - 同一把本地 release keystore 签名、同包名 `studio.weichao.jpq`、与 play 包共用 versionCode 序列；各市场收 release APK（华为可收 AAB）
 - 不做渠道包统计（Walle / VasDolly 不引入）
+- **下载分发**：官网挂 cn release APK 直链 `download/jpq-latest.apk`（仓库根 `download/`，Vercel 随站点分发；`.vercelignore` 已排除 `android/`，所以 APK 放根目录）。文件名固定、内容随版本更新；页面链接标注版本号与大小。**只发 cn 包**——play 包（带 Play Billing）不走官网分发
 - policy 层不动：clamp / resolve 门控照旧，cn 包只是不暴露工坊入口
 
 #### 资质（关键路径，先启动；只能用户本人办）
@@ -510,11 +512,11 @@ Android
 #### 待办
 
 - [x] N6.1 立项（本节，2026-09-17） **阻断**
-- [ ] N6.2 `market` flavor：cn 包无 Billing / Firebase / 工坊段 + 打赏入口 **阻断**
+- [x] N6.2 `market` flavor（2026-09-19：play/cn 双变体绿；cn 无 Billing 依赖（APK 0 billing 类）、无工坊段、设置含投喂打赏弹窗（微信/支付宝收款码仅进 cn res）；双变体 debug + policy 测试绿，cn release 6.3MB 签名指纹与备案一致） **阻断**
 - [x] N6.3 `packages/strings` 补打赏 key（中英；2026-09-17 packages/android/ios 三副本 72 键对齐） **阻断**
 - [x] N6.4 `privacy.html` / `en/privacy.html` 补国内渠道「不收集数据」口径（2026-09-17） **阻断**
-- [ ] N6.5 cn release APK 构建链路（本地 keystore；不自动传任何市场） **阻断**
-- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19：阿里云工单 **00047SKZFN** 已提交并回复客服——确认是本账号问题、附报错原文与诉求（查北京主体备案号/类型/接入商 + 注销途径），**等售后工程师答复**。背景：草稿齐（App/个人/天津南开），「下一步」被「证件已备案，主体属北京」拦；已排除同名网站类（公开查询仅粤/蜀他人）与 `weichao.studio` 域名历史（0 条）；剩余假设=证件下 APP/小程序类北京备案。后续：工程师答复 → 注销 → 重提草稿。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码存 Bitwarden——CLI 导入脚本 `~/keystores/bw-import-jpq.sh` 已修好参数，等用户重跑）
+- [x] N6.5 cn release APK 构建链路（2026-09-19：`assembleCnRelease` 本地 keystore 出包 → `download/jpq-latest.apk`，官网 zh/en 已挂下载链接；不自动传任何市场） **阻断**
+- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19：阿里云工单 **00047SKZFN** 已提交并回复客服——确认是本账号问题、附报错原文与诉求（查北京主体备案号/类型/接入商 + 注销途径），**等售后工程师答复**。背景：草稿齐（App/个人/天津南开），「下一步」被「证件已备案，主体属北京」拦；已排除同名网站类（公开查询仅粤/蜀他人）与 `weichao.studio` 域名历史（0 条）；剩余假设=证件下 APP/小程序类北京备案。后续：工程师答复 → 注销 → 重提草稿。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
 - [x] N6.7 软著：**搁置**（2026-09-17，理由见「资质」节；待规则细化或如实声明口径） **应当**
 - [x] N6.8 华为 AGC 开发者实名 + 创建应用（2026-09-18：个人实名完成；应用「小兔头节拍器」已建，**AppID `119044997`**，状态准备提交，包名待首传 APK 时绑定为 `studio.weichao.jpq`） **阻断**
   - 小米：2026-09-19 注册向导无个人选项（仅企业类主体），**暂缓**，个人通道重开再启动

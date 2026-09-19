@@ -393,7 +393,7 @@ cd android && ./gradlew :app:bundleRelease
 | 隐私政策 | https://jpq.weichao.studio/privacy |
 | 备案号 | 等 N6.6（提审必填；2024 年起未备案不得上架） |
 
-### 签名指纹（release keystore `~/keystores/jpq-release.jks`，alias `jpq`，2026-09-18 生成；密钥文件与密码不进 git，env 见 `~/keystores/jpq-release.env`）
+### 签名指纹（release keystore `~/keystores/jpq-release.jks`，alias `jpq`，2026-09-18 生成；密码在 Bitwarden「小兔头节拍器 · Android release keystore」条目，条目内含 jks base64 可完整还原）
 
 | 用途 | 指纹 |
 |---|---|
@@ -401,7 +401,7 @@ cd android && ./gradlew :app:bundleRelease
 | SHA1 | `6C:7A:3B:FB:1D:77:90:4C:BA:F3:DF:02:83:1C:58:D2:D3:9F:E3:5B` |
 | SHA256 | `54:B0:68:D6:C5:1D:47:D7:66:87:D6:34:EE:E4:4E:1E:78:48:52:0B:54:7D:19:CD:30:77:12:94:37:96:BC:43` |
 
-> 各家表单格式不一：有的去冒号、有的要小写，按后台要求调整。这把钥匙是**所有渠道（Play + 国内市场）共同的升级签名**，丢了就再也不能给已上架的包发更新——`~/keystores/` 目录请自行异地备份。
+> 各家表单格式不一：有的去冒号、有的要小写，按后台要求调整。这把钥匙是**所有渠道（Play + 国内市场）共同的升级签名**，丢了就再也不能给已上架的包发更新——备份即 Bitwarden 条目（含文件本体）。
 
 ### 一句话简介（zh）
 

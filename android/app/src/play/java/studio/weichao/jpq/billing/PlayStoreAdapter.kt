@@ -23,7 +23,7 @@ import studio.weichao.jpq.policy.PlayLedger
 import studio.weichao.jpq.policy.PlayPurchaseRow
 import studio.weichao.jpq.policy.PurchaseBegin
 import studio.weichao.jpq.policy.RestoreBegin
-import studio.weichao.jpq.policy.StoreAdapter
+import studio.weichao.jpq.market.MarketStore
 import studio.weichao.jpq.policy.StoreRestoreResult
 import kotlin.coroutines.resume
 
@@ -35,7 +35,7 @@ class PlayStoreAdapter(
     private val onAvailable: (Boolean) -> Unit = {},
     private val onBusy: (Boolean) -> Unit = {},
     internal val session: BillingSessionController = BillingSessionController()
-) : StoreAdapter {
+) : MarketStore {
     @Volatile private var unlocked = false
     @Volatile var formattedPrice: String? = null
         private set
@@ -140,7 +140,7 @@ class PlayStoreAdapter(
         /* Host activity calls launch(). */
     }
 
-    fun launch(activity: Activity) {
+    override fun launch(activity: Activity) {
         when (val begin = session.beginPurchase(client.isReady)) {
             is PurchaseBegin.Rejected -> {
                 emitBusy()
@@ -206,7 +206,7 @@ class PlayStoreAdapter(
         }
     }
 
-    fun close() {
+    override fun close() {
         reconnectToken?.let { mainHandler.removeCallbacks(it) }
         reconnectToken = null
         session.close()
