@@ -639,7 +639,8 @@ describe('Donate and share hooks', () => {
     const toast = vi.fn();
     global.wx.showToast = toast;
     p.onCopyUrl();
-    expect(toast).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({
       title: getI18n(lang).donate_copy_failed, icon: 'none',
     }));
   });
