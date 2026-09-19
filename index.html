@@ -123,9 +123,12 @@
             font-size: 15px;
             letter-spacing: -0.005em;
         }
-        button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+        /* iOS/iPadOS Safari：页面可缩放时快速连点会被识别为双击缩放；manipulation 只禁双击缩放，不影响捏合缩放 */
+        button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
         a { color: inherit; text-decoration: none; }
         img { display: block; max-width: 100%; }
+        /* 模式按钮是 div、滑块是 input，不走上面的 button 规则，单独补 */
+        .mode-btn, input[type="range"] { touch-action: manipulation; }
 
         .phone {
             max-width: 430px;
