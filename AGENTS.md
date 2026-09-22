@@ -134,7 +134,7 @@ cd android && ./gradlew assemblePlayDebug   # Play 变体
 - 让文档和代码分叉（先改 `AGENTS.md`）
 - 空 App Icon、系统播放三角当启动图标、写死 ¥12 的购买按钮、iOS / Play 包内收款码 —— 这些过不了审，不要送
 - 原生接广告 / 归因 SDK，打开 IDFA / OAID / ATT。**Android 不接 Firebase Analytics / 归因 SDK**，也不要放 `google-services.json`。iOS 暂时仍可保留 Firebase Analytics：只做产品内事件，广告标识关掉，不弹 ATT
-- 为原生发明深色模式、iPad 专属布局、小组件、Watch、CarPlay
+- 为原生发明深色模式、小组件、Watch、CarPlay（iPad 自适应布局不算「发明」，是审核必须，见屏幕节）
 - 把无障碍打磨、1:1 复刻 Web、CI 原生单测当成上线阻断（那些是上线后）
 
 ## IAP
@@ -181,7 +181,7 @@ cd android && ./gradlew assemblePlayDebug   # Play 变体
 
 提审前容易漏（不是新功能）：
 
-- iOS 工程曾 `TARGETED_DEVICE_FAMILY = 1,2`，Connect 会当 iPad App 要 iPad 截图。v1 **只发 iPhone**（`1`）
+- iOS 工程是**通用 App**（`TARGETED_DEVICE_FAMILY = "1,2"`，2026-09-22 Guideline 4 拒审后从「只发 iPhone」转向）：Connect 提审要 iPad 13" 截图 + iPhone 6.9" 截图两套
 - Connect 付费协议 + 税务银行；个人 Play 账号上生产轨要 12 人 × 14 天封闭测试
 - 第一个 IAP 必须跟一版 App 一起送审
 - 截图按 Connect 强制尺寸重出（草稿是模拟器）
@@ -236,8 +236,8 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - ± 和自定义拍数步进到边界时视觉禁用，不要还能按、数值却不变
    - 采样/播放失败必须在练琴屏显示错误；旁加载没有商店也不能把这条滤掉
    - 暖米 + 珊瑚即可；**小兔头摆上练琴屏 = 上线应当，不是阻断**（图标里有兔子就够过审）
-   - **只竖屏**。横过来不转（iOS `UIInterfaceOrientationPortrait`，Android `screenOrientation=portrait`）。v1 不做横屏布局
-   - **只发 iPhone**（`TARGETED_DEVICE_FAMILY = 1`）。不要带 iPad，否则 Connect 要 iPad 截图
+   - **只竖屏**。横过来不转（iOS `UIInterfaceOrientationPortrait` + `UIRequiresFullScreen`，Android `screenOrientation=portrait`）。v1 不做横屏布局
+   - **iPhone + iPad 通用 App**（`TARGETED_DEVICE_FAMILY = "1,2"`）。2026-09-22 起 iPad 兼容是审核必须。**regular 宽度**：满高双栏（练琴舞台竖直铺满 + 通高 inspector）。练琴面：大 BPM → 拍点 → 滑块/播放 → 底栏音效/拍号胶囊。Inspector：解锁/Restore 吸顶常显，工坊 Click|Voice 双列 + 震动选项可滚到底；齿轮可收起专注练琴。compact（iPhone）仍竖向堆叠 + 底栏 sheet。禁止控件截断、禁止大屏留空却展示不全
 2. **设置（上线必须）**
    - 音效：传统 / 均匀 / 童声
    - 拍号预设：4/4、3/4、2/4、6/8、5/4、7/8；自定义 `bc` 1–16（`bu` 可只随预设，自定义分母 = 上线应当）
@@ -345,7 +345,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 ### 明确不做（上线范围外）
 
-小组件、Watch、CarPlay、iPad 专属、Live Activity、Android Auto、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、落地页商店徽章（没有链接先别改口）。华为/小米等国内市场与官网 APK 下载页原在「不做」内，分别于 2026-09-17 / 2026-09-19 立项，见 P6。
+小组件、Watch、CarPlay、iPad 专属玩法（分栏 / 拖拽，自适应布局除外）、Live Activity、Android Auto、KMP、云同步、账号、广告追踪、深色模式、自定义导入采样、复节奏、落地页商店徽章（没有链接先别改口）。华为/小米等国内市场与官网 APK 下载页原在「不做」内，分别于 2026-09-17 / 2026-09-19 立项，见 P6。
 
 ---
 
@@ -413,6 +413,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [ ] N1.29 未购童声；点 pack 出系统购买 **阻断**
 - [ ] N1.30 Sandbox 买 → 删 App → Restore **阻断**
 - [ ] N1.31 来电回来不双开 **应当**
+- [x] N1.32 iPad 通用适配（2026-09-22：Guideline 4 拒审后转通用；满高练琴舞台 + 通高 inspector；Unlock/Restore 吸顶；工坊 Click|Voice 双列可滚到底；模拟器核验；iPad 13" 截图三帧已出 `ipad-practice/playing/workshop.png` 2064×2752） **阻断**
 
 ### P2 · Android（iOS 阻断功能面定了再抄；视觉不挡内测）
 
@@ -448,9 +449,9 @@ iOS
 - [ ] N4.2 建 IAP `studio.weichao.jpq.soundpack` 非消耗型 **阻断**
 - [ ] N4.3 隐私营养：无账户无跟踪；分析勾产品交互 + 应用实例 ID **阻断**
 - [ ] N4.4 隐私 / 支持 URL 指现网 **阻断**
-- [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当 **阻断**
+- [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当。**2026-09-22 转通用 App：iPad 13" 三帧已出**（`ipad-*.png` 2064×2752：默认分栏 / 播放中 / 工坊滚动，iPad Pro 13 M5 模拟器） **阻断**
 - [x] N4.6 审核备注写在 `docs/store/README.md` **阻断**
-- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**
+- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**（2026-09-17 提交 2.1.2(4)+IAP；**09-18 Guideline 2.1 Information Needed 被拒**，当日已回复 7 项说明 + 真机演示视频附件，未点 Resubmit，等结果。**09-19 DSA 交易者信息重新提交**：Apple 邮件 Action needed → Business 页走完 trader 确认 → 联系方式（北京住址（已核对）/Beijing/+86/lazywc）→ 地址证明=信用卡对账单 → Compliance 表 In Review（27 EU 区）。**09-19 发现 Paid Apps 仍 Pending User Info**：banks API 空返回、UI 的 CMB Haidian 行无状态 Not in Use——实为 2026-09-17 银行向导未走完（持有人/CNAPS/账号都已存，只差 Certification 确认）。**同日已补完**：点残影银行行重走向导 → Certification 勾选 → Add → `PUT /ppm/v1/2fa/.../banks` 需新鲜 2FA（401 后弹 mfaChallenges，用户输码）→ 200。现银行=Processing、Paid Apps=Processing（等 Apple 核验转 Active；转绿后沙盒 IAP 商品应可拉取——「商店暂时连不上」的判定根因即协议未生效，届时重验购买弹窗）。**09-20 双 KYC 补资料完成**：Apple 两封 Action needed 邮件（banking details + legal entity details）= 银行进入 Processing 后重跑的 Add User Info 合规筛查，两个入口各交一次（账户持有人版：用户手交，含证件照/出生地 （已线下核对）/非上市；法实体版：自动走完同款表单 + 持股 本人 100% Submit），红色「requires immediate attention」横幅与 Add info 入口全消，待 Apple 邮件通知核验结果）。**09-22 三连拒**：2.3.7（副标题含价格字眼「免费/free」）+ 2.3.10（描述提及 Android/Play 跨平台）+ Guideline 4（iPad 兼容窗裁掉设置/语言）。当日修复：副标题 / 宣传文本 / 描述中英重写（去价格与跨平台字眼）、转通用 App + 自适应布局（N1.32）、版本 2.1.3(5) 重传重提））
 - [x] N4.8 `DEPLOY.md` 补 TestFlight / 提审步骤（不含证书） **应当**
 
 Android
@@ -516,7 +517,7 @@ Android
 - [x] N6.3 `packages/strings` 补打赏 key（中英；2026-09-17 packages/android/ios 三副本 72 键对齐） **阻断**
 - [x] N6.4 `privacy.html` / `en/privacy.html` 补国内渠道「不收集数据」口径（2026-09-17） **阻断**
 - [x] N6.5 cn release APK 构建链路（2026-09-19：`assembleCnRelease` 本地 keystore 出包 → `download/jpq-latest.apk`，官网 zh/en 已挂下载链接；不自动传任何市场） **阻断**
-- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19：阿里云工单 **00047SKZFN** 已提交并回复客服——确认是本账号问题、附报错原文与诉求（查北京主体备案号/类型/接入商 + 注销途径），**等售后工程师答复**。背景：草稿齐（App/个人/天津南开），「下一步」被「证件已备案，主体属北京」拦；已排除同名网站类（公开查询仅粤/蜀他人）与 `weichao.studio` 域名历史（0 条）；剩余假设=证件下 APP/小程序类北京备案。后续：工程师答复 → 注销 → 重提草稿。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
+- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19 深夜：**双拦截已破，北京路线打通**。判定实验结论：「证件已备案，主体属北京」= MIIT 记录的地区一致性拦截（证件下确有北京主体记录，管局归属北京）；「无企业级备案管理」= 账号内已有实体时再建第二主体。解法已验证：**放弃旧天津草稿**（连带删除实体，企业级备案管理列表「暂无数据」）→ 新表单填 App/小兔头节拍器/北京市·市辖区·海淀区/个人/居民身份证/本人/（18 位证件号已线下核对，不写入仓库）/证件住所照身份证填天津原文 → 信息校验**两项拦截全消失**、无任何报错（自动化环境下保存/推进按钮无响应，表单未持久化，需手点）。后续：用户手点走完 5 步（第 2 步主办者信息、第 3 步 App 信息：包名 `studio.weichao.jpq` + 签名指纹、第 4 步传身份证照、第 5 步提交）；注意北京管局对非京户籍个人可能要居住证明，第 4 步见分晓。工单 00047SKZFN 电话结论：阿里云按证件查无旧备案（即北京主体不在阿里云，注销路线作废）。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
 - [x] N6.7 软著：**搁置**（2026-09-17，理由见「资质」节；待规则细化或如实声明口径） **应当**
 - [x] N6.8 华为 AGC 开发者实名 + 创建应用（2026-09-18：个人实名完成；应用「小兔头节拍器」已建，**AppID `119044997`**，状态准备提交，包名待首传 APK 时绑定为 `studio.weichao.jpq`） **阻断**
   - 小米：2026-09-19 注册向导无个人选项（仅企业类主体），**暂缓**，个人通道重开再启动

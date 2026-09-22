@@ -41,27 +41,222 @@ private struct BeatGridWidthKey: PreferenceKey {
 struct ContentView: View {
     @EnvironmentObject var model: MetronomeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hSizeClass
     @State private var beatGridWidth: CGFloat = 0
+    /// iPad inspector visibility (local — don't fight the phone sheet flag on appear).
+    @State private var inspectorVisible = true
+
+    /// Regular width (iPad): full-height practice + inspector split.
+    /// Compact keeps the original iPhone stacked layout + sheet.
+    private var isWide: Bool { hSizeClass == .regular }
+
+    private var contentHPad: CGFloat { isWide ? 16 : 16 }
+    private let inspectorWidth: CGFloat = 408
+
+    private let meterPresets: [(Int, Int, String)] = [
+        (4, 4, "sig_44"), (3, 4, "sig_34"), (2, 4, "sig_24"),
+        (6, 8, "sig_68"), (5, 4, "sig_54"), (7, 8, "sig_78")
+    ]
 
     var body: some View {
         ZStack {
             background
-            VStack(spacing: 12) {
-                topBeans
-                    .padding(.horizontal, 16)
-                heroCard
-                    .padding(.horizontal, 16)
-                    .frame(maxHeight: .infinity, alignment: .top)
-                settingsBar
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
+            GeometryReader { geo in
+                if isWide {
+                    wideLayout
+                        .padding(.horizontal, contentHPad)
+                        .padding(.vertical, 14)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else if #available(iOS 16.4, *) {
+                    practiceScroll(height: geo.size.height)
+                        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+                } else {
+                    practiceScroll(height: geo.size.height)
+                }
             }
         }
         .preferredColorScheme(.light)
-        .sheet(isPresented: $model.settingsOpen) {
+        .sheet(isPresented: Binding(
+            get: { model.settingsOpen && !isWide },
+            set: { model.settingsOpen = $0 }
+        )) {
             settingsSheet
         }
         .task { await model.refreshPrice() }
+    }
+
+    /// Compact phone stack. Scrolls only when the window is too short.
+    private func practiceScroll(height: CGFloat) -> some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                topBeans
+                heroCard
+                settingsBar
+                    .padding(.bottom, 10)
+            }
+            .padding(.horizontal, contentHPad)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: height)
+        }
+    }
+
+    /// iPad: Logic-style split — practice stage + full-height scrollable inspector.
+    private var wideLayout: some View {
+        HStack(alignment: .top, spacing: 14) {
+            practicePane
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if inspectorVisible {
+                settingsPane
+                    .frame(width: inspectorWidth)
+                    .frame(maxHeight: .infinity)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: inspectorVisible)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// iPad practice stage: vertical instrument layout that fills height —
+    /// BPM hero → beats → transport → mode/meter dock. No side-by-side
+    /// leftover cream; chips sit as a bottom toolbar.
+    private var practicePane: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                bunny
+                titleBlock
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                shareButton
+                langButton
+                settingsGear
+            }
+
+            VStack(spacing: 0) {
+                bpmBlock
+                    .padding(.top, 28)
+                beatGrid
+                    .frame(maxWidth: 560)
+                    .padding(.top, 26)
+                sliderRow
+                    .frame(maxWidth: 480)
+                    .padding(.top, 20)
+                playButton
+                    .padding(.top, 18)
+                    .padding(.bottom, 28)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+            Rectangle()
+                .fill(Palette.border.opacity(0.55))
+                .frame(height: 1)
+                .padding(.bottom, 14)
+            stageQuickStrip
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 22)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(cardBackground)
+    }
+
+    private var settingsGear: some View {
+        Button {
+            inspectorVisible.toggle()
+        } label: {
+            Image(systemName: inspectorVisible ? "xmark" : "slider.horizontal.3")
+                .font(.system(size: isWide ? 17 : 14, weight: .bold))
+                .foregroundStyle(inspectorVisible ? Palette.coralDeep : Palette.fg2)
+                .frame(width: isWide ? 44 : 36, height: isWide ? 44 : 36)
+                .background(inspectorVisible ? Palette.coralSoft : Palette.surface2)
+                .clipShape(RoundedRectangle(cornerRadius: isWide ? 14 : 12, style: .continuous))
+        }
+        .buttonStyle(MacaronPressStyle())
+        .accessibilityLabel(model.t("settings"))
+    }
+
+    /// Full-height inspector. Workshop unlock sits above the scroll so the
+    /// purchase CTA stays visible; banks / haptic / meter scroll underneath.
+    private var settingsPane: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(model.t("settings"))
+                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Palette.ink)
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 14)
+
+            if !model.unlocked {
+                InspectorUnlockBanner()
+                    .padding(.bottom, 16)
+            }
+
+            ScrollView(.vertical, showsIndicators: true) {
+                SettingsPanel(layout: .inspector)
+                    .padding(.bottom, 28)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 22)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(cardBackground)
+    }
+
+    /// Quiet secondary strip — mode + meter as compact chips.
+    private var stageQuickStrip: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                ForEach(SoundMode.allCases, id: \.self) { mode in
+                    quietModeChip(mode)
+                }
+            }
+            HStack(spacing: 10) {
+                ForEach(meterPresets, id: \.2) { p in
+                    quietMeterChip(p.0, p.1)
+                }
+            }
+        }
+    }
+
+    private func quietModeChip(_ mode: SoundMode) -> some View {
+        let on = model.prefs.mode == mode
+        let label: String = {
+            switch mode {
+            case .traditional: return model.t("sound_traditional")
+            case .uniform: return model.t("sound_uniform")
+            case .voice: return model.t("sound_voice")
+            }
+        }()
+        return Button {
+            model.setMode(mode)
+        } label: {
+            Text(label)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(on ? Palette.coralDeep : Palette.fg2)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 44)
+                .padding(.vertical, 2)
+                .background(on ? Palette.coralSoft : Palette.surface2)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(MacaronPressStyle())
+    }
+
+    private func quietMeterChip(_ bc: Int, _ bu: Int) -> some View {
+        let on = model.prefs.bc == bc && model.prefs.bu == bu
+        return Button {
+            model.setSignature(bc: bc, bu: bu)
+        } label: {
+            Text("\(bc)/\(bu)")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(on ? Palette.coralDeep : Palette.fg2)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 44)
+                .padding(.vertical, 2)
+                .background(on ? Palette.coralSoft : Palette.surface2)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(MacaronPressStyle())
     }
 
     private var background: some View {
@@ -93,49 +288,68 @@ struct ContentView: View {
     private var topBeans: some View {
         HStack(spacing: 6) {
             Spacer()
-            ShareLink(
-                item: model.shareURL(),
-                subject: Text(model.t("app_name")),
-                message: Text(model.t("share_text"))
-            ) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 14, weight: .bold))
-                    .offset(y: -1)
-                    .foregroundStyle(Palette.lemonDeep)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 0.99, green: 0.95, blue: 0.72), Palette.lemon],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .shadow(color: Palette.lemon.opacity(0.35), radius: 6, y: 3)
-            }
-            .buttonStyle(MacaronPressStyle())
-            .accessibilityLabel(model.t("share"))
-            Button {
-                model.setLang(model.prefs.lang == "zh" ? "en" : "zh")
-            } label: {
-                Text(model.prefs.lang == "zh" ? "EN" : "中文")
-                    .font(.system(size: 12, weight: .bold))
-                    .padding(.horizontal, 10)
-                    .frame(height: 36)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 0.93, green: 0.90, blue: 0.98), Color(red: 0.82, green: 0.78, blue: 0.94)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                    .foregroundStyle(Palette.lavenderDeep)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .shadow(color: Palette.lavender.opacity(0.35), radius: 6, y: 3)
-            }
-            .accessibilityLabel(model.t("language"))
+            shareButton
+            langButton
         }
     }
 
+    private var shareButton: some View {
+        let side: CGFloat = isWide ? 44 : 36
+        return ShareLink(
+            item: model.shareURL(),
+            subject: Text(model.t("app_name")),
+            message: Text(model.t("share_text"))
+        ) {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: isWide ? 16 : 14, weight: .bold))
+                .offset(y: -1)
+                .foregroundStyle(Palette.lemonDeep)
+                .frame(width: side, height: side)
+                .background(
+                    LinearGradient(
+                        colors: [Color(red: 0.99, green: 0.95, blue: 0.72), Palette.lemon],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: isWide ? 14 : 12, style: .continuous))
+                .shadow(color: Palette.lemon.opacity(0.35), radius: 6, y: 3)
+        }
+        .buttonStyle(MacaronPressStyle())
+        .accessibilityLabel(model.t("share"))
+    }
+
+    private var langButton: some View {
+        Button {
+            model.setLang(model.prefs.lang == "zh" ? "en" : "zh")
+        } label: {
+            Text(model.prefs.lang == "zh" ? "EN" : "中文")
+                .font(.system(size: isWide ? 14 : 12, weight: .bold))
+                .padding(.horizontal, isWide ? 14 : 10)
+                .frame(height: isWide ? 44 : 36)
+                .background(
+                    LinearGradient(
+                        colors: [Color(red: 0.93, green: 0.90, blue: 0.98), Color(red: 0.82, green: 0.78, blue: 0.94)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .foregroundStyle(Palette.lavenderDeep)
+                .clipShape(RoundedRectangle(cornerRadius: isWide ? 14 : 12, style: .continuous))
+                .shadow(color: Palette.lavender.opacity(0.35), radius: 6, y: 3)
+        }
+        .accessibilityLabel(model.t("language"))
+    }
+
     private var heroCard: some View {
+        phoneHero
+            .padding(.horizontal, 20)
+            .padding(.vertical, 22)
+            .frame(maxWidth: .infinity)
+            .background(cardBackground)
+            .transaction { $0.animation = nil }
+    }
+
+    /// iPhone: stacked brand → beats → BPM → play (unchanged composition).
+    private var phoneHero: some View {
         VStack(spacing: 0) {
             bunny
                 .padding(.top, 8)
@@ -151,10 +365,6 @@ struct ContentView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 8)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 22)
-        .background(cardBackground)
-        .transaction { $0.animation = nil }
     }
 
     private var cardBackground: some View {
@@ -170,15 +380,17 @@ struct ContentView: View {
     private var bunny: some View {
         // PNG is a circular painting on a pale square; crop the white matte
         // so the rabbit fills the clip. Outer ring stays a thin macaron stroke.
-        Image("Bunny")
+        let outer: CGFloat = isWide ? 96 : 148
+        let inner: CGFloat = isWide ? 76 : 116
+        return Image("Bunny")
             .resizable()
             .scaledToFill()
-            .frame(width: 148, height: 148)
+            .frame(width: outer, height: outer)
             .offset(y: 6)
-            .frame(width: 116, height: 116)
+            .frame(width: inner, height: inner)
             .clipped()
             .clipShape(Circle())
-            .padding(4)
+            .padding(isWide ? 3 : 4)
             .background(
                 Circle().fill(
                     AngularGradient(
@@ -187,12 +399,12 @@ struct ContentView: View {
                     )
                 )
             )
-            .shadow(color: Palette.coral.opacity(0.28), radius: 14, y: 6)
+            .shadow(color: Palette.coral.opacity(0.28), radius: isWide ? 8 : 14, y: 6)
             .accessibilityHidden(true)
     }
 
     private var titleBlock: some View {
-        VStack(spacing: 4) {
+        VStack(alignment: isWide ? .leading : .center, spacing: isWide ? 5 : 4) {
             HStack(spacing: 0) {
                 Text(model.t("app_name_lead"))
                     .foregroundStyle(Palette.ink)
@@ -200,26 +412,28 @@ struct ContentView: View {
                     .italic()
                     .foregroundStyle(Palette.coralDeep)
             }
-            .font(.system(size: 26, weight: .heavy, design: .rounded))
+            .font(.system(size: isWide ? 30 : 26, weight: .heavy, design: .rounded))
             .tracking(-0.6)
             Text(model.t("tagline"))
-                .font(.system(size: 12.5, weight: .medium))
+                .font(.system(size: isWide ? 15 : 12.5, weight: .medium))
                 .foregroundStyle(Palette.muted)
         }
-        .multilineTextAlignment(.center)
+        .multilineTextAlignment(isWide ? .leading : .center)
     }
 
     private var beatGrid: some View {
         let n = max(1, min(16, model.prefs.bc))
-        let spacing: CGFloat = n >= 7 ? 6 : 10
+        let spacing: CGFloat = n >= 7 ? 8 : (isWide ? 14 : 10)
         let rows = MetronomePolicy.beatRows(beats: n)
-        let measured = beatGridWidth > 1 ? beatGridWidth : 300
-        let cell = max(36, (measured - spacing * CGFloat(MetronomePolicy.beatRowMax - 1)) / CGFloat(MetronomePolicy.beatRowMax))
+        let measured = beatGridWidth > 1 ? beatGridWidth : (isWide ? 520 : 300)
+        let cellCap: CGFloat = isWide ? 112 : 76
+        let cell = min(cellCap, max(36, (measured - spacing * CGFloat(MetronomePolicy.beatRowMax - 1)) / CGFloat(MetronomePolicy.beatRowMax)))
+        let beatFont: CGFloat = model.prefs.bc >= 8 ? (isWide ? 18 : 16) : (cell > 80 ? (isWide ? 28 : 26) : 22)
         return VStack(spacing: spacing) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: spacing) {
                     ForEach(0..<row.count, id: \.self) { j in
-                        beatCell(row.startIndex + j, corner: min(18, cell * 0.28))
+                        beatCell(row.startIndex + j, corner: min(18, cell * 0.28), font: beatFont)
                             .frame(width: cell, height: cell)
                     }
                 }
@@ -236,12 +450,12 @@ struct ContentView: View {
         .transaction { $0.animation = nil }
     }
 
-    private func beatCell(_ i: Int, corner: CGFloat) -> some View {
+    private func beatCell(_ i: Int, corner: CGFloat, font: CGFloat) -> some View {
         let active = model.playing && i == model.activeBeat
         let strong = model.prefs.mode == .traditional && i == 0
         let (fill, text, ring) = beatColors()
         return Text("\(i + 1)")
-            .font(.system(size: model.prefs.bc >= 8 ? 16 : 22, weight: .bold, design: .rounded))
+            .font(.system(size: font, weight: .bold, design: .rounded))
             .foregroundStyle(strong ? Color.white : text)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
@@ -284,34 +498,34 @@ struct ContentView: View {
     }
 
     private var bpmBlock: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: isWide ? 12 : 8) {
             Text("\(model.prefs.bpm)")
-                .font(.system(size: 84, weight: .heavy, design: .rounded))
+                .font(.system(size: isWide ? 120 : 84, weight: .heavy, design: .rounded))
                 .foregroundStyle(Palette.ink)
                 .tracking(-2)
                 .monospacedDigit()
                 .accessibilityLabel("\(model.prefs.bpm) BPM")
             Text(model.t("bpm"))
-                .font(.system(size: 11.5, weight: .heavy))
+                .font(.system(size: isWide ? 14 : 11.5, weight: .heavy))
                 .tracking(2.2)
                 .foregroundStyle(Palette.coralDeep)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, isWide ? 12 : 10)
+                .padding(.vertical, isWide ? 5 : 4)
                 .background(Palette.coralSoft)
                 .clipShape(Capsule())
             HStack(spacing: 6) {
                 Circle()
                     .fill(model.playing ? Palette.coral : Color(red: 0.82, green: 0.78, blue: 0.74))
-                    .frame(width: 7, height: 7)
+                    .frame(width: isWide ? 8 : 7, height: isWide ? 8 : 7)
                     .shadow(color: model.playing ? Palette.coral.opacity(0.5) : .clear, radius: 4)
                 Text(model.statusLine)
-                    .font(.system(size: 11.5, weight: .semibold))
+                    .font(.system(size: isWide ? 15 : 11.5, weight: .semibold))
                     .foregroundStyle(Palette.fg2)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, isWide ? 14 : 12)
+            .padding(.vertical, isWide ? 8 : 6)
             .background(Color.white.opacity(0.7))
             .overlay(Capsule().stroke(Palette.border, lineWidth: 1))
             .clipShape(Capsule())
@@ -319,7 +533,7 @@ struct ContentView: View {
     }
 
     private var sliderRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: isWide ? 12 : 10) {
             macaronButton("−", enabled: model.prefs.bpm > MetronomePolicy.minBpm) { model.setBpm(model.prefs.bpm - 1) }
                 .accessibilityLabel("BPM -1")
             MacaronSlider(
@@ -327,9 +541,10 @@ struct ContentView: View {
                     get: { Double(model.prefs.bpm) },
                     set: { model.setBpm(Int($0.rounded())) }
                 ),
-                range: Double(MetronomePolicy.minBpm)...Double(MetronomePolicy.maxBpm)
+                range: Double(MetronomePolicy.minBpm)...Double(MetronomePolicy.maxBpm),
+                thumb: isWide ? 28 : MetronomePolicy.sliderThumb
             )
-            .frame(height: 28)
+            .frame(height: isWide ? 44 : 28)
             .accessibilityLabel("BPM")
             macaronButton("+", enabled: model.prefs.bpm < MetronomePolicy.maxBpm) { model.setBpm(model.prefs.bpm + 1) }
                 .accessibilityLabel("BPM +1")
@@ -337,18 +552,19 @@ struct ContentView: View {
     }
 
     private func macaronButton(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        let side: CGFloat = isWide ? 52 : 36
+        return Button(action: action) {
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: isWide ? 26 : 20, weight: .bold))
                 .foregroundStyle(Palette.lemonDeep)
-                .frame(width: 36, height: 36)
+                .frame(width: side, height: side)
                 .background(
                     LinearGradient(
                         colors: [Palette.lemonSoft, Palette.lemon],
                         startPoint: .top, endPoint: .bottom
                     )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: isWide ? 14 : 12, style: .continuous))
                 .shadow(color: Palette.lemon.opacity(0.35), radius: 4, y: 2)
                 .opacity(enabled ? 1 : 0.38)
         }
@@ -357,15 +573,17 @@ struct ContentView: View {
     }
 
     private var playButton: some View {
-        VStack(spacing: 8) {
+        let side: CGFloat = isWide ? 120 : 78
+        let halo: CGFloat = isWide ? 144 : 94
+        return VStack(spacing: 8) {
             Button {
                 model.togglePlay()
             } label: {
                 Image(systemName: model.playing ? "pause.fill" : "play.fill")
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.system(size: isWide ? 44 : 30, weight: .bold))
                     .foregroundStyle(.white)
                     .offset(x: model.playing ? 0 : 2)
-                    .frame(width: 78, height: 78)
+                    .frame(width: side, height: side)
                     .background(
                         Circle().fill(
                             LinearGradient(
@@ -379,7 +597,7 @@ struct ContentView: View {
                     .background(
                         Circle()
                             .fill((model.playing ? Palette.coral : Palette.mint).opacity(0.22))
-                            .frame(width: 94, height: 94)
+                            .frame(width: halo, height: halo)
                     )
                     .shadow(color: (model.playing ? Palette.coralDeep : Palette.mintDeep).opacity(0.45), radius: 16, y: 8)
             }
@@ -425,7 +643,7 @@ struct ContentView: View {
     private var settingsSheet: some View {
         NavigationStack {
             ScrollView {
-                SettingsPanel()
+                SettingsPanel(layout: .sheet)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .padding(.bottom, 32)
@@ -451,13 +669,14 @@ struct ContentView: View {
 private struct MacaronSlider: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
+    var thumb: Double = MetronomePolicy.sliderThumb
 
     var body: some View {
         GeometryReader { geo in
             let w = Double(geo.size.width)
-            let thumb = MetronomePolicy.sliderThumb
             let t = MetronomePolicy.sliderFraction(value: value, start: range.lowerBound, end: range.upperBound)
             let origin = MetronomePolicy.sliderThumbOrigin(fraction: t, width: w, thumb: thumb)
+            let trackH: CGFloat = thumb >= 28 ? 12 : 10
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(
@@ -466,12 +685,12 @@ private struct MacaronSlider: View {
                             startPoint: .leading, endPoint: .trailing
                         )
                     )
-                    .frame(height: 10)
+                    .frame(height: trackH)
                     .opacity(0.7)
                 Circle()
                     .fill(Color.white)
                     .frame(width: CGFloat(thumb), height: CGFloat(thumb))
-                    .overlay(Circle().stroke(Palette.coral, lineWidth: 2.5))
+                    .overlay(Circle().stroke(Palette.coral, lineWidth: thumb >= 28 ? 3 : 2.5))
                     .shadow(color: Palette.coral.opacity(0.35), radius: 5, y: 2)
                     .offset(x: CGFloat(origin))
             }
@@ -494,68 +713,82 @@ private struct MacaronSlider: View {
 
 private struct SettingsGroup<Content: View>: View {
     let title: String
+    var fill: Color = Palette.surface
+    var comfortable: Bool = false
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: comfortable ? 10 : 8) {
             Text(title)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: comfortable ? 13 : 12, weight: .bold))
                 .foregroundStyle(Palette.muted)
                 .padding(.leading, 4)
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(Palette.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(comfortable ? 14 : 12)
+                .background(fill)
+                .clipShape(RoundedRectangle(cornerRadius: comfortable ? 22 : 20, style: .continuous))
         }
     }
 }
 
+private enum SettingsLayout {
+    /// iPhone sheet: full groups including mode + meter presets.
+    case sheet
+    /// iPad trailing inspector: mode/meter presets live on the practice surface;
+    /// keep custom steppers, volume, language, opts, workshop.
+    case inspector
+}
+
 private struct SettingsPanel: View {
     @EnvironmentObject var model: MetronomeModel
+    var layout: SettingsLayout = .sheet
 
     private let presets: [(Int, Int, String)] = [
         (4, 4, "sig_44"), (3, 4, "sig_34"), (2, 4, "sig_24"),
         (6, 8, "sig_68"), (5, 4, "sig_54"), (7, 8, "sig_78")
     ]
 
+    private var showSurfaceDuplicates: Bool { layout == .sheet }
+    private var groupFill: Color { layout == .inspector ? Palette.surface2 : Palette.surface }
+    private var pad: Bool { layout == .inspector }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SettingsGroup(title: model.t("sound_mode")) {
-                HStack(spacing: 8) {
-                    modeTile(.traditional, icon: "🥁")
-                    modeTile(.uniform, icon: "🎵")
-                    modeTile(.voice, icon: "🗣️")
-                }
-            }
-
-            SettingsGroup(title: model.t("time_signature")) {
-                VStack(spacing: 10) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                        ForEach(presets, id: \.2) { p in
-                            meterChip(p.0, p.1, model.t(p.2))
-                        }
+        VStack(alignment: .leading, spacing: pad ? 16 : 18) {
+            if showSurfaceDuplicates {
+                SettingsGroup(title: model.t("sound_mode"), fill: groupFill) {
+                    HStack(spacing: 8) {
+                        modeTile(.traditional, icon: "🥁")
+                        modeTile(.uniform, icon: "🎵")
+                        modeTile(.voice, icon: "🗣️")
                     }
-                    HStack(spacing: 10) {
-                        stepperChip(model.t("beats"), value: model.prefs.bc, range: 1...16) {
-                            model.setSignature(bc: $0, bu: model.prefs.bu)
+                }
+
+                SettingsGroup(title: model.t("time_signature"), fill: groupFill) {
+                    VStack(spacing: 10) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                            ForEach(presets, id: \.2) { p in
+                                meterChip(p.0, p.1, model.t(p.2))
+                            }
                         }
-                        Text("/")
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(Palette.muted)
-                        stepperChip(model.t("beat_unit"), value: model.prefs.bu, range: 1...16) {
-                            model.setSignature(bc: model.prefs.bc, bu: $0)
-                        }
+                        customMeterSteppers
                     }
                 }
             }
 
-            SettingsGroup(title: model.t("volume")) {
+            // iPad: workshop first — it's the long section and needs the column.
+            if layout == .inspector {
+                SettingsGroup(title: model.t("sound_workshop"), fill: groupFill, comfortable: true) {
+                    inspectorWorkshopBody
+                }
+            }
+
+            SettingsGroup(title: model.t("volume"), fill: groupFill, comfortable: pad) {
                 HStack(spacing: 10) {
                     Text("\(model.prefs.vol)")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: pad ? 18 : 16, weight: .bold, design: .rounded))
                         .foregroundStyle(Palette.coralDeep)
-                        .frame(width: 36, alignment: .leading)
+                        .frame(width: pad ? 40 : 36, alignment: .leading)
                     MacaronSlider(
                         value: Binding(
                             get: { Double(model.prefs.vol) },
@@ -564,20 +797,23 @@ private struct SettingsPanel: View {
                                 model.applyAudioSettings()
                             }
                         ),
-                        range: 10...100
+                        range: 10...100,
+                        thumb: pad ? 28 : MetronomePolicy.sliderThumb
                     )
-                    .frame(height: 28)
+                    .frame(height: pad ? 44 : 28)
                 }
             }
 
-            SettingsGroup(title: model.t("language")) {
-                HStack(spacing: 8) {
-                    langChip("中文", "zh")
-                    langChip("English", "en")
+            if showSurfaceDuplicates {
+                SettingsGroup(title: model.t("language"), fill: groupFill) {
+                    HStack(spacing: 8) {
+                        langChip("中文", "zh")
+                        langChip("English", "en")
+                    }
                 }
             }
 
-            SettingsGroup(title: model.t("practice_opts")) {
+            SettingsGroup(title: model.t("practice_opts"), fill: groupFill, comfortable: pad) {
                 VStack(spacing: 0) {
                     settingToggle(model.t("haptic"), on: model.prefs.haptic) { on in
                         model.prefs.haptic = on
@@ -589,92 +825,19 @@ private struct SettingsPanel: View {
                         model.persist()
                     }
                 }
-                .padding(.vertical, -4)
+                .padding(.vertical, pad ? 2 : -4)
             }
 
-            SettingsGroup(title: model.t("sound_workshop")) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(model.t("sound_workshop_blurb"))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Palette.fg2)
-                    Text(model.t("haptic_pack_blurb"))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Palette.fg2)
-                    hapticOptionRow(
-                        title: model.t("haptic_pattern"),
-                        options: [
-                            (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
-                            (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
-                        ],
-                        current: MetronomePolicy.resolveHapticPattern(
-                            requested: model.prefs.hapticPattern, unlocked: model.unlocked
-                        ),
-                        unlocked: model.unlocked,
-                        freeId: MetronomePolicy.hapticPatternAll
-                    ) { model.requestHapticPattern($0) }
-                    hapticOptionRow(
-                        title: model.t("haptic_feel"),
-                        options: [
-                            (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
-                            (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
-                            (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
-                        ],
-                        current: MetronomePolicy.resolveHapticFeel(
-                            requested: model.prefs.hapticFeel, unlocked: model.unlocked
-                        ),
-                        unlocked: model.unlocked,
-                        freeId: MetronomePolicy.hapticFeelStandard
-                    ) { model.requestHapticFeel($0) }
-                    if model.unlocked {
-                        Text(model.t("owned"))
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Palette.mintDeep)
-                    } else {
-                        Button {
-                            Task { await model.buyPack() }
-                        } label: {
-                            Text(model.buyButtonTitle())
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    LinearGradient(colors: [Palette.coral, Palette.coralDeep], startPoint: .top, endPoint: .bottom)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        }
-                        .buttonStyle(MacaronPressStyle())
-                        .disabled(model.storeBusy || model.productPrice == nil)
-                        if model.storeBusy {
-                            Text(model.t("buying"))
-                                .font(.footnote)
-                                .foregroundStyle(Palette.fg2)
-                        } else if model.productPrice == nil {
-                            Text(model.t("buy_unavailable"))
-                                .font(.footnote)
-                                .foregroundStyle(Palette.fg2)
-                        }
-                    }
-                    Button {
-                        Task { await model.restorePurchases() }
-                    } label: {
-                        Text(model.t("restore"))
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Palette.coralDeep)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(Palette.coralSoft)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(MacaronPressStyle())
-                    .disabled(model.storeBusy)
-                    if !model.storeMessage.isEmpty {
-                        Text(model.storeMessage)
-                            .font(.footnote)
-                            .foregroundStyle(Palette.fg2)
-                    }
-                    bankChips(title: model.t("click_bank"), voice: false)
-                    bankChips(title: model.t("voice_bank"), voice: true)
+            if layout == .sheet {
+                SettingsGroup(title: model.t("sound_workshop"), fill: groupFill) {
+                    workshopBody
+                }
+            }
+
+            // Custom meter only in the inspector — presets live on the practice surface.
+            if layout == .inspector {
+                SettingsGroup(title: model.t("time_signature"), fill: groupFill, comfortable: true) {
+                    customMeterSteppers
                 }
             }
 
@@ -684,9 +847,190 @@ private struct SettingsPanel: View {
                 Link(model.t("privacy"), destination: model.privacyURL())
                 Spacer()
             }
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: pad ? 15 : 13, weight: .semibold))
             .foregroundStyle(Palette.coral)
             .padding(.top, 4)
+            .frame(minHeight: pad ? 44 : 0)
+        }
+    }
+
+    private var customMeterSteppers: some View {
+        HStack(spacing: 10) {
+            stepperChip(model.t("beats"), value: model.prefs.bc, range: 1...16) {
+                model.setSignature(bc: $0, bu: model.prefs.bu)
+            }
+            Text("/")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Palette.muted)
+            stepperChip(model.t("beat_unit"), value: model.prefs.bu, range: 1...16) {
+                model.setSignature(bc: model.prefs.bc, bu: $0)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var workshopBody: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(model.t("sound_workshop_blurb"))
+                .font(.system(size: 13))
+                .foregroundStyle(Palette.fg2)
+            Text(model.t("haptic_pack_blurb"))
+                .font(.system(size: 13))
+                .foregroundStyle(Palette.fg2)
+            hapticOptionRow(
+                title: model.t("haptic_pattern"),
+                options: [
+                    (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
+                    (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
+                ],
+                current: MetronomePolicy.resolveHapticPattern(
+                    requested: model.prefs.hapticPattern, unlocked: model.unlocked
+                ),
+                unlocked: model.unlocked,
+                freeId: MetronomePolicy.hapticPatternAll
+            ) { model.requestHapticPattern($0) }
+            hapticOptionRow(
+                title: model.t("haptic_feel"),
+                options: [
+                    (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
+                    (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
+                    (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
+                ],
+                current: MetronomePolicy.resolveHapticFeel(
+                    requested: model.prefs.hapticFeel, unlocked: model.unlocked
+                ),
+                unlocked: model.unlocked,
+                freeId: MetronomePolicy.hapticFeelStandard
+            ) { model.requestHapticFeel($0) }
+            if model.unlocked {
+                Text(model.t("owned"))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Palette.mintDeep)
+            } else {
+                Button {
+                    Task { await model.buyPack() }
+                } label: {
+                    Text(model.buyButtonTitle())
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(colors: [Palette.coral, Palette.coralDeep], startPoint: .top, endPoint: .bottom)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(MacaronPressStyle())
+                .disabled(model.storeBusy || model.productPrice == nil)
+                if model.storeBusy {
+                    Text(model.t("buying"))
+                        .font(.footnote)
+                        .foregroundStyle(Palette.fg2)
+                } else if model.productPrice == nil {
+                    Text(model.t("buy_unavailable"))
+                        .font(.footnote)
+                        .foregroundStyle(Palette.fg2)
+                }
+            }
+            Button {
+                Task { await model.restorePurchases() }
+            } label: {
+                Text(model.t("restore"))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Palette.coralDeep)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Palette.coralSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(MacaronPressStyle())
+            .disabled(model.storeBusy)
+            if !model.storeMessage.isEmpty {
+                Text(model.storeMessage)
+                    .font(.footnote)
+                    .foregroundStyle(Palette.fg2)
+            }
+            bankChips(title: model.t("click_bank"), voice: false)
+            bankChips(title: model.t("voice_bank"), voice: true)
+        }
+    }
+
+    /// iPad workshop: catalog layout — two bank columns side-by-side, haptic
+    /// underneath. Unlock CTA lives in the sticky banner above the scroll.
+    @ViewBuilder
+    private var inspectorWorkshopBody: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if model.unlocked {
+                Text(model.t("owned"))
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Palette.mintDeep)
+            } else {
+                Text(model.t("sound_workshop_blurb"))
+                    .font(.system(size: 14))
+                    .foregroundStyle(Palette.fg2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(alignment: .top, spacing: 14) {
+                bankChips(title: model.t("click_bank"), voice: false, comfortable: true)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                bankChips(title: model.t("voice_bank"), voice: true, comfortable: true)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+
+            Rectangle()
+                .fill(Palette.border.opacity(0.6))
+                .frame(height: 1)
+
+            hapticOptionRow(
+                title: model.t("haptic_pattern"),
+                options: [
+                    (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
+                    (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
+                ],
+                current: MetronomePolicy.resolveHapticPattern(
+                    requested: model.prefs.hapticPattern, unlocked: model.unlocked
+                ),
+                unlocked: model.unlocked,
+                freeId: MetronomePolicy.hapticPatternAll,
+                comfortable: true
+            ) { model.requestHapticPattern($0) }
+            hapticOptionRow(
+                title: model.t("haptic_feel"),
+                options: [
+                    (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
+                    (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
+                    (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
+                ],
+                current: MetronomePolicy.resolveHapticFeel(
+                    requested: model.prefs.hapticFeel, unlocked: model.unlocked
+                ),
+                unlocked: model.unlocked,
+                freeId: MetronomePolicy.hapticFeelStandard,
+                comfortable: true
+            ) { model.requestHapticFeel($0) }
+
+            if model.unlocked {
+                Button {
+                    Task { await model.restorePurchases() }
+                } label: {
+                    Text(model.t("restore"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Palette.coralDeep)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .background(Palette.coralSoft)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(MacaronPressStyle())
+                .disabled(model.storeBusy)
+            }
+
+            if !model.storeMessage.isEmpty {
+                Text(model.storeMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            }
         }
     }
 
@@ -741,22 +1085,31 @@ private struct SettingsPanel: View {
     }
 
     private func stepperChip(_ label: String, value: Int, range: ClosedRange<Int>, set: @escaping (Int) -> Void) -> some View {
-        HStack(spacing: 6) {
+        let step: CGFloat = pad ? 44 : 28
+        return HStack(spacing: pad ? 8 : 6) {
             Text(label)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: pad ? 13 : 11, weight: .semibold))
                 .foregroundStyle(Palette.muted)
             Button { set(max(range.lowerBound, value - 1)) } label: {
-                Text("−").font(.headline).frame(width: 28, height: 28)
+                Text("−")
+                    .font(.system(size: pad ? 22 : 17, weight: .bold))
+                    .frame(width: step, height: step)
+                    .background(pad ? Color.white : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: pad ? 12 : 0, style: .continuous))
                     .opacity(value > range.lowerBound ? 1 : 0.38)
             }
             .disabled(value <= range.lowerBound)
             .buttonStyle(MacaronPressStyle())
             Text("\(value)")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: pad ? 22 : 17, weight: .bold, design: .rounded))
                 .foregroundStyle(Palette.ink)
-                .frame(minWidth: 22)
+                .frame(minWidth: pad ? 32 : 22)
             Button { set(min(range.upperBound, value + 1)) } label: {
-                Text("+").font(.headline).frame(width: 28, height: 28)
+                Text("+")
+                    .font(.system(size: pad ? 22 : 17, weight: .bold))
+                    .frame(width: step, height: step)
+                    .background(pad ? Color.white : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: pad ? 12 : 0, style: .continuous))
                     .opacity(value < range.upperBound ? 1 : 0.38)
             }
             .disabled(value >= range.upperBound)
@@ -764,9 +1117,10 @@ private struct SettingsPanel: View {
         }
         .foregroundStyle(Palette.ink)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(Palette.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, pad ? 8 : 0)
+        .padding(.vertical, pad ? 10 : 6)
+        .background(pad ? Palette.border.opacity(0.35) : Palette.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: pad ? 16 : 12, style: .continuous))
     }
 
     private func langChip(_ title: String, _ code: String) -> some View {
@@ -786,11 +1140,11 @@ private struct SettingsPanel: View {
     private func settingToggle(_ title: String, on: Bool, set: @escaping (Bool) -> Void) -> some View {
         Toggle(isOn: Binding(get: { on }, set: set)) {
             Text(title)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: pad ? 16 : 15, weight: .medium))
                 .foregroundStyle(Palette.ink)
         }
         .tint(Palette.coral)
-        .padding(.vertical, 6)
+        .padding(.vertical, pad ? 10 : 6)
     }
 
     private func hapticOptionRow(
@@ -799,29 +1153,32 @@ private struct SettingsPanel: View {
         current: String,
         unlocked: Bool,
         freeId: String,
+        comfortable: Bool = false,
         choose: @escaping (String) -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: comfortable ? 10 : 8) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: comfortable ? 13 : 12, weight: .semibold))
                 .foregroundStyle(Palette.muted)
-            HStack(spacing: 8) {
+            HStack(spacing: comfortable ? 10 : 8) {
                 ForEach(options, id: \.0) { id, label in
                     let on = current == id
                     let packLocked = !unlocked && id != freeId
                     Button { choose(id) } label: {
                         HStack(spacing: 4) {
                             if packLocked {
-                                Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold))
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: comfortable ? 10 : 9, weight: .bold))
                             }
                             Text(label)
                         }
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: comfortable ? 14 : 13, weight: .semibold))
                         .foregroundStyle(on ? Palette.coralDeep : Palette.fg2)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
+                        .frame(minHeight: comfortable ? 44 : 0)
+                        .padding(.vertical, comfortable ? 0 : 9)
                         .background(on ? Palette.coralSoft : Palette.surface2)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: comfortable ? 14 : 12, style: .continuous))
                     }
                     .buttonStyle(MacaronPressStyle())
                 }
@@ -829,14 +1186,14 @@ private struct SettingsPanel: View {
         }
     }
 
-    private func bankChips(title: String, voice: Bool) -> some View {
+    private func bankChips(title: String, voice: Bool, comfortable: Bool = false) -> some View {
         let current = voice ? model.prefs.voiceBank : model.prefs.clickBank
         let banks = [MetronomePolicy.defaultBank] + (voice ? MetronomePolicy.packVoiceBanks : MetronomePolicy.packClickBanks)
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: comfortable ? 10 : 8) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: comfortable ? 13 : 12, weight: .semibold))
                 .foregroundStyle(Palette.muted)
-            FlexibleChips(banks: banks, current: current, voice: voice)
+            FlexibleChips(banks: banks, current: current, voice: voice, comfortable: comfortable)
         }
     }
 }
@@ -846,9 +1203,10 @@ private struct FlexibleChips: View {
     let banks: [String]
     let current: String
     let voice: Bool
+    var comfortable: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: comfortable ? 10 : 8) {
             ForEach(banks, id: \.self) { bank in
                 chip(bank)
             }
@@ -863,20 +1221,83 @@ private struct FlexibleChips: View {
         } label: {
             HStack(spacing: 8) {
                 Text(model.bankLabel(bank, voice: voice))
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: comfortable ? 15 : 14, weight: .semibold))
                 Spacer()
                 if locked {
-                    Image(systemName: "lock.fill").font(.caption2)
+                    Image(systemName: "lock.fill").font(comfortable ? .caption : .caption2)
                 } else if on {
                     Image(systemName: "checkmark").font(.caption.weight(.bold))
                 }
             }
             .foregroundStyle(on ? Palette.coralDeep : Palette.ink)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, comfortable ? 14 : 12)
+            .frame(minHeight: comfortable ? 44 : 0)
+            .padding(.vertical, comfortable ? 0 : 10)
             .background(on ? Palette.coralSoft : Palette.surface2)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: comfortable ? 14 : 12, style: .continuous))
         }
         .buttonStyle(MacaronPressStyle())
+    }
+}
+
+/// Sticky purchase strip for the iPad inspector — unlock + restore stay on screen
+/// while sound banks / haptic options scroll underneath.
+private struct InspectorUnlockBanner: View {
+    @EnvironmentObject var model: MetronomeModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                Task { await model.buyPack() }
+            } label: {
+                Text(model.buyButtonTitle())
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 48)
+                    .background(
+                        LinearGradient(
+                            colors: [Palette.coral, Palette.coralDeep],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(MacaronPressStyle())
+            .disabled(model.storeBusy || model.productPrice == nil)
+
+            Button {
+                Task { await model.restorePurchases() }
+            } label: {
+                Text(model.t("restore"))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Palette.coralDeep)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .background(Palette.coralSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(MacaronPressStyle())
+            .disabled(model.storeBusy)
+
+            if model.storeBusy {
+                Text(model.t("buying"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            } else if model.productPrice == nil {
+                Text(model.t("buy_unavailable"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            }
+            if !model.storeMessage.isEmpty {
+                Text(model.storeMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Palette.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
