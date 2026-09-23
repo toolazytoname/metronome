@@ -81,9 +81,10 @@ class EntitlementActivityWiringTest {
 class PlayStoreAdapterConsumeWiringTest {
     @Test
     fun adapterConsumesListenerPlanInsteadOfOrGrant() {
+        // PlayStoreAdapter lives in the play source set since the market-flavor split.
         val src = listOf(
-            File("app/src/main/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt"),
-            File("../app/src/main/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt")
+            File("app/src/play/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt"),
+            File("../app/src/play/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt")
         ).first { it.isFile }.readText()
         assertTrue(src.contains("PlayLedger.consumeListener(plan)"))
         assertTrue(src.contains("PlayLedger.ListenerConsume.AckOnly"))

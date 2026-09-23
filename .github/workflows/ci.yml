@@ -139,7 +139,7 @@ jobs:
             android/app/src/main/java/studio/weichao/jpq/audio/AudioTrackClock.kt \
             android/app/src/main/java/studio/weichao/jpq/audio/MetronomeService.kt \
             android/app/src/main/java/studio/weichao/jpq/MainActivity.kt \
-            android/app/src/main/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt \
+            android/app/src/play/java/studio/weichao/jpq/billing/PlayStoreAdapter.kt \
             privacy.html support.html
           do
             test -f "$f" || { echo "MISSING $f"; exit 1; }
