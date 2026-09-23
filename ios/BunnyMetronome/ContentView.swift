@@ -579,30 +579,45 @@ struct ContentView: View {
             Button {
                 model.togglePlay()
             } label: {
-                Image(systemName: model.playing ? "pause.fill" : "play.fill")
-                    .font(.system(size: isWide ? 44 : 30, weight: .bold))
-                    .foregroundStyle(.white)
-                    .offset(x: model.playing ? 0 : 2)
-                    .frame(width: side, height: side)
-                    .background(
-                        Circle().fill(
-                            LinearGradient(
-                                colors: model.playing
-                                    ? [Palette.coral, Palette.coralDeep]
-                                    : [Color(red: 0.55, green: 0.86, blue: 0.74), Palette.mintDeep.opacity(0.85)],
-                                startPoint: .top, endPoint: .bottom
-                            )
+                Group {
+                    // Honest button: a spinner while the shared load task runs,
+                    // never a play triangle that isn't sounding yet.
+                    if model.samplesLoading {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(1.5)
+                            .frame(width: side, height: side)
+                    } else {
+                        Image(systemName: model.playing ? "pause.fill" : "play.fill")
+                            .font(.system(size: isWide ? 44 : 30, weight: .bold))
+                            .foregroundStyle(.white)
+                            .offset(x: model.playing ? 0 : 2)
+                            .frame(width: side, height: side)
+                    }
+                }
+                .background(
+                    Circle().fill(
+                        LinearGradient(
+                            colors: model.playing
+                                ? [Palette.coral, Palette.coralDeep]
+                                : [Color(red: 0.55, green: 0.86, blue: 0.74), Palette.mintDeep.opacity(0.85)],
+                            startPoint: .top, endPoint: .bottom
                         )
                     )
-                    .background(
-                        Circle()
-                            .fill((model.playing ? Palette.coral : Palette.mint).opacity(0.22))
-                            .frame(width: halo, height: halo)
-                    )
-                    .shadow(color: (model.playing ? Palette.coralDeep : Palette.mintDeep).opacity(0.45), radius: 16, y: 8)
+                )
+                .background(
+                    Circle()
+                        .fill((model.playing ? Palette.coral : Palette.mint).opacity(0.22))
+                        .frame(width: halo, height: halo)
+                )
+                .shadow(color: (model.playing ? Palette.coralDeep : Palette.mintDeep).opacity(0.45), radius: 16, y: 8)
             }
             .buttonStyle(MacaronPressStyle())
-            .accessibilityLabel(model.playing ? model.t("pause") : model.t("play"))
+            .disabled(model.samplesLoading)
+            .accessibilityLabel(
+                model.samplesLoading ? model.t("samples_loading")
+                : model.playing ? model.t("pause") : model.t("play")
+            )
             if !model.storeMessage.isEmpty {
                 Text(model.storeMessage)
                     .font(.footnote)
@@ -815,20 +830,21 @@ private struct SettingsPanel: View {
 
             SettingsGroup(title: model.t("practice_opts"), fill: groupFill, comfortable: pad) {
                 VStack(spacing: 0) {
-                    settingToggle(model.t("haptic"), on: model.prefs.haptic) { on in
-                        model.prefs.haptic = on
-                        model.applyAudioSettings()
-                    }
-                    .disabled(!model.deviceSupportsHaptics)
-                    if !model.deviceSupportsHaptics {
+                    // Spec: haptic controls are not rendered at all (not grayed)
+                    // on devices without a haptic engine.
+                    if model.deviceSupportsHaptics {
+                        settingToggle(model.t("haptic"), on: model.prefs.haptic) { on in
+                            model.prefs.haptic = on
+                            model.applyAudioSettings()
+                        }
+                        Rectangle().fill(Palette.border).frame(height: 1)
+                    } else {
                         Text(model.t("haptics_unsupported"))
                             .font(.system(size: 12))
                             .foregroundStyle(Palette.fg2)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.bottom, 6)
+                            .padding(.vertical, 8)
                     }
-                    Rectangle().fill(Palette.border).frame(height: 1)
                     settingToggle(model.t("keep_awake"), on: model.prefs.keepAwake) { on in
                         model.prefs.keepAwake = on
                         model.persist()

@@ -304,6 +304,78 @@ final class BeatSchedulerGenerationTests: XCTestCase {
         XCTAssertNotEqual(firstRun, clock.currentRunId)
         XCTAssertTrue(clock.playing)
     }
+
+    /// The engine's delayed callbacks gate on isLiveRun(token); drive the exact
+    /// predicate across a live run, a stop, and a restart.
+    func testIsLiveRunDrivesLateCallbackPredicate() {
+        let clock = BeatScheduler(bpm: 208, beatsPerBar: 4)
+        clock.start(at: 0)
+        let token = clock.currentRunId
+        XCTAssertTrue(clock.isLiveRun(token))
+
+        clock.stop()
+        XCTAssertFalse(clock.isLiveRun(token), "late callback from a stopped run must stay silent")
+
+        clock.start(at: 100)
+        XCTAssertFalse(clock.isLiveRun(token), "run 1's token must not fire run 2's dots or haptics")
+        XCTAssertTrue(clock.isLiveRun(clock.currentRunId))
+    }
+}
+
+/// Single-flight semantics for the shared sample load (launch preload + first
+/// Play): one decode at a time, warm short-circuit, retryable failure.
+final class SampleLoadGateTests: XCTestCase {
+    func testConcurrentClaimsShareOneDecode() {
+        let gate = SampleLoadGate()
+        var ownerNotified = 0
+        var riderNotified = 0
+        XCTAssertTrue(gate.claimLoadSlot { _ in ownerNotified += 1 }, "first claim owns the decode slot")
+        XCTAssertFalse(gate.claimLoadSlot { _ in riderNotified += 1 }, "second claim rides the in-flight decode")
+        XCTAssertEqual(ownerNotified, 0, "waiters only hear back at finish")
+        XCTAssertEqual(riderNotified, 0)
+
+        gate.finish(.success(()))
+        XCTAssertEqual(ownerNotified, 1)
+        XCTAssertEqual(riderNotified, 1)
+    }
+
+    func testCompleteGateShortCircuitsWithoutDecode() {
+        let gate = SampleLoadGate()
+        XCTAssertTrue(gate.claimLoadSlot { _ in })
+        gate.finish(.success(()))
+        XCTAssertTrue(gate.isComplete)
+
+        // A later Play (warm path): answered immediately, no decode granted.
+        var fired = 0
+        XCTAssertFalse(gate.claimLoadSlot { result in
+            if case .success = result { fired += 1 } else { XCTFail("expected success") }
+        })
+        XCTAssertTrue(gate.isComplete)
+        XCTAssertEqual(fired, 1)
+    }
+
+    func testFailedAttemptIsRetryable() {
+        let gate = SampleLoadGate()
+        var failures = 0
+        XCTAssertTrue(gate.claimLoadSlot { if case .failure = $0 { failures += 1 } })
+        gate.finish(.failure(NSError(domain: "audio", code: 3)))
+        XCTAssertEqual(failures, 1)
+        XCTAssertFalse(gate.isComplete, "failure must leave the gate retryable")
+
+        // Play tapped again: a fresh decode slot is granted.
+        XCTAssertTrue(gate.claimLoadSlot { _ in })
+        gate.finish(.success(()))
+        XCTAssertTrue(gate.isComplete)
+    }
+
+    func testSecondFinishDoesNotReNotify() {
+        let gate = SampleLoadGate()
+        var notified = 0
+        XCTAssertTrue(gate.claimLoadSlot { _ in notified += 1 })
+        gate.finish(.success(()))
+        gate.finish(.success(()))
+        XCTAssertEqual(notified, 1)
+    }
 }
 
 final class SampleIntegrityTests: XCTestCase {

@@ -7,6 +7,7 @@ final class MetronomeModel: ObservableObject {
     @Published var prefs: MetronomePrefs
     @Published var playing = false
     @Published var activeBeat: Int = -1
+    @Published var samplesLoading = false
     @Published var unlocked = false
     @Published var settingsOpen = false {
         didSet {
@@ -59,7 +60,10 @@ final class MetronomeModel: ObservableObject {
                 self?.storeMessage = self?.t("samples_degraded") ?? ""
             }
         }
-        audio.preloadSamples()
+        // Launch preload shares the single load task with the first Play tap.
+        // A silent failure here is fine: Play retries the load and surfaces
+        // the error where the user is looking for feedback.
+        audio.prepareSamples { _ in }
         haptics.prepare()
         Task {
             await refreshEntitlement()
@@ -176,17 +180,39 @@ final class MetronomeModel: ObservableObject {
             playing = false
             activeBeat = -1
             AppAnalytics.event("play", playParams(action: "pause"))
+            persist()
+        } else if samplesLoading {
+            // The shared load task is running; its completion starts playback.
+            return
+        } else if audio.samplesReady {
+            startPlayback()
         } else {
-            applyAudioSettings()
-            do {
-                try audio.loadSamples()
-                try audio.start()
-                playing = true
-                storeMessage = ""
-                AppAnalytics.event("play", playParams(action: "play"))
-            } catch {
-                storeMessage = t("play_error")
+            // Cold start: wait on the same background load the launch preload
+            // uses — never decode on the main thread, never a second copy.
+            samplesLoading = true
+            storeMessage = t("samples_loading")
+            audio.prepareSamples { [weak self] result in
+                guard let self else { return }
+                self.samplesLoading = false
+                guard case .success = result else {
+                    self.storeMessage = self.t("play_error")
+                    self.persist()
+                    return
+                }
+                self.startPlayback()
             }
+        }
+    }
+
+    private func startPlayback() {
+        applyAudioSettings()
+        do {
+            try audio.start()
+            playing = true
+            storeMessage = ""
+            AppAnalytics.event("play", playParams(action: "play"))
+        } catch {
+            storeMessage = t("play_error")
         }
         persist()
     }

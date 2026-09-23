@@ -8,6 +8,7 @@ final class MetronomeAudioEngine {
     private let mixer = AVAudioMixerNode()
     private var buffers: [String: AVAudioPCMBuffer] = [:]
     let scheduler = BeatScheduler()
+    private let loadGate = SampleLoadGate()
     private var timer: DispatchSourceTimer?
     private var onBeat: ((Int) -> Void)?
     private(set) var mode: SoundMode = .uniform
@@ -59,33 +60,33 @@ final class MetronomeAudioEngine {
         try session.setActive(true)
     }
 
-    func loadSamples() throws {
-        try loadSamples(root: Self.bundledSoundsRoot())
-    }
-
-    /// Throws when any required free-tier sample is missing, so a broken bundle
-    /// fails visibly at Play instead of playing bars with silently missing beats.
-    func loadSamples(root: URL) throws {
-        let (merged, decodedFormat) = try SampleStore.load(root: root, existing: buffers)
-        buffers = merged
-        if format == nil { format = decodedFormat }
-        connectFormatIfNeeded()
-    }
-
-    /// Decode off the main thread at launch so the first Play tap does not pay
-    /// the decode cost (92 files ≈ 60ms on Apple Silicon; slower on device).
-    /// Merges on main only; the running engine is never rewired here.
-    func preloadSamples() {
+    /// Load the bundle's samples exactly once, off the main thread. The launch
+    /// preload and a cold-start Play tap share the same attempt through the
+    /// load gate: no second concurrent decode, no main-thread decode, and
+    /// once the free-tier set is complete later calls short-circuit without
+    /// touching the filesystem. `onDone` fires once per attempt on main.
+    func prepareSamples(onDone: @escaping (Result<Void, Error>) -> Void) {
+        let shouldDecode = loadGate.claimLoadSlot { result in
+            DispatchQueue.main.async { onDone(result) }
+        }
+        guard shouldDecode else { return }
         let root = Self.bundledSoundsRoot()
         sampleLoadQueue.async { [weak self] in
-            guard let decoded = try? SampleStore.decodeSamples(root: root, existing: [:]) else { return }
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                for (key, buf) in decoded.buffers where self.buffers[key] == nil {
-                    self.buffers[key] = buf
+            let result = Result { try SampleStore.load(root: root) }
+            if case .success(let decoded) = result {
+                // Merge is enqueued before finish() so the waiter's onDone —
+                // which may immediately call start() — always lands after the
+                // buffers are in place (main queue is FIFO).
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    for (key, buf) in decoded.buffers where self.buffers[key] == nil {
+                        self.buffers[key] = buf
+                    }
+                    if self.format == nil { self.format = decoded.format }
+                    self.connectFormatIfNeeded()
                 }
-                if self.format == nil { self.format = decoded.format }
             }
+            self?.loadGate.finish(result.map { _ in () })
         }
     }
 
@@ -93,9 +94,9 @@ final class MetronomeAudioEngine {
         Bundle.main.resourceURL?.appendingPathComponent("Sounds") ?? Bundle.main.bundleURL
     }
 
-    var samplesComplete: Bool {
-        SampleStore.isComplete(Set(buffers.keys))
-    }
+    /// True once a load attempt has delivered the complete free-tier set;
+    /// Play uses this to start instantly without re-walking the bundle.
+    var samplesReady: Bool { loadGate.isComplete }
 
     private func connectFormatIfNeeded() {
         guard let format, !formatConnected else { return }
@@ -106,10 +107,12 @@ final class MetronomeAudioEngine {
 
     func start() throws {
         if scheduler.playing { return }
-        try configurePlaybackSession()
-        if !samplesComplete {
-            try loadSamples()
+        // Hard precondition on the actual buffers: callers route through
+        // prepareSamples() so this never decodes (never on the main thread).
+        guard SampleStore.isComplete(Set(buffers.keys)) else {
+            throw NSError(domain: "audio", code: 3)
         }
+        try configurePlaybackSession()
         connectFormatIfNeeded()
         if !engine.isRunning {
             engine.prepare()
@@ -240,7 +243,7 @@ final class MetronomeAudioEngine {
         let runId = scheduler.currentRunId
         let delay = max(0, beat.time - currentPlayerTime())
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.scheduler.playing, self.scheduler.currentRunId == runId else { return }
+            guard let self, self.scheduler.isLiveRun(runId) else { return }
             self.onBeat?(beat.index)
             if self.hapticEnabled { self.onHaptic?(beat.index) }
         }

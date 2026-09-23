@@ -29,7 +29,7 @@
   "haptic": "Haptic ticks",
   "keep_awake": "Keep screen on while playing",
   "sound_workshop": "Sound Workshop",
-  "sound_workshop_blurb": "One-time unlock for extra clicks, voices, and finer haptics. Default counting stays free.",
+  "sound_workshop_blurb": "One-time unlock for extra clicks and counting voices. Default counting stays free.",
   "workshop_play_only": "Workshop purchases only work in the Google Play build. This copy is the full free metronome: default voice and haptic on/off stay free.",
   "haptic_pack_blurb": "The on/off switch stays free. The workshop adds downbeat-only ticks and light / standard / heavy feel.",
   "haptic_pattern": "Which beats",
@@ -72,5 +72,6 @@
   "privacy": "Privacy policy",
   "default_bank": "Default",
   "samples_degraded": "Some samples missing; using default sounds",
-  "haptics_unsupported": "No haptic hardware on this device; haptic options have no effect here."
+  "haptics_unsupported": "No haptic hardware on this device; haptic options have no effect here.",
+  "samples_loading": "Loading sounds…"
 }

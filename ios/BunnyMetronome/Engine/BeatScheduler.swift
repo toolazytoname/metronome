@@ -21,6 +21,13 @@ final class BeatScheduler {
 
     var currentRunId: Int { runId }
 
+    /// Late main-queue callbacks (beat dots, haptics) capture a run token at
+    /// schedule time and check this before firing, so a pending callback from
+    /// a stopped or superseded run stays silent.
+    func isLiveRun(_ token: Int) -> Bool {
+        playing && token == runId
+    }
+
     func start(at now: Double) {
         playing = true
         runId += 1

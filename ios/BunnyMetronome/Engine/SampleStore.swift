@@ -67,3 +67,53 @@ enum SampleStore {
         return buf
     }
 }
+
+/// Single-flight sample loading shared by the launch preload and the first
+/// Play tap: only one decode ever runs at a time, concurrent callers ride the
+/// same attempt, a complete bundle short-circuits (no directory walk), and a
+/// failed attempt can be retried. Pure state — no audio I/O — so it stays
+/// testable on macOS alongside SampleStore.
+final class SampleLoadGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var complete = false
+    private var inFlight = false
+    private var waiters: [(Result<Void, Error>) -> Void] = []
+
+    var isComplete: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return complete
+    }
+
+    /// Registers `completion` to be notified of the current/next load attempt.
+    /// Returns true when the caller owns the decode slot (it must decode and
+    /// report via `finish`); false when a decode is already running or the
+    /// gate is already complete (the caller only waits).
+    @discardableResult
+    func claimLoadSlot(then completion: @escaping (Result<Void, Error>) -> Void) -> Bool {
+        lock.lock()
+        if complete {
+            lock.unlock()
+            completion(.success(()))
+            return false
+        }
+        waiters.append(completion)
+        let shouldDecode = !inFlight
+        inFlight = true
+        lock.unlock()
+        return shouldDecode
+    }
+
+    /// The decode owner reports the attempt's outcome; every waiter (including
+    /// the owner's own completion) is notified exactly once. Success latches
+    /// the gate complete; failure leaves it retryable.
+    func finish(_ result: Result<Void, Error>) {
+        lock.lock()
+        if case .success = result { complete = true }
+        inFlight = false
+        let list = waiters
+        waiters = []
+        lock.unlock()
+        for waiter in list { waiter(result) }
+    }
+}

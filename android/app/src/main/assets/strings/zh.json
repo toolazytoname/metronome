@@ -29,7 +29,7 @@
   "haptic": "震动拍",
   "keep_awake": "播放时保持亮屏",
   "sound_workshop": "音色工坊",
-  "sound_workshop_blurb": "一次买断额外节拍声、数拍声线，以及更细的震动拍。默认童声仍然免费。",
+  "sound_workshop_blurb": "一次买断额外节拍声与数拍声线。默认童声仍然免费。",
   "workshop_play_only": "工坊内购只在 Google Play 安装的版本里。这边仍是完整免费节拍器：默认童声和震动开关不用买。",
   "haptic_pack_blurb": "开关免费。工坊可只震强拍，并在轻 / 标准 / 重之间调节。",
   "haptic_pattern": "震哪些拍",
@@ -73,5 +73,6 @@
   "default_bank": "默认",
   "app_version": "版本 %s",
   "samples_degraded": "部分采样缺失，已回退默认音色",
-  "haptics_unsupported": "此设备没有震动马达，震动选项在此设备上无效"
+  "haptics_unsupported": "此设备没有震动马达，震动选项在此设备上无效",
+  "samples_loading": "正在加载音色…"
 }
