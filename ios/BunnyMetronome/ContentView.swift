@@ -819,6 +819,15 @@ private struct SettingsPanel: View {
                         model.prefs.haptic = on
                         model.applyAudioSettings()
                     }
+                    .disabled(!model.deviceSupportsHaptics)
+                    if !model.deviceSupportsHaptics {
+                        Text(model.t("haptics_unsupported"))
+                            .font(.system(size: 12))
+                            .foregroundStyle(Palette.fg2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 6)
+                    }
                     Rectangle().fill(Palette.border).frame(height: 1)
                     settingToggle(model.t("keep_awake"), on: model.prefs.keepAwake) { on in
                         model.prefs.keepAwake = on
@@ -874,34 +883,40 @@ private struct SettingsPanel: View {
             Text(model.t("sound_workshop_blurb"))
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.fg2)
-            Text(model.t("haptic_pack_blurb"))
-                .font(.system(size: 13))
-                .foregroundStyle(Palette.fg2)
-            hapticOptionRow(
-                title: model.t("haptic_pattern"),
-                options: [
-                    (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
-                    (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
-                ],
-                current: MetronomePolicy.resolveHapticPattern(
-                    requested: model.prefs.hapticPattern, unlocked: model.unlocked
-                ),
-                unlocked: model.unlocked,
-                freeId: MetronomePolicy.hapticPatternAll
-            ) { model.requestHapticPattern($0) }
-            hapticOptionRow(
-                title: model.t("haptic_feel"),
-                options: [
-                    (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
-                    (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
-                    (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
-                ],
-                current: MetronomePolicy.resolveHapticFeel(
-                    requested: model.prefs.hapticFeel, unlocked: model.unlocked
-                ),
-                unlocked: model.unlocked,
-                freeId: MetronomePolicy.hapticFeelStandard
-            ) { model.requestHapticFeel($0) }
+            if model.deviceSupportsHaptics {
+                Text(model.t("haptic_pack_blurb"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+                hapticOptionRow(
+                    title: model.t("haptic_pattern"),
+                    options: [
+                        (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
+                        (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
+                    ],
+                    current: MetronomePolicy.resolveHapticPattern(
+                        requested: model.prefs.hapticPattern, unlocked: model.unlocked
+                    ),
+                    unlocked: model.unlocked,
+                    freeId: MetronomePolicy.hapticPatternAll
+                ) { model.requestHapticPattern($0) }
+                hapticOptionRow(
+                    title: model.t("haptic_feel"),
+                    options: [
+                        (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
+                        (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
+                        (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
+                    ],
+                    current: MetronomePolicy.resolveHapticFeel(
+                        requested: model.prefs.hapticFeel, unlocked: model.unlocked
+                    ),
+                    unlocked: model.unlocked,
+                    freeId: MetronomePolicy.hapticFeelStandard
+                ) { model.requestHapticFeel($0) }
+            } else {
+                Text(model.t("haptics_unsupported"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            }
             if model.unlocked {
                 Text(model.t("owned"))
                     .font(.system(size: 13, weight: .bold))
@@ -982,33 +997,40 @@ private struct SettingsPanel: View {
                 .fill(Palette.border.opacity(0.6))
                 .frame(height: 1)
 
-            hapticOptionRow(
-                title: model.t("haptic_pattern"),
-                options: [
-                    (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
-                    (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
-                ],
-                current: MetronomePolicy.resolveHapticPattern(
-                    requested: model.prefs.hapticPattern, unlocked: model.unlocked
-                ),
-                unlocked: model.unlocked,
-                freeId: MetronomePolicy.hapticPatternAll,
-                comfortable: true
-            ) { model.requestHapticPattern($0) }
-            hapticOptionRow(
-                title: model.t("haptic_feel"),
-                options: [
-                    (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
-                    (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
-                    (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
-                ],
-                current: MetronomePolicy.resolveHapticFeel(
-                    requested: model.prefs.hapticFeel, unlocked: model.unlocked
-                ),
-                unlocked: model.unlocked,
-                freeId: MetronomePolicy.hapticFeelStandard,
-                comfortable: true
-            ) { model.requestHapticFeel($0) }
+            if model.deviceSupportsHaptics {
+                hapticOptionRow(
+                    title: model.t("haptic_pattern"),
+                    options: [
+                        (MetronomePolicy.hapticPatternAll, model.t("haptic_all")),
+                        (MetronomePolicy.hapticPatternDownbeat, model.t("haptic_downbeat"))
+                    ],
+                    current: MetronomePolicy.resolveHapticPattern(
+                        requested: model.prefs.hapticPattern, unlocked: model.unlocked
+                    ),
+                    unlocked: model.unlocked,
+                    freeId: MetronomePolicy.hapticPatternAll,
+                    comfortable: true
+                ) { model.requestHapticPattern($0) }
+                hapticOptionRow(
+                    title: model.t("haptic_feel"),
+                    options: [
+                        (MetronomePolicy.hapticFeelLight, model.t("haptic_light")),
+                        (MetronomePolicy.hapticFeelStandard, model.t("haptic_standard")),
+                        (MetronomePolicy.hapticFeelHeavy, model.t("haptic_heavy"))
+                    ],
+                    current: MetronomePolicy.resolveHapticFeel(
+                        requested: model.prefs.hapticFeel, unlocked: model.unlocked
+                    ),
+                    unlocked: model.unlocked,
+                    freeId: MetronomePolicy.hapticFeelStandard,
+                    comfortable: true
+                ) { model.requestHapticFeel($0) }
+            } else {
+                // No haptic engine (iPad): paid haptic options are not value here.
+                Text(model.t("haptics_unsupported"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.fg2)
+            }
 
             if model.unlocked {
                 Button {

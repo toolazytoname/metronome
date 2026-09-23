@@ -72,5 +72,6 @@
   "privacy": "Privacy policy",
   "default_bank": "Default",
   "app_version": "Version %s",
-  "samples_degraded": "Some samples missing; using default sounds"
+  "samples_degraded": "Some samples missing; using default sounds",
+  "haptics_unsupported": "No haptic hardware on this device; haptic options have no effect here."
 }

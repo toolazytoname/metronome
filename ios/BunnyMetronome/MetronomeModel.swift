@@ -71,6 +71,11 @@ final class MetronomeModel: ObservableObject {
         Self.cachedTable(lang: prefs.lang)
     }
 
+    /// Devices without a haptic engine (iPad) get no haptic UI to buy or toggle.
+    var deviceSupportsHaptics: Bool {
+        TickHaptics.hardwareSupported
+    }
+
     private static var tableCache: [String: [String: String]] = [:]
 
     /// The strings table is read on every SwiftUI render; parse each language once.

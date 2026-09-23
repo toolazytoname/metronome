@@ -7,6 +7,12 @@ final class TickHaptics {
     var feel = MetronomePolicy.hapticFeelStandard
     var unlocked = false
 
+    /// False on hardware without a haptic engine (iPad): paid haptic options
+    /// must not render as purchasable value on such devices.
+    static var hardwareSupported: Bool {
+        CHHapticEngine.capabilitiesForHardware().supportsHaptics
+    }
+
     func prepare() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         engine = try? CHHapticEngine()
