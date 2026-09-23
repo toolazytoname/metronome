@@ -6,6 +6,13 @@
 
 **在线地址：** https://jpq.weichao.studio/
 
+### 改 js/ 或采样时必须同步的事（缓存一致性）
+
+- `sw.js` 的 `CACHE` 常量 bump 一版（`xiaotutou-v8` → `v9`…）。HTML 是 network-first，但 JS/采样走 SW 缓存优先——**不 bump 就是新 HTML 配旧 JS/旧采样**，且旧缓存无过期时间。
+- 同步改 `scripts/test_sw_fetch.js` 里的 `CACHE` 断言（CI 会跑）。
+- 采样（`assets/sounds/`）属于 precache + runtime 缓存，改文件同样要 bump。
+- `/download/*`（官网 APK）在 `sw.js` 里**整段绕过 SW**：固定文件名内容会更新，绝不能进缓存优先分支。新增任何「同名换内容」的下载文件都要走 `/download/` 前缀。
+
 ---
 
 ## 📱 微信小程序部署
@@ -122,10 +129,10 @@ metronome/
 1. 本机用个人/公司 Team 打开 `ios/BunnyMetronome.xcodeproj`，把 Debug/Release 的签名改成 Automatic（不要提交这步）。
 2. Scheme 已挂 `Configuration.storekit`，本地可测 IAP。
 3. 真机过完 `AGENTS.md` N1.25–N1.30。
-4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`，只选 iPhone。
+4. App Store Connect 建 App，Bundle ID `studio.weichao.jpq`，**iPhone + iPad 通用**（`TARGETED_DEVICE_FAMILY = "1,2"`，2026-09-22 起）。
 5. 先签付费协议 + 税务/银行，再建非消耗型 IAP `studio.weichao.jpq.soundpack`。价格档对齐 ¥12 / $1.99。第一个 IAP 必须跟这一版 App 一起送审。
 6. 隐私营养：无账户、无跟踪（Analytics ≠ Tracking）。勾产品交互 + 设备 ID（应用实例，非 IDFA）。出口合规选否（工程已 `ITSAppUsesNonExemptEncryption = NO`）。
-7. 截图上传 1320×2868 那四张 `docs/store/screenshots/ios-*.png`。不要传 iPad。
+7. 截图上传 iPhone 6.9"（1320×2868）四张 `docs/store/screenshots/ios-*.png` + **iPad 13"（2064×2752）三张 `ipad-*.png`（通用 App 必传，缺了 Guideline 4 再拒）**。
 8. Archive → 上传 → 内部 TestFlight → 过完真机清单再提审。
 
 ## 🤖 Android（Play 内测 / 签名 APK）

@@ -1,7 +1,9 @@
 /* 小兔头节拍器 · service worker
  * HTML: network-first (so deploys show up), assets: cache-first.
+ * /download/* is never intercepted: fixed-name files (the APK) change content
+ * under the same URL, so a cache-first hit would keep serving the old package.
  */
-var CACHE = 'xiaotutou-v7';
+var CACHE = 'xiaotutou-v8';
 
 var PRECACHE = [
   '/',
@@ -107,6 +109,9 @@ self.addEventListener('fetch', function (event) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // No respondWith → the browser goes straight to the network and the SW
+  // cache never learns about the file, so server-side updates always win.
+  if (url.pathname.indexOf('/download/') === 0) return;
 
   if (isHtml(req.url)) {
     event.respondWith(

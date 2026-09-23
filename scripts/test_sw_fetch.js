@@ -102,7 +102,7 @@ async function main() {
     ['https://jpq.weichao.studio/p/piano-practice.html', zhTail]
   ]);
   const { ctx, listeners } = loadWorker(store);
-  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v7');
+  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v8');
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/privacy')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/support')", ctx), true);
@@ -178,6 +178,44 @@ async function main() {
   const { listeners: listeners3 } = loadWorker(store2);
   const aboutOffline = await dispatchFetch(listeners3, 'https://jpq.weichao.studio/about/');
   assert.ok((await (await aboutOffline).text()).indexOf('ABOUT_OK') !== -1, 'offline /about/ uses cached HTML');
+
+  // Regression: fixed-name downloads must bypass the SW entirely. Before the
+  // /download/ guard, the first fetch cached the APK and every later download
+  // kept returning the old package even after the server updated the file.
+  const apkStore = new Map();
+  let apkNetCalls = 0;
+  let apkNetBody = 'APK_V1';
+  const apkUrl = 'https://jpq.weichao.studio/download/jpq-latest.apk';
+  const { listeners: apkListeners } = loadWorker(apkStore, () => {
+    apkNetCalls += 1;
+    return Promise.resolve(new FakeResponse(apkUrl, apkNetBody));
+  });
+  const first = dispatchFetch(apkListeners, apkUrl);
+  assert.strictEqual(first, undefined, '/download/ request must not be claimed by the SW');
+  assert.strictEqual(apkNetCalls, 0, 'SW must not fetch /download/ either — the browser owns it');
+  apkNetBody = 'APK_V2';
+  const second = dispatchFetch(apkListeners, apkUrl);
+  assert.strictEqual(second, undefined, 'updated APK download also bypasses the SW');
+  await new Promise((r) => setTimeout(r, 0));
+  assert.strictEqual(apkStore.size, 0, 'the APK must never enter the SW cache');
+
+  // The bypass is scoped to /download/: plain assets keep the cache-first
+  // runtime path (that is what makes offline practice work).
+  const assetStore = new Map();
+  let assetNetCalls = 0;
+  const assetUrl = 'https://jpq.weichao.studio/js/engine.js';
+  const { listeners: assetListeners } = loadWorker(assetStore, () => {
+    assetNetCalls += 1;
+    return Promise.resolve(new FakeResponse(assetUrl, 'JS_V1'));
+  });
+  const assetFirst = await dispatchFetch(assetListeners, assetUrl);
+  assert.ok(assetFirst, 'asset fetch must be handled by the SW');
+  assert.ok((await assetFirst.text()).indexOf('JS_V1') !== -1);
+  await new Promise((r) => setTimeout(r, 0));
+  assert.ok(assetStore.size === 1, 'asset response is runtime-cached');
+  const assetSecond = await dispatchFetch(assetListeners, assetUrl);
+  assert.ok((await assetSecond.text()).indexOf('JS_V1') !== -1, 'asset still served from cache');
+  assert.strictEqual(assetNetCalls, 1, 'second asset fetch hit the cache, not the network');
 
   console.log('test_sw_fetch: ok');
 }
