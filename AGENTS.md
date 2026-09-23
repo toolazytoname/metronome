@@ -323,7 +323,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [ ] 40 / 120 / 208 各 60 秒不加速、不拖；播放中改 BPM 不插拍
 - [ ] 未购默认童声可播；点付费走系统购买；Restore 能找回
 - [x] 1024 图标 + 显示名；设置里有 Restore（模拟器核验）
-- [ ] Connect：IAP 商品、隐私营养（无跟踪；分析勾产品交互 + 实例 ID）、隐私/支持 URL、截图、年龄 4+（文案已写，账号未建）
+- [ ] Connect：IAP 商品、隐私营养（无跟踪；分析勾产品交互 + 实例 ID）、隐私 / 支持 URL、截图、年龄 4+（**2026-09-22 ASC API 已核实 App+IAP 建成且 WAITING_FOR_REVIEW**；隐私营养 09-17 提交校验通过可间接证明已发布，营养标签逐项内容待网页复核）
 - [x] `PrivacyInfo.xcprivacy`；不声明麦克风；出口合规 NO
 - [ ] 内部 TestFlight 过完真机清单再提审
 - [ ] 审核通过且 Ready for Sale
@@ -451,7 +451,7 @@ iOS
 - [ ] N4.4 隐私 / 支持 URL 指现网 **阻断**
 - [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当。**2026-09-22 转通用 App：iPad 13" 三帧已出**（`ipad-*.png` 2064×2752：默认分栏 / 播放中 / 工坊滚动，iPad Pro 13 M5 模拟器） **阻断**
 - [x] N4.6 审核备注写在 `docs/store/README.md` **阻断**
-- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**（2026-09-17 提交 2.1.2(4)+IAP；**09-18 Guideline 2.1 Information Needed 被拒**，当日已回复 7 项说明 + 真机演示视频附件，未点 Resubmit，等结果。**09-19 DSA 交易者信息重新提交**：Apple 邮件 Action needed → Business 页走完 trader 确认 → 联系方式（北京住址（已核对）/Beijing/+86/lazywc）→ 地址证明=信用卡对账单 → Compliance 表 In Review（27 EU 区）。**09-19 发现 Paid Apps 仍 Pending User Info**：banks API 空返回、UI 的 CMB Haidian 行无状态 Not in Use——实为 2026-09-17 银行向导未走完（持有人/CNAPS/账号都已存，只差 Certification 确认）。**同日已补完**：点残影银行行重走向导 → Certification 勾选 → Add → `PUT /ppm/v1/2fa/.../banks` 需新鲜 2FA（401 后弹 mfaChallenges，用户输码）→ 200。现银行=Processing、Paid Apps=Processing（等 Apple 核验转 Active；转绿后沙盒 IAP 商品应可拉取——「商店暂时连不上」的判定根因即协议未生效，届时重验购买弹窗）。**09-20 双 KYC 补资料完成**：Apple 两封 Action needed 邮件（banking details + legal entity details）= 银行进入 Processing 后重跑的 Add User Info 合规筛查，两个入口各交一次（账户持有人版：用户手交，含证件照/出生地 （已线下核对）/非上市；法实体版：自动走完同款表单 + 持股 本人 100% Submit），红色「requires immediate attention」横幅与 Add info 入口全消，待 Apple 邮件通知核验结果）。**09-22 三连拒**：2.3.7（副标题含价格字眼「免费/free」）+ 2.3.10（描述提及 Android/Play 跨平台）+ Guideline 4（iPad 兼容窗裁掉设置/语言）。当日修复：副标题 / 宣传文本 / 描述中英重写（去价格与跨平台字眼）、转通用 App + 分栏布局（N1.32）、版本 2.1.3(5) 重传重提。**09-22 已重新提交**：无头管线归档签名上传（profile 缺新证书 → API 3 调用现建 `jpq appstore 20260922`）；ASC API 改元数据 + iPad 13" 三帧截图 + 换构建后版本自动回 PREPARE；备注补 RESUBMISSION NOTE；Resolution Center 已回复三项修复说明；点 Resubmit → **版本与 IAP 均 WAITING_FOR_REVIEW**（提交单 fe336740））
+- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**（2026-09-17 提交 2.1.2(4)+IAP；**09-18 Guideline 2.1 Information Needed 被拒**，当日已回复 7 项说明 + 真机演示视频附件，未点 Resubmit，等结果。**09-19 DSA 交易者信息重新提交**：Apple 邮件 Action needed → Business 页走完 trader 确认 → 联系方式（北京住址小区名、+86 手机号均已线下核对，不写入仓库；邮箱 lazywc）→ 地址证明=信用卡对账单 → Compliance 表 In Review（27 EU 区）。**09-19 发现 Paid Apps 仍 Pending User Info**：banks API 空返回、UI 的 CMB Haidian 行无状态 Not in Use——实为 2026-09-17 银行向导未走完（持有人/CNAPS/账号都已存，只差 Certification 确认）。**同日已补完**：点残影银行行重走向导 → Certification 勾选 → Add → `PUT /ppm/v1/2fa/.../banks` 需新鲜 2FA（401 后弹 mfaChallenges，用户输码）→ 200。现银行=Processing、Paid Apps=Processing（等 Apple 核验转 Active；转绿后沙盒 IAP 商品应可拉取——「商店暂时连不上」的判定根因即协议未生效，届时重验购买弹窗）。**09-20 双 KYC 补资料完成**：Apple 两封 Action needed 邮件（banking details + legal entity details）= 银行进入 Processing 后重跑的 Add User Info 合规筛查，两个入口各交一次（账户持有人版：用户手交，含证件照/出生地（已线下核对，不写入仓库）/非上市；法实体版：自动走完同款表单 + 持股本人 100% Submit），红色「requires immediate attention」横幅与 Add info 入口全消，待 Apple 邮件通知核验结果）。**09-22 三连拒**：2.3.7（副标题含价格字眼「免费/free」）+ 2.3.10（描述提及 Android/Play 跨平台）+ Guideline 4（iPad 兼容窗裁掉设置/语言）。当日修复：副标题 / 宣传文本 / 描述中英重写（去价格与跨平台字眼）、转通用 App + 分栏布局（N1.32）、版本 2.1.3(5) 重传重提。**09-22 已重新提交**：无头管线归档签名上传（profile 缺新证书 → API 3 调用现建 `jpq appstore 20260922`）；ASC API 改元数据 + iPad 13" 三帧截图 + 换构建后版本自动回 PREPARE；备注补 RESUBMISSION NOTE；Resolution Center 已回复三项修复说明；点 Resubmit → **版本与 IAP 均 WAITING_FOR_REVIEW**（提交单 fe336740）。**09-22 ASC API 只读复核**：App `6813051843`，2.1.3 appStoreState=WAITING_FOR_REVIEW；构建 5（2026-09-22 05:53 PDT 上传）processingState=VALID；IAP `6813065483` state=WAITING_FOR_REVIEW。Paid Apps 协议/银行是否已从 Processing 转 Active **API 查不到，待网页核实**——若过审时协议未生效，IAP 无法销售，属过审后第一优先检查项）
 - [x] N4.8 `DEPLOY.md` 补 TestFlight / 提审步骤（不含证书） **应当**
 
 Android
@@ -517,7 +517,7 @@ Android
 - [x] N6.3 `packages/strings` 补打赏 key（中英；2026-09-17 packages/android/ios 三副本 72 键对齐） **阻断**
 - [x] N6.4 `privacy.html` / `en/privacy.html` 补国内渠道「不收集数据」口径（2026-09-17） **阻断**
 - [x] N6.5 cn release APK 构建链路（2026-09-19：`assembleCnRelease` 本地 keystore 出包 → `download/jpq-latest.apk`，官网 zh/en 已挂下载链接；不自动传任何市场） **阻断**
-- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19 深夜：**双拦截已破，北京路线打通**。判定实验结论：「证件已备案，主体属北京」= MIIT 记录的地区一致性拦截（证件下确有北京主体记录，管局归属北京）；「无企业级备案管理」= 账号内已有实体时再建第二主体。解法已验证：**放弃旧天津草稿**（连带删除实体，企业级备案管理列表「暂无数据」）→ 新表单填 App/小兔头节拍器/北京市·市辖区·海淀区/个人/居民身份证/本人/（18 位证件号已线下核对，不写入仓库）/证件住所照身份证填天津原文 → 信息校验**两项拦截全消失**、无任何报错（自动化环境下保存/推进按钮无响应，表单未持久化，需手点）。后续：用户手点走完 5 步（第 2 步主办者信息、第 3 步 App 信息：包名 `studio.weichao.jpq` + 签名指纹、第 4 步传身份证照、第 5 步提交）；注意北京管局对非京户籍个人可能要居住证明，第 4 步见分晓。工单 00047SKZFN 电话结论：阿里云按证件查无旧备案（即北京主体不在阿里云，注销路线作废）。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
+- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19 深夜：**双拦截已破，北京路线打通**。判定实验结论：「证件已备案，主体属北京」= MIIT 记录的地区一致性拦截（证件下确有北京主体记录，管局归属北京）；「无企业级备案管理」= 账号内已有实体时再建第二主体。解法已验证：**放弃旧天津草稿**（连带删除实体，企业级备案管理列表「暂无数据」）→ 新表单填 App/小兔头节拍器/北京市·市辖区·海淀区/个人/居民身份证/本人（姓名与 18 位证件号 2026-09-19 已线下核对，不写入仓库）/证件住所照身份证原文填天津 → 信息校验**两项拦截全消失**、无任何报错（自动化环境下保存/推进按钮无响应，表单未持久化，需手点）。后续：用户手点走完 5 步（第 2 步主办者信息、第 3 步 App 信息：包名 `studio.weichao.jpq` + 签名指纹、第 4 步传身份证照、第 5 步提交）；注意北京管局对非京户籍个人可能要居住证明，第 4 步见分晓。工单 00047SKZFN 电话结论：阿里云按证件查无旧备案（即北京主体不在阿里云，注销路线作废）。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
 - [x] N6.7 软著：**搁置**（2026-09-17，理由见「资质」节；待规则细化或如实声明口径） **应当**
 - [x] N6.8 华为 AGC 开发者实名 + 创建应用（2026-09-18：个人实名完成；应用「小兔头节拍器」已建，**AppID `119044997`**，状态准备提交，包名待首传 APK 时绑定为 `studio.weichao.jpq`） **阻断**
   - 小米：2026-09-19 注册向导无个人选项（仅企业类主体），**暂缓**，个人通道重开再启动
@@ -547,6 +547,8 @@ Android
 默认开发线是 **`develop`**。开发修复的提交和推送都复用它。除用户明确另行指定，**不创建**额外 task / audit / feature 分支。隔离工作树可以用，但不得因为 worktree 自动发明远端分支。
 
 `main` 只是发布合并关口（Web：推 `main` → Vercel）。默认不推 `main`、不 force、不改写已推历史、不自动打 tag / 合并 / 触发发布。发布另经发布关口授权。
+
+**PII 闸（2026-09-22 立，同日完成清除）**：曾在本地未推提交的 AGENTS.md 写入证件号 / 姓名 / 住址，已重写这两个未推提交（`a00c02e`→`3d77021`、`29df279`→`fa357ba`，作者日期保留）彻底去敏，全历史与工作区扫描 0 命中；origin 从未收到过含 PII 的提交。已推送历史里的 iPhone UDID / OnePlus 序列号（9e99b27、e73c9ad）属低敏设备号，保留。今后身份材料一律写「已线下核对，不写入仓库」。
 
 按**可独立解释、验证、回退**的逻辑修复单元提交。代码和必要测试/契约一起走，不按返工次数或每个文件碎片提交，也不长期堆成全项目巨型提交。
 
