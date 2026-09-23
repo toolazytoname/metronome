@@ -378,6 +378,122 @@ final class SampleLoadGateTests: XCTestCase {
     }
 }
 
+/// Cross-queue ordering of the shared load: decode done → install on main →
+/// only then readiness published and waiters released. Suspended serial
+/// queues make the reviewer's window (decode finished, install still queued)
+/// a deterministic assertion instead of a race to reproduce.
+final class SampleLoadOrderingTests: XCTestCase {
+    private func soundsTree() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BunnyMetronome/Sounds")
+    }
+
+    private func makeFixtureDir(_ tag: String) throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jpq-ordering-\(tag)-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    func testReadinessPublishesOnlyAfterInstallRan() throws {
+        let dir = try makeFixtureDir("full")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // copy the free-tier set
+        let root = soundsTree()
+        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw NSError(domain: "test", code: 1)
+        }
+        var copied = 0
+        for case let url as URL in enumerator {
+            guard url.pathExtension.lowercased() == "mp3" else { continue }
+            let rel = String(url.path.dropFirst(root.path.count + 1))
+            if rel.hasPrefix("pack/") { continue }
+            let dst = dir.appendingPathComponent(rel)
+            try FileManager.default.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: url, to: dst)
+            copied += 1
+        }
+        XCTAssertGreaterThan(copied, 0, "fixture path drifted")
+
+        let decode = DispatchQueue(label: "t.decode")
+        let main = DispatchQueue(label: "t.main")
+        decode.suspend()
+        main.suspend()
+        let loader = SampleLoader(decodeQueue: decode, mainQueue: main)
+
+        var order: [String] = []
+        loader.prepare(root: dir, install: { _, _ in
+            order.append("install")
+        }, onDone: { result in
+            if case .success = result { order.append("done") } else { XCTFail("expected success") }
+        })
+
+        // Decode finishes while main stays suspended: install is queued but
+        // has not run — exactly the window a Play tap used to fall into.
+        decode.resume()
+        decode.sync {}
+        XCTAssertFalse(loader.isReady, "readiness must not publish before the main-queue install ran")
+        XCTAssertTrue(order.isEmpty)
+
+        main.resume()
+        main.sync {}   // runs the install block
+        main.sync {}   // runs the waiter hop that install's finish() enqueued
+        XCTAssertTrue(loader.isReady)
+        XCTAssertEqual(order, ["install", "done"], "waiters may only hear success after the install")
+    }
+
+    func testFailureNeedsNoInstallAndStaysRetryable() throws {
+        let dir = try makeFixtureDir("empty-then-full")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let decode = DispatchQueue(label: "f.decode")
+        let main = DispatchQueue(label: "f.main")
+        decode.suspend()
+        main.suspend()
+        let loader = SampleLoader(decodeQueue: decode, mainQueue: main)
+
+        var installed = false
+        var failed = false
+        loader.prepare(root: dir, install: { _, _ in installed = true }, onDone: { result in
+            if case .failure = result { failed = true } else { XCTFail("expected failure") }
+        })
+
+        decode.resume()
+        decode.sync {}
+        XCTAssertFalse(loader.isReady, "empty bundle must fail, not latch ready")
+        main.resume()
+        main.sync {}
+        XCTAssertTrue(failed)
+        XCTAssertFalse(installed, "a failed attempt installs nothing")
+
+        // The files come back; the next attempt claims a fresh decode slot.
+        let root = soundsTree()
+        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw NSError(domain: "test", code: 1)
+        }
+        for case let url as URL in enumerator {
+            guard url.pathExtension.lowercased() == "mp3" else { continue }
+            let rel = String(url.path.dropFirst(root.path.count + 1))
+            if rel.hasPrefix("pack/") { continue }
+            let dst = dir.appendingPathComponent(rel)
+            try FileManager.default.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: url, to: dst)
+        }
+
+        var done2 = false
+        loader.prepare(root: dir, install: { _, _ in installed = true }, onDone: { result in
+            if case .success = result { done2 = true } else { XCTFail("expected success on retry") }
+        })
+        decode.sync {}
+        main.sync {}
+        XCTAssertTrue(loader.isReady)
+        XCTAssertTrue(installed)
+        XCTAssertTrue(done2)
+    }
+}
+
 final class SampleIntegrityTests: XCTestCase {
     private func soundsTree() -> URL {
         // <repo>/ios/BunnyMetronomeTests/<file> → <repo>/ios/BunnyMetronome/Sounds

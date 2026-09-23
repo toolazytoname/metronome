@@ -117,3 +117,54 @@ final class SampleLoadGate: @unchecked Sendable {
         for waiter in list { waiter(result) }
     }
 }
+
+/// Orchestrates the one shared load attempt: decode off-main, install on main,
+/// and publish readiness only AFTER the install has actually run. With the
+/// publish happening inside the main-queue install block, `isReady` can never
+/// be observed true while the buffers are still in flight to their owner —
+/// the window a Play tap used to fall into. Queues are injectable so tests can
+/// drive decode-done-but-not-installed deterministically.
+final class SampleLoader: @unchecked Sendable {
+    private let gate = SampleLoadGate()
+    private let decodeQueue: DispatchQueue
+    private let mainQueue: DispatchQueue
+
+    init(decodeQueue: DispatchQueue, mainQueue: DispatchQueue = .main) {
+        self.decodeQueue = decodeQueue
+        self.mainQueue = mainQueue
+    }
+
+    /// True only once a successful attempt has installed its buffers on main.
+    var isReady: Bool { gate.isComplete }
+
+    /// `install` runs on the main queue with the decoded buffers and format;
+    /// `onDone` runs on the main queue once per attempt. The launch preload
+    /// and Play share one attempt through the gate.
+    func prepare(
+        root: URL,
+        install: @escaping ([String: AVAudioPCMBuffer], AVAudioFormat?) -> Void,
+        onDone: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let shouldDecode = gate.claimLoadSlot { [mainQueue] result in
+            mainQueue.async { onDone(result) }
+        }
+        guard shouldDecode else { return }
+        decodeQueue.async { [weak self] in
+            let result = Result { try SampleStore.load(root: root) }
+            switch result {
+            case .success(let decoded):
+                self?.mainQueue.async { [weak self] in
+                    guard let self else { return }
+                    install(decoded.buffers, decoded.format)
+                    // Publish only now, in the same main-queue block that
+                    // installed the samples: no observable gap.
+                    self.gate.finish(.success(()))
+                }
+            case .failure(let error):
+                // Nothing was installed; failure is safe to publish from the
+                // decode queue (waiters still hop to main).
+                self?.gate.finish(.failure(error))
+            }
+        }
+    }
+}

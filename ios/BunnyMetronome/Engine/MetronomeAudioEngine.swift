@@ -8,7 +8,7 @@ final class MetronomeAudioEngine {
     private let mixer = AVAudioMixerNode()
     private var buffers: [String: AVAudioPCMBuffer] = [:]
     let scheduler = BeatScheduler()
-    private let loadGate = SampleLoadGate()
+    private let sampleLoader: SampleLoader
     private var timer: DispatchSourceTimer?
     private var onBeat: ((Int) -> Void)?
     private(set) var mode: SoundMode = .uniform
@@ -34,6 +34,7 @@ final class MetronomeAudioEngine {
         engine.connect(clickPlayer, to: mixer, format: nil)
         engine.connect(overlayPlayer, to: mixer, format: nil)
         engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        sampleLoader = SampleLoader(decodeQueue: sampleLoadQueue)
         listenForSessionEvents()
     }
 
@@ -62,41 +63,32 @@ final class MetronomeAudioEngine {
 
     /// Load the bundle's samples exactly once, off the main thread. The launch
     /// preload and a cold-start Play tap share the same attempt through the
-    /// load gate: no second concurrent decode, no main-thread decode, and
-    /// once the free-tier set is complete later calls short-circuit without
+    /// loader's gate: no second concurrent decode, no main-thread decode, and
+    /// once the free-tier set is installed later calls short-circuit without
     /// touching the filesystem. `onDone` fires once per attempt on main.
     func prepareSamples(onDone: @escaping (Result<Void, Error>) -> Void) {
-        let shouldDecode = loadGate.claimLoadSlot { result in
-            DispatchQueue.main.async { onDone(result) }
-        }
-        guard shouldDecode else { return }
-        let root = Self.bundledSoundsRoot()
-        sampleLoadQueue.async { [weak self] in
-            let result = Result { try SampleStore.load(root: root) }
-            if case .success(let decoded) = result {
-                // Merge is enqueued before finish() so the waiter's onDone —
-                // which may immediately call start() — always lands after the
-                // buffers are in place (main queue is FIFO).
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    for (key, buf) in decoded.buffers where self.buffers[key] == nil {
-                        self.buffers[key] = buf
-                    }
-                    if self.format == nil { self.format = decoded.format }
-                    self.connectFormatIfNeeded()
+        sampleLoader.prepare(
+            root: Self.bundledSoundsRoot(),
+            install: { [weak self] decoded, decodedFormat in
+                guard let self else { return }
+                for (key, buf) in decoded where self.buffers[key] == nil {
+                    self.buffers[key] = buf
                 }
-            }
-            self?.loadGate.finish(result.map { _ in () })
-        }
+                if self.format == nil { self.format = decodedFormat }
+                self.connectFormatIfNeeded()
+            },
+            onDone: onDone
+        )
     }
 
     private static func bundledSoundsRoot() -> URL {
         Bundle.main.resourceURL?.appendingPathComponent("Sounds") ?? Bundle.main.bundleURL
     }
 
-    /// True once a load attempt has delivered the complete free-tier set;
-    /// Play uses this to start instantly without re-walking the bundle.
-    var samplesReady: Bool { loadGate.isComplete }
+    /// True only after a successful load has actually installed the buffers
+    /// on the main queue; Play uses this to start instantly without re-walking
+    /// the bundle and can never race an in-flight install.
+    var samplesReady: Bool { sampleLoader.isReady }
 
     private func connectFormatIfNeeded() {
         guard let format, !formatConnected else { return }

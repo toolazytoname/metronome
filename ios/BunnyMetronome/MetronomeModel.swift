@@ -8,6 +8,9 @@ final class MetronomeModel: ObservableObject {
     @Published var playing = false
     @Published var activeBeat: Int = -1
     @Published var samplesLoading = false
+    /// Play was requested while samples were still loading; tapping the
+    /// spinner cancels it, tapping again re-arms it.
+    @Published private(set) var pendingPlay = false
     @Published var unlocked = false
     @Published var settingsOpen = false {
         didSet {
@@ -181,25 +184,34 @@ final class MetronomeModel: ObservableObject {
             activeBeat = -1
             AppAnalytics.event("play", playParams(action: "pause"))
             persist()
-        } else if samplesLoading {
-            // The shared load task is running; its completion starts playback.
-            return
         } else if audio.samplesReady {
             startPlayback()
+        } else if samplesLoading {
+            // Load in flight: a second tap cancels the pending start — the
+            // shared load keeps running and lands silently, never producing
+            // late sound; a third tap re-arms the start.
+            pendingPlay.toggle()
+            storeMessage = pendingPlay ? t("samples_loading") : ""
         } else {
             // Cold start: wait on the same background load the launch preload
             // uses — never decode on the main thread, never a second copy.
             samplesLoading = true
+            pendingPlay = true
             storeMessage = t("samples_loading")
             audio.prepareSamples { [weak self] result in
                 guard let self else { return }
                 self.samplesLoading = false
+                let wantsPlay = self.pendingPlay
+                self.pendingPlay = false
                 guard case .success = result else {
-                    self.storeMessage = self.t("play_error")
-                    self.persist()
+                    if wantsPlay { self.storeMessage = self.t("play_error") }
                     return
                 }
-                self.startPlayback()
+                if wantsPlay {
+                    self.startPlayback()
+                } else {
+                    self.storeMessage = ""
+                }
             }
         }
     }

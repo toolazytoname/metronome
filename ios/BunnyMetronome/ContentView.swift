@@ -575,14 +575,15 @@ struct ContentView: View {
     private var playButton: some View {
         let side: CGFloat = isWide ? 120 : 78
         let halo: CGFloat = isWide ? 144 : 94
+        let awaitingSamples = model.samplesLoading && model.pendingPlay
         return VStack(spacing: 8) {
             Button {
                 model.togglePlay()
             } label: {
                 Group {
-                    // Honest button: a spinner while the shared load task runs,
-                    // never a play triangle that isn't sounding yet.
-                    if model.samplesLoading {
+                    // Honest button: a spinner while the shared load runs and
+                    // playback is pending; tapping it cancels the pending start.
+                    if awaitingSamples {
                         ProgressView()
                             .tint(.white)
                             .scaleEffect(1.5)
@@ -613,9 +614,8 @@ struct ContentView: View {
                 .shadow(color: (model.playing ? Palette.coralDeep : Palette.mintDeep).opacity(0.45), radius: 16, y: 8)
             }
             .buttonStyle(MacaronPressStyle())
-            .disabled(model.samplesLoading)
             .accessibilityLabel(
-                model.samplesLoading ? model.t("samples_loading")
+                awaitingSamples ? model.t("samples_loading")
                 : model.playing ? model.t("pause") : model.t("play")
             )
             if !model.storeMessage.isEmpty {
