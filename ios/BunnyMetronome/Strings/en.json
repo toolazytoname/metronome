@@ -70,5 +70,6 @@
   "donate_blurb": "Tips are voluntary and unlock nothing. Everything stays free.",
   "support": "Support",
   "privacy": "Privacy policy",
-  "default_bank": "Default"
+  "default_bank": "Default",
+  "samples_degraded": "Some samples missing; using default sounds"
 }

@@ -16,9 +16,15 @@ final class MetronomeAudioEngine {
     private var voiceBank = MetronomePolicy.defaultBank
     private var format: AVAudioFormat?
     private var observers: [NSObjectProtocol] = []
+    private let sampleLoadQueue = DispatchQueue(label: "studio.weichao.jpq.sampleload", qos: .userInitiated)
+    private var formatConnected = false
+    private var degradedNotified = false
     var hapticEnabled = false
     var onHaptic: ((Int) -> Void)?
     var onInterrupted: (() -> Void)?
+    /// Fired once per playing run when a pack sample is missing and the free
+    /// default had to stand in, so the UI can say so instead of silently thinning beats.
+    var onSamplesDegraded: (() -> Void)?
 
     init() {
         engine.attach(clickPlayer)
@@ -54,36 +60,57 @@ final class MetronomeAudioEngine {
     }
 
     func loadSamples() throws {
-        if !buffers.isEmpty { return }
-        let root = Bundle.main.resourceURL?.appendingPathComponent("Sounds")
-            ?? Bundle.main.bundleURL
-        let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
-            throw NSError(domain: "audio", code: 1)
-        }
-        for case let url as URL in enumerator where url.pathExtension.lowercased() == "mp3" {
-            let rel = url.path.replacingOccurrences(of: root.path + "/", with: "")
-                .replacingOccurrences(of: ".mp3", with: "")
-            if let buf = try? Self.buffer(url: url) {
-                buffers[rel] = buf
-                if format == nil { format = buf.format }
+        try loadSamples(root: Self.bundledSoundsRoot())
+    }
+
+    /// Throws when any required free-tier sample is missing, so a broken bundle
+    /// fails visibly at Play instead of playing bars with silently missing beats.
+    func loadSamples(root: URL) throws {
+        let (merged, decodedFormat) = try SampleStore.load(root: root, existing: buffers)
+        buffers = merged
+        if format == nil { format = decodedFormat }
+        connectFormatIfNeeded()
+    }
+
+    /// Decode off the main thread at launch so the first Play tap does not pay
+    /// the decode cost (92 files ≈ 60ms on Apple Silicon; slower on device).
+    /// Merges on main only; the running engine is never rewired here.
+    func preloadSamples() {
+        let root = Self.bundledSoundsRoot()
+        sampleLoadQueue.async { [weak self] in
+            guard let decoded = try? SampleStore.decodeSamples(root: root, existing: [:]) else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                for (key, buf) in decoded.buffers where self.buffers[key] == nil {
+                    self.buffers[key] = buf
+                }
+                if self.format == nil { self.format = decoded.format }
             }
         }
-        guard !buffers.isEmpty else {
-            throw NSError(domain: "audio", code: 2)
-        }
-        if let format {
-            engine.connect(clickPlayer, to: mixer, format: format)
-            engine.connect(overlayPlayer, to: mixer, format: format)
-        }
+    }
+
+    private static func bundledSoundsRoot() -> URL {
+        Bundle.main.resourceURL?.appendingPathComponent("Sounds") ?? Bundle.main.bundleURL
+    }
+
+    var samplesComplete: Bool {
+        SampleStore.isComplete(Set(buffers.keys))
+    }
+
+    private func connectFormatIfNeeded() {
+        guard let format, !formatConnected else { return }
+        engine.connect(clickPlayer, to: mixer, format: format)
+        engine.connect(overlayPlayer, to: mixer, format: format)
+        formatConnected = true
     }
 
     func start() throws {
         if scheduler.playing { return }
         try configurePlaybackSession()
-        if buffers.isEmpty {
+        if !samplesComplete {
             try loadSamples()
         }
+        connectFormatIfNeeded()
         if !engine.isRunning {
             engine.prepare()
             try engine.start()
@@ -93,6 +120,7 @@ final class MetronomeAudioEngine {
         overlayPlayer.stop()
         clickPlayer.play()
         overlayPlayer.play()
+        degradedNotified = false
         scheduler.start(at: currentPlayerTime())
         armTimer()
     }
@@ -180,19 +208,39 @@ final class MetronomeAudioEngine {
             clickBank: clickBank,
             voiceBank: voiceBank
         )
+        // Slot-aligned free-bank equivalents: used when a pack sample is missing
+        // so a beat falls back to its default sound instead of going silent.
+        let fallbacks = MetronomePolicy.sampleVoices(
+            beat: beat.index,
+            mode: mode,
+            lang: lang,
+            clickBank: MetronomePolicy.defaultBank,
+            voiceBank: MetronomePolicy.defaultBank
+        )
         let rate = format?.sampleRate ?? 44100
         let sampleTime = AVAudioFramePosition((beat.time * rate).rounded())
         // `at` is player time, same clock as currentPlayerTime().
         let at = AVAudioTime(sampleTime: sampleTime, atRate: rate)
         let players = [clickPlayer, overlayPlayer]
         for (i, voice) in voices.enumerated() {
-            guard let src = buffers[voice.key] else { continue }
+            var key = voice.key
+            if buffers[key] == nil, i < fallbacks.count {
+                key = fallbacks[i].key
+                if buffers[key] != nil && !degradedNotified {
+                    degradedNotified = true
+                    onSamplesDegraded?()
+                }
+            }
+            guard let src = buffers[key] else { continue }
             let scaled = Self.bufferApplyingGain(src, gain: voice.gain)
             players[min(i, players.count - 1)].scheduleBuffer(scaled, at: at, options: [])
         }
+        // Generation token: a rapid stop→start must not let the previous run's
+        // pending callbacks light up the new run's beat dots or fire haptics.
+        let runId = scheduler.currentRunId
         let delay = max(0, beat.time - currentPlayerTime())
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.scheduler.playing else { return }
+            guard let self, self.scheduler.playing, self.scheduler.currentRunId == runId else { return }
             self.onBeat?(beat.index)
             if self.hapticEnabled { self.onHaptic?(beat.index) }
         }
@@ -238,16 +286,5 @@ final class MetronomeAudioEngine {
             return Double(playerTime.sampleTime) / playerTime.sampleRate
         }
         return 0
-    }
-
-    private static func buffer(url: URL) throws -> AVAudioPCMBuffer {
-        let file = try AVAudioFile(forReading: url)
-        let fmt = file.processingFormat
-        let frames = AVAudioFrameCount(file.length)
-        guard let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: frames) else {
-            throw NSError(domain: "audio", code: 1)
-        }
-        try file.read(into: buf)
-        return buf
     }
 }

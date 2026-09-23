@@ -291,6 +291,151 @@ final class BufferGainTests: XCTestCase {
     }
 }
 
+final class BeatSchedulerGenerationTests: XCTestCase {
+    func testRapidStopStartInvalidatesPreviousRunCallbacks() {
+        // The engine's delayed beat callbacks capture currentRunId; a stale
+        // token from a stopped run must not survive into the next run.
+        let clock = BeatScheduler(bpm: 208, beatsPerBar: 4)
+        clock.start(at: 0)
+        let firstRun = clock.currentRunId
+        _ = clock.pull(until: 0.05)
+        clock.stop()
+        clock.start(at: 100)
+        XCTAssertNotEqual(firstRun, clock.currentRunId)
+        XCTAssertTrue(clock.playing)
+    }
+}
+
+final class SampleIntegrityTests: XCTestCase {
+    private func soundsTree() -> URL {
+        // <repo>/ios/BunnyMetronomeTests/<file> → <repo>/ios/BunnyMetronome/Sounds
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BunnyMetronome/Sounds")
+    }
+
+    private func copyFreeTree(to dir: URL, skipping skip: Set<String> = []) throws {
+        let root = soundsTree()
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw NSError(domain: "test", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "cannot enumerate \(root.path)"
+            ])
+        }
+        var copied = 0
+        for case let url as URL in enumerator where url.pathExtension.lowercased() == "mp3" {
+            let rel = String(url.path.dropFirst(root.path.count + 1))
+            if rel.hasPrefix("pack/") || skip.contains(rel) { continue }
+            let dst = dir.appendingPathComponent(rel)
+            try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fm.copyItem(at: url, to: dst)
+            copied += 1
+        }
+        guard copied > 0 else {
+            throw NSError(domain: "test", code: 2, userInfo: [
+                NSLocalizedDescriptionKey: "copied 0 samples from \(root.path) — fixture path drifted"
+            ])
+        }
+    }
+
+    func testRequiredFreeSampleKeysCoverClicksAndBothVoiceLanguages() {
+        let keys = MetronomePolicy.requiredFreeSampleKeys()
+        XCTAssertEqual(keys.count, 35)
+        for click in ["click-strong", "click-weak", "click-uniform"] {
+            XCTAssertTrue(keys.contains(click), click)
+        }
+        for lang in ["zh", "en"] {
+            XCTAssertTrue(keys.contains("voice/\(lang)/01"))
+            XCTAssertTrue(keys.contains("voice/\(lang)/16"))
+        }
+        XCTAssertFalse(keys.contains { $0.hasPrefix("pack/") })
+    }
+
+    func testMissingRequiredSampleKeysFlagOnlyTheGap() {
+        let full = MetronomePolicy.requiredFreeSampleKeys()
+        XCTAssertTrue(MetronomePolicy.missingRequiredSampleKeys(full).isEmpty)
+        XCTAssertEqual(
+            MetronomePolicy.missingRequiredSampleKeys(full.subtracting(["voice/zh/07"])),
+            Set(["voice/zh/07"])
+        )
+    }
+
+    func testSampleStoreLoadPassesAgainstRealBundledFreeTree() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jpq-sounds-full-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try copyFreeTree(to: dir)
+
+        let result = try SampleStore.load(root: dir)
+        XCTAssertTrue(SampleStore.isComplete(Set(result.buffers.keys)))
+        XCTAssertGreaterThan(result.buffers["click-strong"]?.frameLength ?? 0, 0)
+        XCTAssertGreaterThan(result.buffers["voice/en/16"]?.frameLength ?? 0, 0)
+    }
+
+    func testSampleStoreLoadThrowsWhenOneRequiredSampleIsMissing() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jpq-sounds-gap-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try copyFreeTree(to: dir, skipping: ["voice/zh/07.mp3"])
+
+        XCTAssertThrowsError(try SampleStore.load(root: dir)) { error in
+            XCTAssertEqual((error as NSError).domain, "audio")
+            XCTAssertEqual((error as NSError).code, 3)
+        }
+    }
+
+    func testSampleStoreDecodeFillsGapsOnRetryWithoutRedecodingExisting() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jpq-sounds-retry-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try copyFreeTree(to: dir, skipping: ["voice/zh/07.mp3", "click-weak.mp3"])
+
+        let partial = try SampleStore.decodeSamples(root: dir, existing: [:])
+        XCTAssertEqual(partial.buffers.count, 33)
+        XCTAssertFalse(SampleStore.isComplete(Set(partial.buffers.keys)))
+
+        // The file "comes back"; re-decoding only fills the gap.
+        try FileManager.default.copyItem(
+            at: soundsTree().appendingPathComponent("voice/zh/07.mp3"),
+            to: dir.appendingPathComponent("voice/zh/07.mp3")
+        )
+        try FileManager.default.copyItem(
+            at: soundsTree().appendingPathComponent("click-weak.mp3"),
+            to: dir.appendingPathComponent("click-weak.mp3")
+        )
+        let full = try SampleStore.load(root: dir, existing: partial.buffers)
+        XCTAssertTrue(SampleStore.isComplete(Set(full.buffers.keys)))
+    }
+
+    func testPackBankSlotsStayAlignedWithFreeFallbackPerBeat() {
+        // schedule() falls back slot-by-slot when a pack sample is missing;
+        // the free bank must produce the same slot count and per-slot gain.
+        for mode in SoundMode.allCases {
+            for lang in ["zh", "en"] {
+                for beat in 0..<16 {
+                    let pack = MetronomePolicy.sampleVoices(
+                        beat: beat, mode: mode, lang: lang,
+                        clickBank: "click-stick", voiceBank: "voice-zh-yunxi"
+                    )
+                    let free = MetronomePolicy.sampleVoices(
+                        beat: beat, mode: mode, lang: lang,
+                        clickBank: MetronomePolicy.defaultBank,
+                        voiceBank: MetronomePolicy.defaultBank
+                    )
+                    XCTAssertEqual(pack.count, free.count, "\(mode) \(lang) beat \(beat)")
+                    for (p, f) in zip(pack, free) {
+                        XCTAssertEqual(p.gain, f.gain, accuracy: 1e-9, "\(mode) \(lang) beat \(beat)")
+                    }
+                }
+            }
+        }
+    }
+}
+
 final class BeatSchedulerTests: XCTestCase {
     func testLiveBpmChangeDoesNotInsertExtraBeat() {
         let clock = BeatScheduler(bpm: 60, beatsPerBar: 4)

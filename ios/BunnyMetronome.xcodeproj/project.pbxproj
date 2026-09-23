@@ -18,6 +18,7 @@
 		S05 /* MetronomePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomePolicy.swift; sourceTree = "<group>"; };
 		S06 /* BeatScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatScheduler.swift; sourceTree = "<group>"; };
 		S07 /* MetronomeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomeAudioEngine.swift; sourceTree = "<group>"; };
+		S15 /* SampleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleStore.swift; sourceTree = "<group>"; };
 		S12 /* BufferGain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BufferGain.swift; sourceTree = "<group>"; };
 		S08 /* StoreAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreAdapter.swift; sourceTree = "<group>"; };
 		S09 /* PrefsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefsStore.swift; sourceTree = "<group>"; };
@@ -45,6 +46,7 @@
 		B05 /* MetronomePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = S05 /* MetronomePolicy.swift */; };
 		B06 /* BeatScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = S06 /* BeatScheduler.swift */; };
 		B07 /* MetronomeAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = S07 /* MetronomeAudioEngine.swift */; };
+		B15 /* SampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S15 /* SampleStore.swift */; };
 		B12 /* BufferGain.swift in Sources */ = {isa = PBXBuildFile; fileRef = S12 /* BufferGain.swift */; };
 		B08 /* StoreAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = S08 /* StoreAdapter.swift */; };
 		B09 /* PrefsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = S09 /* PrefsStore.swift */; };
@@ -98,13 +100,14 @@
 			path = BunnyMetronome;
 			sourceTree = "<group>";
 		};
-		GENG /* Engine */ = {
+			GENG /* Engine */ = {
 			isa = PBXGroup;
 			children = (
 				S05 /* MetronomePolicy.swift */,
 				S06 /* BeatScheduler.swift */,
 				S07 /* MetronomeAudioEngine.swift */,
 				S12 /* BufferGain.swift */,
+				S15 /* SampleStore.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -138,7 +141,7 @@
 			sourceTree = "<group>";
 		};
 
-		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12,); runOnlyForDeploymentPostprocessing = 0; };
+		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B15,); runOnlyForDeploymentPostprocessing = 0; };
 		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10, B14,); runOnlyForDeploymentPostprocessing = 0; };
 		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2, BPV, BIP, BGS,); runOnlyForDeploymentPostprocessing = 0; };
 		RTST /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };

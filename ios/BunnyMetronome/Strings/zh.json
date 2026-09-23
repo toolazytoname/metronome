@@ -70,5 +70,6 @@
   "donate_blurb": "打赏完全自愿，不解锁任何功能；所有功能永久免费。",
   "support": "支持我们",
   "privacy": "隐私政策",
-  "default_bank": "默认"
+  "default_bank": "默认",
+  "samples_degraded": "部分采样缺失，已回退默认音色"
 }

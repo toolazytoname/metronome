@@ -147,6 +147,23 @@ enum MetronomePolicy {
         return bank.replacingOccurrences(of: "-", with: "_")
     }
 
+    /// Free-tier samples every build must bundle: 3 clicks + zh/en 01–16.
+    /// The engine refuses to report "loaded" without the full set so a broken
+    /// bundle fails visibly instead of playing silently-gapped bars.
+    static func requiredFreeSampleKeys() -> Set<String> {
+        var keys: Set<String> = ["click-strong", "click-weak", "click-uniform"]
+        for lang in ["zh", "en"] {
+            for n in minBeats...maxBeats {
+                keys.insert("voice/\(lang)/\(String(format: "%02d", n))")
+            }
+        }
+        return keys
+    }
+
+    static func missingRequiredSampleKeys(_ loadedKeys: Set<String>) -> Set<String> {
+        requiredFreeSampleKeys().subtracting(loadedKeys)
+    }
+
     static let hapticPatternAll = "all"
     static let hapticPatternDownbeat = "downbeat"
     static let hapticFeelLight = "light"

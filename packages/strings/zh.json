@@ -71,5 +71,6 @@
   "support": "支持我们",
   "privacy": "隐私政策",
   "default_bank": "默认",
-  "app_version": "版本 %s"
+  "app_version": "版本 %s",
+  "samples_degraded": "部分采样缺失，已回退默认音色"
 }

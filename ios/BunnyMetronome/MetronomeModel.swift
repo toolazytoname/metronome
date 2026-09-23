@@ -12,6 +12,11 @@ final class MetronomeModel: ObservableObject {
         didSet {
             if oldValue != settingsOpen {
                 AppAnalytics.event("settings_panel", ["action": settingsOpen ? "open" : "close"])
+                // Reopening Settings is the cheapest recovery for a grayed-out
+                // Unlock button after an earlier StoreKit price miss.
+                if settingsOpen, productPrice == nil {
+                    Task { await refreshPrice() }
+                }
             }
         }
     }
@@ -23,6 +28,7 @@ final class MetronomeModel: ObservableObject {
     let haptics = TickHaptics()
     private let store: StoreAdapter
     private let entitlementGate = EntitlementRefreshGate()
+    private let priceGate = EntitlementRefreshGate()
 
     init(store: StoreAdapter? = nil) {
         self.store = store ?? StoreKitAdapter.shared
@@ -48,6 +54,12 @@ final class MetronomeModel: ObservableObject {
                 self.persist()
             }
         }
+        audio.onSamplesDegraded = { [weak self] in
+            Task { @MainActor in
+                self?.storeMessage = self?.t("samples_degraded") ?? ""
+            }
+        }
+        audio.preloadSamples()
         haptics.prepare()
         Task {
             await refreshEntitlement()
@@ -56,7 +68,18 @@ final class MetronomeModel: ObservableObject {
     }
 
     var strings: [String: String] {
-        Self.loadTable(lang: prefs.lang)
+        Self.cachedTable(lang: prefs.lang)
+    }
+
+    private static var tableCache: [String: [String: String]] = [:]
+
+    /// The strings table is read on every SwiftUI render; parse each language once.
+    private static func cachedTable(lang: String) -> [String: String] {
+        let name = lang == "en" ? "en" : "zh"
+        if let hit = tableCache[name] { return hit }
+        let table = loadTable(lang: lang)
+        tableCache[name] = table
+        return table
     }
 
     func t(_ key: String) -> String {
@@ -287,6 +310,11 @@ final class MetronomeModel: ObservableObject {
         }
     }
 
+    /// iOS entitlement note: a completed `Transaction.currentEntitlements` read is
+    /// the authoritative signed ledger (revocations included), so resetting pack
+    /// banks and persisting here matches the IAP contract's "an authoritative
+    /// empty ledger may persist defaults". iOS has no "unknown" query state akin
+    /// to Android's non-OK queryPurchases, and price failures never touch banks.
     func refreshEntitlement() async {
         let token = entitlementGate.begin()
         let value = await store.currentEntitlement()
@@ -298,7 +326,21 @@ final class MetronomeModel: ObservableObject {
     }
 
     func refreshPrice() async {
-        productPrice = await store.productPrice()
+        // Gate so a slow earlier query can't overwrite a newer result.
+        let token = priceGate.begin()
+        let value = await store.productPrice()
+        guard priceGate.isCurrent(token) else { return }
+        productPrice = value
+    }
+
+    /// Bounded recovery, once per foreground activation: covers offline first
+    /// launch, transient StoreKit failures, and sandbox flakiness without a
+    /// permanent gray Unlock button.
+    func refreshOnForeground() {
+        Task {
+            await refreshEntitlement()
+            await refreshPrice()
+        }
     }
 
     private static func loadTable(lang: String) -> [String: String] {

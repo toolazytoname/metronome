@@ -71,5 +71,6 @@
   "support": "Support",
   "privacy": "Privacy policy",
   "default_bank": "Default",
-  "app_version": "Version %s"
+  "app_version": "Version %s",
+  "samples_degraded": "Some samples missing; using default sounds"
 }
