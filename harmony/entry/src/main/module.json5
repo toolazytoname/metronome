@@ -7,9 +7,7 @@
     "deviceTypes": [
       "phone"
     ],
-    "backgroundModes": [
-      "audioPlayback"
-    ],
+    "deliveryWithInstall": true,
     "abilities": [
       {
         "name": "EntryAbility",
@@ -19,7 +17,7 @@
         "label": "$string:app_name",
         "startWindowIcon": "$media:app_icon",
         "startWindowBackground": "$color:start_window_background",
-        "orientation": "vertical",
+        "orientation": "portrait",
         "skills": [
           {
             "entities": [
