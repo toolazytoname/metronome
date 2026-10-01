@@ -1,0 +1,67 @@
+name: Harmony
+
+# 鸿蒙端无头构建（用户授权 2026-10-01）：官方 command-line-tools 5.0.5.200（内置 API 12 SDK，
+# 匹配 compatibleSdkVersion 5.0.0(12)），HuggingFace 公开镜像免登录。
+# 产物为未签名 hap；上架签名走本机证书（panglong-release）。
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - 'harmony/**'
+      - '.github/workflows/harmony.yml'
+
+concurrency:
+  group: harmony-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache command-line-tools zip
+        id: clt
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/clt.zip
+          key: commandline-tools-linux-x64-5.0.5.200
+
+      - name: Download command-line-tools (SDK 5.0.5 / API 12)
+        if: steps.clt.outputs.cache-hit != 'true'
+        run: |
+          curl -SL --retry 3 -o /home/runner/clt.zip \
+            https://huggingface.co/csukuangfj/harmonyos-commandline-tools/resolve/main/commandline-tools-linux-x64-5.0.5.200.zip
+          ls -lh /home/runner/clt.zip
+
+      - name: Unpack
+        run: |
+          cd /home/runner
+          unzip -q clt.zip
+          ls command-line-tools
+          ls command-line-tools/bin || true
+          ls command-line-tools/sdk/default/openharmony || true
+
+      - name: Build unsigned hap
+        env:
+          DEVECO_SDK_HOME: /home/runner/command-line-tools/sdk
+          PATH: /home/runner/command-line-tools/bin:/usr/local/bin:/usr/bin:/bin
+        run: |
+          cd harmony
+          which hvigorw || ls /home/runner/command-line-tools/bin
+          ohpm install || true
+          hvigorw --mode module -p product=default assembleHap \
+            --analyze=normal --parallel --incremental --daemon=false
+
+      - name: Upload hap
+        uses: actions/upload-artifact@v4
+        with:
+          name: harmony-unsigned-hap
+          path: harmony/entry/build/default/outputs/default/*.hap
+          if-no-files-found: error

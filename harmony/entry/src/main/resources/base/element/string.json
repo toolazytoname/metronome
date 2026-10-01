@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "app_name",
+      "value": "小兔头节拍器"
+    },
+    {
+      "name": "module_desc",
+      "value": "小兔头节拍器主模块"
+    },
+    {
+      "name": "ability_desc",
+      "value": "练琴节拍器"
+    }
+  ]
+}

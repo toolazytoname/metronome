@@ -42,6 +42,7 @@ iOS / Google Play 包可卖一次性「音色工坊」（SKU `studio.weichao.jpq
 | 微信小程序 | `miniapp/` | `setTimeout` 绝对时刻链 + InnerAudio | 微信搜索「小兔头节拍器」 |
 | iOS | `ios/` | AVAudioEngine 预约 · session `.playback` | App Store（先发） |
 | Android | `android/` | AudioTrack + 前台 Service | Play 内测 + 国内市场（P6，首批华为/小米）+ 官网 APK |
+| 鸿蒙 | `harmony/`（2026-09-30 立项；2026-10-01 ArkTS 工程落地，cn 变体：免费+打赏无 IAP，待 DevEco 编译+真机） | worker 线程 `AudioRenderer` 阻塞写 + 绝对帧预约（`entry/src/main/ets/engine/ClockWorker.ets`），采样为 rawfile WAV（`harmony/sync-sounds.sh`） | 华为 AppGallery（P6 跟进；包名 `studio.weichao.jpq.hmos`） |
 
 **不要把 Web 搬到 `apps/web/`。** `sw.js`、hreflang、长尾 URL、Vercel 根发布都绑在仓库根上。
 
@@ -237,7 +238,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
    - 采样/播放失败必须在练琴屏显示错误；旁加载没有商店也不能把这条滤掉
    - 暖米 + 珊瑚即可；**小兔头摆上练琴屏 = 上线应当，不是阻断**（图标里有兔子就够过审）
    - **只竖屏**。横过来不转（iOS `UIInterfaceOrientationPortrait` + `UIRequiresFullScreen`，Android `screenOrientation=portrait`）。v1 不做横屏布局
-   - **iPhone + iPad 通用 App**（`TARGETED_DEVICE_FAMILY = "1,2"`）。2026-09-22 起 iPad 兼容是审核必须。**regular 宽度**：满高双栏（练琴舞台竖直铺满 + 通高 inspector）。练琴面：大 BPM → 拍点 → 滑块/播放 → 底栏音效/拍号胶囊。Inspector：解锁/Restore 吸顶常显，工坊 Click|Voice 双列 + 震动选项可滚到底；齿轮可收起专注练琴。compact（iPhone）仍竖向堆叠 + 底栏 sheet。禁止控件截断、禁止大屏留空却展示不全
+   - **iPhone + iPad 通用 App**（`TARGETED_DEVICE_FAMILY = "1,2"`）。2026-09-22 起 iPad 兼容是审核必须。**regular 宽度**：满高双栏（练琴舞台竖直铺满 + 通高 inspector）。练琴面：大 BPM → 拍点 → 滑块/播放 → 底栏音效/拍号胶囊。Inspector：解锁/Restore 吸顶常显，工坊 Click|Voice 双列 + 震动选项可滚到底；齿轮可收起专注练琴。compact（iPhone）仍竖向堆叠 + 底栏 sheet。**regular 宽度自适应**（2026-09-24 Guideline 4 拒审后立）：窗口宽度 ≥900pt（iPad Pro 13" 竖屏 1032pt）用满高双栏；<900pt 的 regular（iPad Air 11" 竖屏约 820pt）双栏放不下，改练琴舞台在上 + 通宽 inspector 在下的纵向滚动堆叠，禁用固定 408pt 侧栏挤压左栏。禁止控件截断、禁止大屏留空却展示不全
 2. **设置（上线必须）**
    - 音效：传统 / 均匀 / 童声
    - 拍号预设：4/4、3/4、2/4、6/8、5/4、7/8；自定义 `bc` 1–16（`bu` 可只随预设，自定义分母 = 上线应当）
@@ -325,7 +326,7 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 - [ ] 40 / 120 / 208 各 60 秒不加速、不拖；播放中改 BPM 不插拍
 - [ ] 未购默认童声可播；点付费走系统购买；Restore 能找回
 - [x] 1024 图标 + 显示名；设置里有 Restore（模拟器核验）
-- [ ] Connect：IAP 商品、隐私营养（无跟踪；分析勾产品交互 + 实例 ID）、隐私 / 支持 URL、截图、年龄 4+（**2026-09-22 ASC API 已核实 App+IAP 建成且 WAITING_FOR_REVIEW**；隐私营养 09-17 提交校验通过可间接证明已发布，营养标签逐项内容待网页复核）
+- [x] Connect：IAP 商品、隐私营养（无跟踪；分析勾产品交互 + 实例 ID）、隐私 / 支持 URL、截图、年龄 4+（2026-09-26 API / Web 会话复核：IAP 已建、隐私申报已发布、四条 URL 均 HTTP 200、iPhone / iPad 截图 COMPLETE、年龄 FOUR_PLUS；App 版本待重提，IAP 仍待随版本审核）
 - [x] `PrivacyInfo.xcprivacy`；不声明麦克风；出口合规 NO
 - [ ] 内部 TestFlight 过完真机清单再提审
 - [ ] 审核通过且 Ready for Sale
@@ -447,13 +448,13 @@ App 是练琴屏，不是落地页。颜色靠近 Web token，不要 1:1 搬 CSS
 
 iOS
 
-- [ ] N4.1 App Store Connect 建 App，Bundle ID `studio.weichao.jpq` **阻断**
-- [ ] N4.2 建 IAP `studio.weichao.jpq.soundpack` 非消耗型 **阻断**
-- [ ] N4.3 隐私营养：无账户无跟踪；分析勾产品交互 + 应用实例 ID **阻断**
-- [ ] N4.4 隐私 / 支持 URL 指现网 **阻断**
-- [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当。**2026-09-22 转通用 App：iPad 13" 三帧已出**（`ipad-*.png` 2064×2752：默认分栏 / 播放中 / 工坊滚动，iPad Pro 13 M5 模拟器） **阻断**
+- [x] N4.1 App Store Connect 建 App，Bundle ID `studio.weichao.jpq` **阻断**（App ID `6813051843`，2026-09-26 API 复核）
+- [x] N4.2 建 IAP `studio.weichao.jpq.soundpack` 非消耗型 **阻断**（IAP ID `6813065483`，当前 READY_TO_SUBMIT，仍须随 App 版本送审）
+- [x] N4.3 隐私营养：无账户无跟踪；分析勾产品交互 + 应用实例 ID **阻断**（2026-09-26 `asc web privacy pull`：published=true，DEVICE_ID + PRODUCT_INTERACTION 均为 ANALYTICS / DATA_NOT_LINKED_TO_YOU）
+- [x] N4.4 隐私 / 支持 URL 指现网 **阻断**（2026-09-26 中英四条 URL 均 HTTP 200）
+- [x] N4.5 中文 6.9" 截图 `docs/store/screenshots/ios-*.png`（1320×2868，无透明；默认 / 播放 / 设置 / 工坊 Restore；2026-09-08 iPhone 17 Pro Max）。英文截图 = 应当。**2026-09-26 iPad 13" 三帧按 build 6 界面重拍**（`ipad-*.png` 2064×2752：默认练琴 / 播放中 / 设置工坊，iPad Pro 13 M5 模拟器；不再展示无震动硬件设备上的震动控件） **阻断**
 - [x] N4.6 审核备注写在 `docs/store/README.md` **阻断**
-- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**（2026-09-17 提交 2.1.2(4)+IAP；**09-18 Guideline 2.1 Information Needed 被拒**，当日已回复 7 项说明 + 真机演示视频附件，未点 Resubmit，等结果。**09-19 DSA 交易者信息重新提交**：Apple 邮件 Action needed → Business 页走完 trader 确认 → 联系方式（北京住址小区名、+86 手机号均已线下核对，不写入仓库；邮箱 lazywc）→ 地址证明=信用卡对账单 → Compliance 表 In Review（27 EU 区）。**09-19 发现 Paid Apps 仍 Pending User Info**：banks API 空返回、UI 的 CMB Haidian 行无状态 Not in Use——实为 2026-09-17 银行向导未走完（持有人/CNAPS/账号都已存，只差 Certification 确认）。**同日已补完**：点残影银行行重走向导 → Certification 勾选 → Add → `PUT /ppm/v1/2fa/.../banks` 需新鲜 2FA（401 后弹 mfaChallenges，用户输码）→ 200。现银行=Processing、Paid Apps=Processing（等 Apple 核验转 Active；转绿后沙盒 IAP 商品应可拉取——「商店暂时连不上」的判定根因即协议未生效，届时重验购买弹窗）。**09-20 双 KYC 补资料完成**：Apple 两封 Action needed 邮件（banking details + legal entity details）= 银行进入 Processing 后重跑的 Add User Info 合规筛查，两个入口各交一次（账户持有人版：用户手交，含证件照/出生地（已线下核对，不写入仓库）/非上市；法实体版：自动走完同款表单 + 持股本人 100% Submit），红色「requires immediate attention」横幅与 Add info 入口全消，待 Apple 邮件通知核验结果）。**09-22 三连拒**：2.3.7（副标题含价格字眼「免费/free」）+ 2.3.10（描述提及 Android/Play 跨平台）+ Guideline 4（iPad 兼容窗裁掉设置/语言）。当日修复：副标题 / 宣传文本 / 描述中英重写（去价格与跨平台字眼）、转通用 App + 分栏布局（N1.32）、版本 2.1.3(5) 重传重提。**09-22 已重新提交**：无头管线归档签名上传（profile 缺新证书 → API 3 调用现建 `jpq appstore 20260922`）；ASC API 改元数据 + iPad 13" 三帧截图 + 换构建后版本自动回 PREPARE；备注补 RESUBMISSION NOTE；Resolution Center 已回复三项修复说明；点 Resubmit → **版本与 IAP 均 WAITING_FOR_REVIEW**（提交单 fe336740）。**09-22 ASC API 只读复核**：App `6813051843`，2.1.3 appStoreState=WAITING_FOR_REVIEW；构建 5（2026-09-22 05:53 PDT 上传）processingState=VALID；IAP `6813065483` state=WAITING_FOR_REVIEW。Paid Apps 协议/银行是否已从 Processing 转 Active **API 查不到，待网页核实**——若过审时协议未生效，IAP 无法销售，属过审后第一优先检查项）
+- [ ] N4.7 内部 TestFlight → 提审 → Ready for Sale **阻断**（2026-09-17 提交 2.1.2(4)+IAP；**09-18 Guideline 2.1 Information Needed 被拒**，当日已回复 7 项说明 + 真机演示视频附件，未点 Resubmit，等结果。**09-19 DSA 交易者信息重新提交**：Apple 邮件 Action needed → Business 页走完 trader 确认 → 联系方式（北京住址小区名、+86 手机号均已线下核对，不写入仓库；邮箱 lazywc）→ 地址证明=信用卡对账单 → Compliance 表 In Review（27 EU 区）。**09-19 发现 Paid Apps 仍 Pending User Info**：banks API 空返回、UI 的 CMB Haidian 行无状态 Not in Use——实为 2026-09-17 银行向导未走完（持有人/CNAPS/账号都已存，只差 Certification 确认）。**同日已补完**：点残影银行行重走向导 → Certification 勾选 → Add → `PUT /ppm/v1/2fa/.../banks` 需新鲜 2FA（401 后弹 mfaChallenges，用户输码）→ 200。现银行=Processing、Paid Apps=Processing（等 Apple 核验转 Active；转绿后沙盒 IAP 商品应可拉取——「商店暂时连不上」的判定根因即协议未生效，届时重验购买弹窗）。**09-20 双 KYC 补资料完成**：Apple 两封 Action needed 邮件（banking details + legal entity details）= 银行进入 Processing 后重跑的 Add User Info 合规筛查，两个入口各交一次（账户持有人版：用户手交，含证件照/出生地（已线下核对，不写入仓库）/非上市；法实体版：自动走完同款表单 + 持股本人 100% Submit），红色「requires immediate attention」横幅与 Add info 入口全消，待 Apple 邮件通知核验结果）。**09-22 三连拒**：2.3.7（副标题含价格字眼「免费/free」）+ 2.3.10（描述提及 Android/Play 跨平台）+ Guideline 4（iPad 兼容窗裁掉设置/语言）。当日修复：副标题 / 宣传文本 / 描述中英重写（去价格与跨平台字眼）、转通用 App + 分栏布局（N1.32）、版本 2.1.3(5) 重传重提。**09-22 已重新提交**：无头管线归档签名上传（profile 缺新证书 → API 3 调用现建 `jpq appstore 20260922`）；ASC API 改元数据 + iPad 13" 三帧截图 + 换构建后版本自动回 PREPARE；备注补 RESUBMISSION NOTE；Resolution Center 已回复三项修复说明；点 Resubmit → **版本与 IAP 均 WAITING_FOR_REVIEW**（提交单 fe336740）。**09-22 ASC API 只读复核**：App `6813051843`，2.1.3 appStoreState=WAITING_FOR_REVIEW；构建 5（2026-09-22 05:53 PDT 上传）processingState=VALID；IAP `6813065483` state=WAITING_FOR_REVIEW。Paid Apps 协议/银行是否已从 Processing 转 Active **API 查不到，待网页核实**——若过审时协议未生效，IAP 无法销售，属过审后第一优先检查项）。**09-24 Guideline 4 再拒**：`asc web review show` 于 09-26 读取提交单 `fe336740` 的审核原文及附件。Apple 在 iPad Air 11-inch (M3) / iPadOS 27.0 指出控件尺寸或位置影响使用；附件 `Screenshot-0924-162241.png` 显示双栏横向溢出，左侧标题 / 减速按钮 / 拍号预设与右侧工坊 / 震动选项 / 音量滑块被裁切。原因是固定 408pt inspector 与练琴舞台在约 820pt 宽度下互相挤压。**09-26 修复已上传，待真机门禁**：regular 窗宽 ≥900pt 保留满高双栏，<900pt 改练琴舞台在上、通宽设置在下的纵向滚动布局；iPhone compact 不变。2.1.3(6) IPA 签名上传成功（Delivery UUID `9d9a7f47-9bcb-41d7-8707-d71648d59022`），build `9d9a7f47-9bcb-41d7-8707-d71648d59022` 处理为 VALID 并已挂到版本，版本当前 PREPARE_FOR_SUBMISSION；iPad 13" 三帧截图已用新版替换并 COMPLETE；中英描述和 App Review Notes 已更新。iPad Air 11-inch (M4) / iOS 26.5 模拟器检查了可见性。**09-26 已发 Resolution Center 修复回复并重提 build 6**：提交单 `fe336740` 于 2026-09-26 23:45:58 UTC 回 `WAITING_FOR_REVIEW`，版本 2.1.3(6) 亦 `WAITING_FOR_REVIEW`，IAP 审核项 `READY_FOR_REVIEW`；待 Apple 复核 iPadOS 27 原环境。N1.25–N1.30 真机与 pack 人耳仍未实测，不勾完成。**09-26 Business 双接口复核与纠偏**：旧 `/WebObjects/iTunesConnect.woa/ra/.../agreements` 显示 Paid Applications `ActivePendingUserInfo`、`taxInfo.usTaxMissing`，但新版 Business `/ppm/v1/accounts/{publicProviderId}/status` 的 `PurpleSoftwarePaidApplications.status=AGREEMENT_IN_EFFECT`；新版税表接口 W‑8BEN / 1042‑S 为 `ACTIVE`、美国资格问卷 `COMPLETE`，银行 `CLEARED`。两张税表旧接口亦显示已提交并关联当前付费协议，旧警告属状态不一致，不再当作缺税表的提交阻断，禁止重复提交。用户允许以模拟器 / 签名包 / TestFlight 状态替代无真机时的检查，但 N1.25–N1.30 不因此勾完成或声称已实测。
 - [x] N4.8 `DEPLOY.md` 补 TestFlight / 提审步骤（不含证书） **应当**
 
 Android
@@ -502,7 +503,7 @@ Android
 
 #### 资质（关键路径，先启动；只能用户本人办）
 
-- **APP 备案**：接入商定为**阿里云**（用户已有大陆实例；域名 `weichao.studio` 也在阿里云注册，NS = hichina，无境外注册商障碍）。备案 App 域名填 `jpq.weichao.studio`（`.studio` 在工信部可备案名单内）；管局审核最长约 20 个工作日
+- **APP 备案**：接入商 2026-09-30 由阿里云**改为腾讯云**（用户决定；阿里云表单始终未持久化，无在途订单，切换零成本。原备案不在腾讯云 → 走「新增服务（原备案不在腾讯云）」，与胖龙同账号同路线；云资源复用胖龙那台境内轻量服务器）。备案 App 域名填 `jpq.weichao.studio`（`.studio` 在工信部可备案名单内）；管局审核最长约 20 个工作日。鸿蒙端随本次备案立项（端矩阵已加行）
 - **软著**：应用宝硬要求；若将来登记，名称仍须 备案名 = 应用名 = 软著名 =「小兔头节拍器」。2026-09-17 定走正常渠道，**同日改搁置**：2026-03 起中国版权保护中心新版申请表要求手抄承诺「未使用 AI 编写代码 / 撰写文档 / 生成登记材料」，失实进失信名单并挂钩征信；本项目为 AI 辅助开发，不签不实承诺。只挡应用宝（N6.12 一并后置），不挡华为 / 小米；待规则细化或「如实声明」口径出现再启动
 - 华为 AGC + 小米开发者账号：个人主体实名注册，注册时逐家确认个人可上工具类
 
@@ -519,7 +520,7 @@ Android
 - [x] N6.3 `packages/strings` 补打赏 key（中英；2026-09-17 packages/android/ios 三副本 72 键对齐） **阻断**
 - [x] N6.4 `privacy.html` / `en/privacy.html` 补国内渠道「不收集数据」口径（2026-09-17） **阻断**
 - [x] N6.5 cn release APK 构建链路（2026-09-19：`assembleCnRelease` 本地 keystore 出包 → `download/jpq-latest.apk`，官网 zh/en 已挂下载链接；不自动传任何市场） **阻断**
-- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（2026-09-19 深夜：**双拦截已破，北京路线打通**。判定实验结论：「证件已备案，主体属北京」= MIIT 记录的地区一致性拦截（证件下确有北京主体记录，管局归属北京）；「无企业级备案管理」= 账号内已有实体时再建第二主体。解法已验证：**放弃旧天津草稿**（连带删除实体，企业级备案管理列表「暂无数据」）→ 新表单填 App/小兔头节拍器/北京市·市辖区·海淀区/个人/居民身份证/本人（姓名与 18 位证件号 2026-09-19 已线下核对，不写入仓库）/证件住所照身份证原文填天津 → 信息校验**两项拦截全消失**、无任何报错（自动化环境下保存/推进按钮无响应，表单未持久化，需手点）。后续：用户手点走完 5 步（第 2 步主办者信息、第 3 步 App 信息：包名 `studio.weichao.jpq` + 签名指纹、第 4 步传身份证照、第 5 步提交）；注意北京管局对非京户籍个人可能要居住证明，第 4 步见分晓。工单 00047SKZFN 电话结论：阿里云按证件查无旧备案（即北京主体不在阿里云，注销路线作废）。keystore `~/keystores/jpq-release.jks`（alias `jpq`，指纹见 `docs/store/README.md`；密码已存 Bitwarden（2026-09-19 导入完成，条目「小兔头节拍器 · Android release keystore」，含 jks base64 本体可完整还原）；本地明文 env / 导入文件已删，`~/keystores/` 仅留 jks）
+- [ ] N6.6 APP 备案拿备案号（用户） **阻断**（**2026-09-30 接入商已切换为腾讯云并提交审核**：订单 `30179078206880765`（新增服务·原备案不在腾讯云），状态「腾讯云审核中」；服务=小兔头节拍器·APP·软件开发·中文简体·jpq.weichao.studio·43.143.252.243；三平台特征信息：安卓 `studio.weichao.jpq`（MD5 `5E8B01B4…7013`）、苹果 `studio.weichao.jpq`（**腾讯苹果栏要 40 位 SHA-1** `5418FAFF4534C06F639428A788EA5E0E16B8601D`，不是 MD5）、鸿蒙 `studio.weichao.jpq.hmos`（AGC 证书 MD5 `C508F5EB…CF57`）。**鸿蒙包名规则：全产品鸿蒙包名 = 安卓包名 + `.hmos`**（华为 AGC 不允许鸿蒙与安卓同包名）；节拍器鸿蒙 AGC APP ID `6917617820587845260`。误建 AGC APP ID `6917617818934615019`（占了安卓包名 `studio.weichao.jpq`）无法自删，**2026-09-30 已提华为工单 `D644577` 申请注销**（状态「处理中」，1-2 个工作日回复，进展在开发者联盟「我的工单」跟踪），在工单结案前勿用该 APP ID。**用户待办：接听腾讯云审核电话**（010-5610-3419 / 010-5610-8024 等，1-2 个工作日内，两次未接即驳回）；腾讯云过审后**工信部短信核验 24h 内完成**（发 15901020559，逾期整单作废）；管局审核最长 1-20 个工作日，非京户籍个人可能被要居住证明。旧阿里云路线全废弃（2026-09-19 的解法记录已随切换失效：阿里云表单从未持久化、无在途订单，切换零成本）。keystore `~/keystores/jpq-release.jks`（alias `jpq`，密码在 Bitwarden 条目「小兔头节拍器 · Android release keystore」）
 - [x] N6.7 软著：**搁置**（2026-09-17，理由见「资质」节；待规则细化或如实声明口径） **应当**
 - [x] N6.8 华为 AGC 开发者实名 + 创建应用（2026-09-18：个人实名完成；应用「小兔头节拍器」已建，**AppID `119044997`**，状态准备提交，包名待首传 APK 时绑定为 `studio.weichao.jpq`） **阻断**
   - 小米：2026-09-19 注册向导无个人选项（仅企业类主体），**暂缓**，个人通道重开再启动
@@ -528,6 +529,7 @@ Android
 - [ ] N6.11 OPPO / vivo / 荣耀跟进 **应当**
 - [ ] N6.12 应用宝（等软著规则明朗或替代口径，见 N6.7） **应当**
 - [ ] N6.13 上传自动化（华为 API / 小米接口 / 浏览器自动化） **上线后**
+- [ ] N6.14 鸿蒙端 ArkTS 实现（2026-10-01 工程落地：cn 变体免费+打赏、无 IAP 无工坊段；worker `AudioRenderer` 时钟、rawfile WAV 采样（`harmony/sync-sounds.sh`，不带 pack/）、偏好/文案/版本号形状与 android cn 对齐。**编译走 CI**：`.github/workflows/harmony.yml` 用官方 command-line-tools 5.0.5.200（内置 API 12 SDK，HuggingFace 公开镜像免登录，用户本地无空间装 DevEco；2026-10-01 用户授权新增此 workflow，监听 develop 的 harmony/** 变更 + 手动触发），产物未签名 hap；**CI 尚未跑绿**，跑绿前不视为已编译。上架签名走本机 panglong-release 证书） **应当**
 
 ---
 
