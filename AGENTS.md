@@ -529,7 +529,7 @@ Android
 - [ ] N6.11 OPPO / vivo / 荣耀跟进 **应当**
 - [ ] N6.12 应用宝（等软著规则明朗或替代口径，见 N6.7） **应当**
 - [ ] N6.13 上传自动化（华为 API / 小米接口 / 浏览器自动化） **上线后**
-- [ ] N6.14 鸿蒙端 ArkTS 实现（2026-10-01 工程落地：cn 变体免费+打赏、无 IAP 无工坊段；worker `AudioRenderer` 时钟、rawfile WAV 采样（`harmony/sync-sounds.sh`，不带 pack/）、偏好/文案/版本号形状与 android cn 对齐。**编译走 CI**：`.github/workflows/harmony.yml` 用官方 command-line-tools 5.0.5.200（内置 API 12 SDK，HuggingFace 公开镜像免登录，用户本地无空间装 DevEco；2026-10-01 用户授权新增此 workflow，监听 develop 的 harmony/** 变更 + 手动触发），产物未签名 hap；**CI 尚未跑绿**，跑绿前不视为已编译。上架签名走本机 panglong-release 证书） **应当**
+- [x] N6.14 鸿蒙端 ArkTS 实现（2026-10-01 工程落地：cn 变体免费+打赏、无 IAP 无工坊段；worker `AudioRenderer` 时钟、rawfile WAV 采样（`harmony/sync-sounds.sh`，不带 pack/）、偏好/文案/版本号形状与 android cn 对齐。**编译走 CI**：`.github/workflows/harmony.yml` 用官方 command-line-tools 5.0.5.200（内置 API 12 SDK，HuggingFace 公开镜像免登录，用户本地无空间装 DevEco；2026-10-01 用户授权新增此 workflow，监听 develop 的 harmony/** 变更 + 手动触发），**同日 CI 已跑绿**（run `36874983440`，CompileArkTS 通过，产物未签名 hap 挂 artifact）。注意：module.json5 的 `backgroundModes` 已按 OpenHarmony schema 移除，后台播放靠 `startBackgroundRunning` API + `KEEP_BACKGROUND_RUNNING` 权限，真机要验；上架签名走本机 panglong-release 证书；**真机/云测核验未做**（40/120/208 不漂、锁屏出声、不插拍）） **应当**
 
 ---
 
