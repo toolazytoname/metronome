@@ -17,7 +17,7 @@ function boot(storage, blocked = false) {
   return { api: box.MetronomeDiagnostics, els, box, listeners };
 }
 (async function () {
-const storage = { value: JSON.stringify([{ at: Date.now(), code: 'paused', version: '2026.10.03.1', state: { bpm: 120, url: 'SECRET', audio: 'SECRET', playing: 'SECRET' } },
+const storage = { value: JSON.stringify([{ at: Date.now(), code: 'paused', version: '2026.10.03.2', state: { bpm: 120, url: 'SECRET', audio: 'SECRET', playing: 'SECRET' } },
   { at: Date.now() - 86400001, code: 'paused', version: '2026.10.02.2' }]) };
 let p = boot(storage);
 p.api.attach({ snapshot: () => ({ bpm: 140, mode: 'voice', token: 'SECRET', audio: 'running', loading: false }) });
@@ -42,17 +42,19 @@ p.els['diagnostic-note'].value = 'After switching tabs, Play stopped responding.
 p.els['diagnostic-send'].onclick();
 assert.ok(p.box.location.href.startsWith('mailto:lazywc@gmail.com?'));
 assert.ok(decodeURIComponent(p.box.location.href).includes('After switching tabs'));
-assert.ok(decodeURIComponent(p.box.location.href).includes('2026.10.03.1'));
+assert.ok(decodeURIComponent(p.box.location.href).includes('2026.10.03.2'));
 assert.equal(p.els['diagnostic-status'].textContent, '邮件草稿已打开，请确认内容后点击发送。');
 
 // Mobile share path is explicit and user-controlled.
 p = boot({ value: '[]' });
 let shared;
 p.box.navigator.share = payload => { shared = payload; return Promise.resolve(); };
+p.els['diagnostic-note'] = { value: 'After switching tabs, Play stopped responding.' };
 p.els['diagnostic-send'].onclick();
 return new Promise(resolve => setImmediate(resolve)).then(() => {
-assert.equal(shared.title, '[Bunny Metronome Web] Audio issue · 2026.10.03.1');
+assert.equal(shared.title, '[Bunny Metronome Web] Audio issue · 2026.10.03.2');
 assert.ok(shared.text.includes('Bunny Metronome Web'));
+assert.ok(shared.text.includes('After switching tabs'), 'user note must survive the sending size cap');
 assert.ok(p.els['diagnostic-status'].textContent.includes('分享面板已打开'));
 
 console.log('Diagnostics: bounded storage, retention, privacy allowlist, denied storage, clipboard fallback, clear, boot failure, mail and share reporting passed');

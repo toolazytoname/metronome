@@ -1,7 +1,7 @@
 /* Local, bounded diagnostics. Outbound reporting is explicit user action via share/mail. */
 (function (global) {
   'use strict';
-  var VERSION = '2026.10.03.1';
+  var VERSION = '2026.10.03.2';
   var KEY = 'metronome_diagnostics_v1';
   var MAX = 80, TTL = 86400000;
   var events = [], hooks = {};
@@ -55,8 +55,10 @@
     var payload;
     try { payload = JSON.parse(report()); } catch (_) { payload = { product: 'Bunny Metronome Web', version: VERSION }; }
     // Keep mailto URLs usable on mobile browsers; the full report remains available via Copy.
-    payload.events = (payload.events || []).slice(-32);
+    var recentEvents = (payload.events || []).slice(-32);
+    delete payload.events;
     if (note) payload.userNote = String(note).slice(0, 1200);
+    payload.events = recentEvents;
     var text = JSON.stringify(payload, null, 2);
     return text.length > 6000 ? text.slice(0, 6000) + '\n... [report truncated; use Copy for full report]' : text;
   }

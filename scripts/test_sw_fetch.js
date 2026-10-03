@@ -102,7 +102,7 @@ async function main() {
     ['https://jpq.weichao.studio/p/piano-practice.html', zhTail]
   ]);
   const { ctx, listeners } = loadWorker(store);
-  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v13');
+  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v14');
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/privacy')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/support')", ctx), true);
@@ -219,7 +219,7 @@ async function main() {
 
   // A site-wide SW update may only remove its own old caches.
   const deleted = []; let activation;
-  ctx.caches.keys = () => Promise.resolve(['other-app-cache', 'xiaotutou-v1', 'xiaotutou-v13']);
+  ctx.caches.keys = () => Promise.resolve(['other-app-cache', 'xiaotutou-v1', 'xiaotutou-v14']);
   ctx.caches.delete = name => { deleted.push(name); return Promise.resolve(true); };
   listeners.activate[0]({ waitUntil(p) { activation = p; } });
   await activation;
