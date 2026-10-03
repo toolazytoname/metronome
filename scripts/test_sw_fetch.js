@@ -102,7 +102,7 @@ async function main() {
     ['https://jpq.weichao.studio/p/piano-practice.html', zhTail]
   ]);
   const { ctx, listeners } = loadWorker(store);
-  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v11');
+  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v12');
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/privacy')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/support')", ctx), true);
@@ -219,11 +219,24 @@ async function main() {
 
   // A site-wide SW update may only remove its own old caches.
   const deleted = []; let activation;
-  ctx.caches.keys = () => Promise.resolve(['other-app-cache', 'xiaotutou-v1', 'xiaotutou-v11']);
+  ctx.caches.keys = () => Promise.resolve(['other-app-cache', 'xiaotutou-v1', 'xiaotutou-v12']);
   ctx.caches.delete = name => { deleted.push(name); return Promise.resolve(true); };
   listeners.activate[0]({ waitUntil(p) { activation = p; } });
   await activation;
   assert.deepStrictEqual(deleted, ['xiaotutou-v1']);
+
+  let htmlCacheMode;
+  const fresh = loadWorker(new Map(), (req, opts) => {
+    htmlCacheMode = opts && opts.cache;
+    return Promise.resolve(new FakeResponse(req.url, 'FRESH_HTML'));
+  });
+  const freshResponse = await dispatchFetch(fresh.listeners, 'https://jpq.weichao.studio/');
+  assert.equal(htmlCacheMode, 'no-cache', 'old HTTP max-age must not bypass network revalidation');
+  assert.equal(await freshResponse.text(), 'FRESH_HTML');
+  fresh.ctx.caches.open = () => Promise.reject(new Error('quota denied'));
+  const uncached = await dispatchFetch(fresh.listeners, 'https://jpq.weichao.studio/en/');
+  assert.equal(await uncached.text(), 'FRESH_HTML', 'cache failure must not break the live page');
+  await new Promise(resolve => setImmediate(resolve));
 
   console.log('test_sw_fetch: ok');
 }

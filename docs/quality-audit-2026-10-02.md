@@ -107,3 +107,5 @@ xcodebuild -project ios/BunnyMetronome.xcodeproj -scheme BunnyMetronome \
 - **原用户故障发生时没有现场日志；本次修复是针对已证实的故障路径，不声称已唯一定位该次根因。** 尚不能验证扬声器物理输出、Safari 真机 interruption，或操作系统冻结整页时 JS 自救。
 - 提交前只读复盘：检查启动/停止代次、closed context 重建、调度异常收尾、日志白名单、两语言一致性、内容 hash/SW 缓存升级、原生变更与发布脚本；本轮未发现新的发布阻断。原先 iPad 布局/截图/版本变更独立提交，不混作本次 Web 修复。
 - 最终本地回归 `./scripts/check-quality.sh` 通过（`/tmp/metronome-quality-release-final.log`）；引擎 13 项、Web 页面中英启动/同步异常与可见错误测试、诊断/缓存/资源一致性测试通过；小程序与 Harmony mock 133 项、Swift 39 项、Android policy 59 项通过。Harmony 仍非 SDK 编译/真机验证。
+
+- 发布复核补充：旧客户端可能仍持有以前 `max-age=300` 的 HTML；只改新服务端响应头不能清除该旧 HTTP 缓存。SW v12 对 HTML 显式 `cache: no-cache` 重新验证，并将缓存写入失败降为非阻断；新增执行型回归通过。

@@ -3,7 +3,7 @@
  * /download/* is never intercepted: fixed-name files (the APK) change content
  * under the same URL, so a cache-first hit would keep serving the old package.
  */
-var CACHE = 'xiaotutou-v11';
+var CACHE = 'xiaotutou-v12';
 
 var PRECACHE = [
   '/',
@@ -118,10 +118,11 @@ self.addEventListener('fetch', function (event) {
 
   if (isHtml(req.url)) {
     event.respondWith(
-      fetch(req).then(function (res) {
+      // Revalidate even HTML cached under an older release's max-age.
+      fetch(req, { cache: 'no-cache' }).then(function (res) {
         if (isCacheableResponse(res)) {
           var copy = res.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+          caches.open(CACHE).then(function (cache) { return cache.put(req, copy); }).catch(function () {});
         }
         return res;
       }).catch(function () {
@@ -137,7 +138,7 @@ self.addEventListener('fetch', function (event) {
       return fetch(req).then(function (res) {
         if (isCacheableResponse(res)) {
           var copy = res.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+          caches.open(CACHE).then(function (cache) { return cache.put(req, copy); }).catch(function () {});
         }
         return res;
       });
