@@ -1153,20 +1153,20 @@ window.addEventListener('load', function(){
 .web-health{max-width:480px;margin:12px auto;padding:0 20px 16px;color:#665c58;font:12px/1.6 sans-serif;text-align:center}
 .web-health summary{cursor:pointer;min-height:32px;padding:6px}
 .web-health details[open]{text-align:left}.web-health button,.web-health a{display:inline-block;font:inherit;margin:4px 4px 4px 0;padding:8px 12px;border:1px solid #b9aaa2;border-radius:12px;background:#fffaf5;color:#51443f;cursor:pointer}
-.web-health textarea{box-sizing:border-box;width:100%;height:150px;font:11px/1.5 monospace;background:#fffaf5;color:#51443f;border:1px solid #b9aaa2;border-radius:8px;padding:8px}
+.web-health textarea{box-sizing:border-box;width:100%;height:150px;font:11px/1.5 monospace;background:#fffaf5;color:#51443f;border:1px solid #b9aaa2;border-radius:8px;padding:8px}.web-health #diagnostic-note{height:54px;margin:4px 0 6px}.web-health label{display:block;margin-top:4px}
 </style>
 <section class="web-health" aria-label="诊断与恢复">
-<span id="web-version">Web 2026.10.02.2</span>
+<span id="web-version">Web 2026.10.03.1</span>
 <details id="diagnostics"><summary>诊断与恢复</summary>
-<p>无声或卡住？请先复制诊断，再重置音频。日志仅在本机保留最多 24 小时（80 条），不自动上传。可连同故障经过发到 lazywc@gmail.com。若整页失去响应，请使用浏览器刷新。</p>
-<button type="button" id="diagnostic-copy">复制诊断</button>
+<p>无声或卡住？可一键发送诊断到 lazywc@gmail.com，也可以先复制。发送会打开系统分享或邮件草稿，需你确认后才会发出。日志仅在本机保留最多 24 小时（80 条），不会静默上传。若整页失去响应，请使用浏览器刷新。</p>
+<label for="diagnostic-note">故障描述（可选）</label><textarea id="diagnostic-note" aria-label="故障描述（可选）" maxlength="1200" placeholder="例如：切换标签页后，播放按钮没有反应。"></textarea><button type="button" id="diagnostic-send">发送诊断</button><button type="button" id="diagnostic-copy">复制诊断</button>
 <button type="button" id="diagnostic-reset">重置音频</button>
 <button type="button" id="diagnostic-clear">清除日志</button>
 <a href="" onclick="location.reload();return false;">刷新页面</a>
 <p id="diagnostic-status" role="status" aria-live="polite"></p>
 <textarea id="diagnostic-text" readonly aria-label="本机诊断信息"></textarea>
 </details></section>
-<script src="/js/diagnostics.js?v=a134b8049a50"></script>
+<script src="/js/diagnostics.js?v=d6cac32bfc28"></script>
 <script src="/js/prefs.js?v=193df9a6c2c0"></script>
 <script src="/js/engine.js?v=acab7ad4c7b2"></script>
 <script>

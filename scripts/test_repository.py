@@ -85,6 +85,6 @@ for route in ['/', '/en/:path*', '/(index|landing|en/index|en/landing).html']:
     assert 'max-age=0' in next(x['value'] for x in entry['headers'] if x['key'] == 'Cache-Control')
 for rel in ['index.html', 'en/index.html']:
     html = (ROOT / rel).read_text()
-    assert 'Web 2026.10.02.2' in html and 'id="diagnostics"' in html
+    assert 'Web 2026.10.03.1' in html and 'id="diagnostics"' in html
     assert html.index('/js/diagnostics.js?v=') < html.index('/js/engine.js?v=')
 print('ok practice HTML revalidation and diagnostic boot order / release label')

@@ -1,7 +1,7 @@
-/* Local, bounded, opt-in export only. Never send diagnostics over the network. */
+/* Local, bounded diagnostics. Outbound reporting is explicit user action via share/mail. */
 (function (global) {
   'use strict';
-  var VERSION = '2026.10.02.2';
+  var VERSION = '2026.10.03.1';
   var KEY = 'metronome_diagnostics_v1';
   var MAX = 80, TTL = 86400000;
   var events = [], hooks = {};
@@ -51,7 +51,34 @@
       online: navigator.onLine, serviceWorker: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
       state: state(), events: events }, null, 2);
   }
-  global.MetronomeDiagnostics = { record: record, report: report, attach: function (value) { hooks = value; }, version: VERSION };
+  function reportForSending(note) {
+    var payload;
+    try { payload = JSON.parse(report()); } catch (_) { payload = { product: 'Bunny Metronome Web', version: VERSION }; }
+    // Keep mailto URLs usable on mobile browsers; the full report remains available via Copy.
+    payload.events = (payload.events || []).slice(-32);
+    if (note) payload.userNote = String(note).slice(0, 1200);
+    var text = JSON.stringify(payload, null, 2);
+    return text.length > 6000 ? text.slice(0, 6000) + '\n... [report truncated; use Copy for full report]' : text;
+  }
+  function sendReport(note, done) {
+    var subject = '[Bunny Metronome Web] Audio issue · ' + VERSION;
+    var body = 'Please describe what happened above this line if needed.\n\n' + reportForSending(note);
+    var text = subject + '\n\n' + body;
+    function mail() {
+      try {
+        global.location.href = 'mailto:lazywc@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        done('mail');
+      } catch (_) { done('fallback'); }
+    }
+    try {
+      if (navigator.share) {
+        navigator.share({ title: subject, text: text }).then(function () { done('share'); }, function (err) {
+          if (err && err.name === 'AbortError') done('cancel'); else mail();
+        });
+      } else mail();
+    } catch (_) { mail(); }
+  }
+  global.MetronomeDiagnostics = { record: record, report: report, send: sendReport, attach: function (value) { hooks = value; }, version: VERSION };
   record('page_open');
   global.addEventListener('error', function () { record('script_error'); }, true);
   global.addEventListener('unhandledrejection', function () { record('promise_error'); });
@@ -76,6 +103,18 @@
         status.textContent = en ? 'Copied. Send it with what happened to support.' : '已复制，请连同故障经过一起发给支持。';
       }).catch(fallback);
     } catch (_) { fallback(); }
+  };
+  var send = document.getElementById('diagnostic-send');
+  if (send) send.onclick = function () {
+    var noteEl = document.getElementById('diagnostic-note');
+    var note = noteEl && noteEl.value ? noteEl.value : '';
+    status.textContent = en ? 'Opening share or email…' : '正在打开分享或邮件…';
+    sendReport(note, function (kind) {
+      if (kind === 'share') status.textContent = en ? 'Share sheet opened. Confirm to send the report.' : '分享面板已打开，请确认发送诊断。';
+      else if (kind === 'mail') status.textContent = en ? 'Email draft opened. Review and press Send.' : '邮件草稿已打开，请确认内容后点击发送。';
+      else if (kind === 'cancel') status.textContent = en ? 'Report not sent.' : '已取消发送，诊断未发出。';
+      else status.textContent = en ? 'Could not open share or email. Copy the report below.' : '无法打开分享或邮件，请复制下方诊断信息。';
+    });
   };
   var clear = document.getElementById('diagnostic-clear');
   if (clear) clear.onclick = function () { events = []; persist(); show(); status.textContent = en ? 'Local logs cleared.' : '本机诊断记录已清除。'; };

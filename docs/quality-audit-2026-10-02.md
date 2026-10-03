@@ -115,3 +115,11 @@ xcodebuild -project ios/BunnyMetronome.xcodeproj -scheme BunnyMetronome \
 - `a4e08eb` 已推送 `origin/develop`，并经授权快进发布至 `origin/main`；Vercel Production `dpl_3F9iHjBvYcERv8GM4r4GkKdngg2p` Ready。Web 发布号 `2026.10.02.2` 为界面标识，不是原生版本号。
 - CI `37097237563` 全绿；Harmony SDK CI `37097237558` 全绿（同提交，unsigned HAP）。这补充了前文检查结束时“只有 mock、未 SDK 编译”的证据缺口；仍不代表真机或商店验收。
 - 后续 `a9c1446` 仅补 SW v12 的旧 HTTP 缓存重新验证与非阻断缓存写入，不变更音频或原生代码。中英预览站 HTTP 200、版本号、三份 JS SHA-256 内容前缀与 no-cache HTML 头已核验。
+
+### 用户主动上报（2026-10-03）
+
+- 诊断上报目标固定为 `lazywc@gmail.com`。Web 不增加后端：支持 Web Share 的设备打开系统分享面板，其他设备打开 `mailto:` 预填草稿；两种方式都必须由用户最后确认发送。
+- 发送版报告保留最近 32 条事件并限制约 6000 字符，避免移动端 `mailto:` URL 过长；完整 80 条本地记录仍可通过复制获得。用户可填写最多 1200 字的故障描述。
+- 已增加邮件回退、分享成功、取消分享、无法打开分享/邮件的测试；不调用 `fetch` 或其他自动上报接口。
+
+- `2026.10.03.1` 增加用户主动「发送诊断」：目标 `lazywc@gmail.com`，移动端系统分享、桌面端邮件草稿，用户确认后发送；无自动网络上报，无新增后端。发送版最近 32 条事件 / 6000 字符上限，故障描述可选。
