@@ -3,13 +3,13 @@
 Bundle / application id: `studio.weichao.jpq`
 Name: 小兔头节拍器 / Bunny Metronome
 SKU: `studio.weichao.jpq.soundpack` (non-consumable, ¥12 / $1.99)
-Version: Android Play next upload `2.1.7` (versionCode 9). Current internal-test high is `2.1.6` (code 8), not this source. iOS `2.1.3` (build 5) — universal app (iPhone + iPad), needs both 6.9" and iPad 13" screenshots.
+Version: Android Play next upload `2.1.7` (versionCode 9). Current internal-test high is `2.1.6` (code 8), not this source. iOS `2.1.3` (build 6 submitted 2026-09-26; WAITING_FOR_REVIEW) — universal app (iPhone + iPad), needs both 6.9" and iPad 13" screenshots.
 
 提审当天把本节贴进 App Store Connect / Play Console。代码待办在 [AGENTS.md](../../AGENTS.md) P4。
 
 提审容易漏（不是文案）：
 
-- Connect 先签付费应用协议 + 税务 / 银行，否则 IAP 建不了。
+- Connect 先签付费应用协议 + 税务 / 银行，否则 IAP 无法正常销售。2026-09-26 新版 Business 接口复核：银行 `CLEARED`、美国 W‑8BEN 与 1042‑S `ACTIVE`、资格问卷 `COMPLETE`，付费应用协议 `AGREEMENT_IN_EFFECT`。旧协议接口仍报 `taxInfo.usTaxMissing`，与新版实际状态不一致；税表已经提交并关联当前协议，勿重复提交。
 - 第一个非消耗型 IAP 必须跟这一版 App **一起**送审。
 - 个人 Play 账号上**生产轨**要 12 名测试者连续 14 天封闭测试；内部测试轨不挡。
 - 商店链接在 Ready for Sale 之前不要改落地页徽章（N5.9）。
@@ -64,7 +64,7 @@ iPad 三帧（分栏布局）：
 
 1. `docs/store/screenshots/ipad-practice.png` — 默认分栏：练琴舞台 + 设置 inspector（解锁 + 恢复购买吸顶）
 2. `docs/store/screenshots/ipad-playing.png` — 正在播放（舞台暂停键 + 拍点高亮）
-3. `docs/store/screenshots/ipad-workshop.png` — inspector 滚到工坊（click / 数拍银行 + 震动选项）
+3. `docs/store/screenshots/ipad-workshop.png` — 工坊与 Restore（iPad 无震动马达，不展示震动选项）
 
 英文截图 = 上线应当，同一批帧。Play 不要用这套 iOS 图。
 
@@ -113,7 +113,7 @@ Core metronome is free. Default counting voice is free. Haptic ticks on/off is f
 
 ## App Store Connect 粘贴稿
 
-主语言 **简体中文**，再加 **English (US)**。类别 **Music**。**iPhone + iPad 通用**（工程 `TARGETED_DEVICE_FAMILY = "1,2"` + `UIRequiresFullScreen`，2026-09-22 起）。不要勾 Made for Kids（有 IAP）。版权 `2026 weichao.studio`。联系 `lazywc@gmail.com`。SKU（Connect 应用级，不是 IAP）`studio.weichao.jpq`。版本 `2.1.3` (build 5)。
+主语言 **简体中文**，再加 **English (US)**。类别 **Music**。**iPhone + iPad 通用**（工程 `TARGETED_DEVICE_FAMILY = "1,2"` + `UIRequiresFullScreen`，2026-09-22 起）。不要勾 Made for Kids（有 IAP）。版权 `2026 weichao.studio`。联系 `lazywc@gmail.com`。SKU（Connect 应用级，不是 IAP）`studio.weichao.jpq`。版本 `2.1.3` (build 6，已重提并等待审核)。
 
 ### 名称（≤30）/ 副标题（≤30）
 
@@ -169,7 +169,7 @@ metronome,tempo,BPM,piano,drums,voice,count,beat,practice
 
 锁屏、静音键下仍然出声。没有广告，不用注册。
 
-可选一次买断「音色工坊」，解锁额外 click、数拍声线，以及只震强拍 / 轻标准重震感。震动开关本身免费。购买记录保存在 App Store 账本里，换机或重装后用「恢复购买」找回。默认童声不需要买。
+可选一次买断「音色工坊」，解锁额外 click 和数拍声线；在有震动马达的设备上，还可选择只震强拍及轻 / 标准 / 重震感。震动开关本身免费。购买记录保存在 App Store 账本里，换机或重装后用「恢复购买」找回。默认童声不需要买。
 ```
 
 English：
@@ -181,7 +181,7 @@ Always free: play/pause, BPM 40–208, time signatures including custom, and the
 
 It keeps ticking with the silent switch on and on the lock screen. No ads, no account.
 
-Sound Workshop is an optional one-time unlock for extra clicks, voices, and finer haptic ticks. The haptic on/off switch stays free. Purchases are kept in your App Store account; use Restore Purchases after reinstalling. The default voice stays free.
+Sound Workshop is an optional one-time unlock for extra clicks and voices. On devices with haptic hardware, it also adds downbeat-only ticks and adjustable haptic feel. The haptic on/off switch stays free on supported devices. Purchases are kept in your App Store account; use Restore Purchases after reinstalling. The default voice stays free.
 ```
 
 文案写「在本平台一次买断」，不要写「买一次全平台」。
@@ -248,7 +248,7 @@ Connect 先签付费协议 + 税务/银行，否则建不了商品。
 无登录、无演示账号。联系 `lazywc@gmail.com`。电话你自己填。
 
 ```
-Core metronome is free. Default counting voice is free. Haptic ticks on/off is free. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples plus downbeat-only / light-standard-heavy haptics. Restore is in Settings. Purchases stay in the App Store ledger. No WeChat/Alipay QR codes in the app. iOS Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads. Universal app (iPhone + iPad), portrait only. On iPad the app shows a practice stage plus a side settings inspector; all controls are reachable without cropping. Silent switch and lock screen should still click — AVAudioSession is .playback with UIBackgroundModes audio.
+Core metronome is free. Default counting voice is free. Haptic ticks on/off is free on supported devices. Sound Workshop (studio.weichao.jpq.soundpack) is a non-consumable that unlocks extra samples and, on devices with haptic hardware, downbeat-only / light-standard-heavy haptics. Restore is in Settings. Purchases stay in the App Store ledger. No WeChat/Alipay QR codes in the app. iOS Firebase Analytics records in-app events (open, play, BPM, meter, mode). Advertising ID collection is off; we do not use the data for tracking or ads. Universal app (iPhone + iPad), portrait only. On narrower iPads, the practice stage sits above a full-width scrollable Settings panel; wider iPads use a two-column layout. Silent switch and lock screen should still click — AVAudioSession is .playback with UIBackgroundModes audio.
 ```
 
 ### 你还得在本机做的

@@ -52,6 +52,10 @@ struct ContentView: View {
 
     private var contentHPad: CGFloat { isWide ? 16 : 16 }
     private let inspectorWidth: CGFloat = 408
+    /// Regular widths below this (iPad Air 11" portrait ≈ 820pt) can't fit the
+    /// 408pt inspector beside the practice stage without clipping — stack instead.
+    /// iPad Pro 13" portrait (1032pt) and wider keep the split.
+    private let wideSplitMinWidth: CGFloat = 900
 
     private let meterPresets: [(Int, Int, String)] = [
         (4, 4, "sig_44"), (3, 4, "sig_34"), (2, 4, "sig_24"),
@@ -63,10 +67,14 @@ struct ContentView: View {
             background
             GeometryReader { geo in
                 if isWide {
-                    wideLayout
-                        .padding(.horizontal, contentHPad)
-                        .padding(.vertical, 14)
-                        .frame(width: geo.size.width, height: geo.size.height)
+                    if geo.size.width >= wideSplitMinWidth {
+                        wideLayout
+                            .padding(.horizontal, contentHPad)
+                            .padding(.vertical, 14)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                    } else {
+                        wideStackLayout
+                    }
                 } else if #available(iOS 16.4, *) {
                     practiceScroll(height: geo.size.height)
                         .scrollBounceBehavior(.basedOnSize, axes: .vertical)
@@ -114,6 +122,37 @@ struct ContentView: View {
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: inspectorVisible)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Narrow regular width (iPad Air 11" portrait ≈ 820pt): the fixed-width
+    /// inspector can't sit beside the stage without clipping either column.
+    /// Stack the practice stage above a full-width inspector inside one
+    /// vertical scroll — same inspector content, no horizontal squeeze.
+    private var wideStackLayout: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                practicePane
+                if inspectorVisible {
+                    VStack(alignment: .leading, spacing: 0) {
+                        inspectorHeader
+                        if !model.unlocked {
+                            InspectorUnlockBanner()
+                                .padding(.bottom, 16)
+                        }
+                        SettingsPanel(layout: .inspector)
+                            .padding(.bottom, 8)
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 22)
+                    .padding(.bottom, 16)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .background(cardBackground)
+                }
+            }
+            .padding(.horizontal, contentHPad)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+        }
     }
 
     /// iPad practice stage: vertical instrument layout that fills height —
@@ -173,17 +212,21 @@ struct ContentView: View {
         .accessibilityLabel(model.t("settings"))
     }
 
+    private var inspectorHeader: some View {
+        HStack {
+            Text(model.t("settings"))
+                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                .foregroundStyle(Palette.ink)
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 14)
+    }
+
     /// Full-height inspector. Workshop unlock sits above the scroll so the
     /// purchase CTA stays visible; banks / haptic / meter scroll underneath.
     private var settingsPane: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(model.t("settings"))
-                    .font(.system(size: 24, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Palette.ink)
-                Spacer(minLength: 0)
-            }
-            .padding(.bottom, 14)
+            inspectorHeader
 
             if !model.unlocked {
                 InspectorUnlockBanner()
