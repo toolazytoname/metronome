@@ -27,3 +27,8 @@ scripts/
 coverage
 **/__pycache__
 **/*.pyc
+
+# Native Harmony sources and local private tooling are not web assets.
+harmony/
+.claude/
+.git/

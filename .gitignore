@@ -62,3 +62,9 @@ android/local.properties
 *.jks
 *.keystore
 play-service-account.json
+
+# Local signing identities / private keys (never commit)
+*.p12
+*.pfx
+*.key
+AuthKey_*.p8
