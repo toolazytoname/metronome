@@ -190,7 +190,7 @@ final class MetronomeAudioEngine {
     private func tick() {
         guard scheduler.playing else { return }
         let now = currentPlayerTime()
-        for beat in scheduler.pull(until: now + 0.1) {
+        for beat in scheduler.pull(until: now + 0.1, now: now) {
             schedule(beat)
         }
     }

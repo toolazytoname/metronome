@@ -625,6 +625,44 @@ final class SampleIntegrityTests: XCTestCase {
 }
 
 final class BeatSchedulerTests: XCTestCase {
+    func testLongMainQueueStallDropsExpiredAudioAtEverySupportedTempo() {
+        for bpm in [40, 120, 208] {
+            let clock = BeatScheduler(bpm: bpm)
+            clock.start(at: 0)
+            _ = clock.pull(until: 0.1, now: 0)
+            let recovered = clock.pull(until: 5.1, now: 5)
+            XCTAssertEqual(recovered.count, 1)
+            XCTAssertEqual(recovered.first?.time, 5)
+            XCTAssertEqual(recovered.first?.index, 1)
+            XCTAssertTrue(clock.pull(until: 5.1, now: 5).isEmpty)
+        }
+    }
+
+    func testNonFiniteHorizonDoesNotAdvanceClock() {
+        let clock = BeatScheduler()
+        clock.start(at: 0)
+        XCTAssertTrue(clock.pull(until: .infinity).isEmpty)
+        XCTAssertTrue(clock.pull(until: .nan).isEmpty)
+        XCTAssertEqual(clock.nextNoteTime, 0.02)
+    }
+
+    func testSixtySecondsAtTempoDoesNotDriftOrDuplicate() {
+        for bpm in [40, 120, 208] {
+            let clock = BeatScheduler(bpm: bpm)
+            clock.start(at: 0)
+            var beats: [ScheduledBeat] = []
+            for step in 0..<2400 {
+                let now = Double(step) * 0.025
+                beats += clock.pull(until: min(60, now + 0.1), now: now)
+            }
+            XCTAssertEqual(beats.count, bpm)
+            for (index, beat) in beats.enumerated() {
+                XCTAssertEqual(beat.time, 0.02 + Double(index) * 60 / Double(bpm), accuracy: 1e-8)
+                XCTAssertEqual(beat.index, index % 4)
+            }
+        }
+    }
+
     func testLiveBpmChangeDoesNotInsertExtraBeat() {
         let clock = BeatScheduler(bpm: 60, beatsPerBar: 4)
         clock.start(at: 0)

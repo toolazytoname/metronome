@@ -41,17 +41,23 @@ final class MetronomeModel: ObservableObject {
             await self?.refreshEntitlement()
         }
         applyAudioSettings()
-        audio.setOnBeat { [weak self] beat in
+        audio.setOnBeat { [weak self, weak audio = self.audio] beat in
+            guard let audio else { return }
+            let run = audio.scheduler.currentRunId
             Task { @MainActor in
-                self?.activeBeat = beat
+                guard let self, self.playing, audio.scheduler.isLiveRun(run) else { return }
+                self.activeBeat = beat
             }
         }
         audio.onHaptic = { [weak self] beat in
             self?.haptics.tick(strong: beat == 0)
         }
-        audio.onInterrupted = { [weak self] in
+        audio.onInterrupted = { [weak self, weak audio = self.audio] in
+            guard let audio else { return }
+            let interruptedRun = audio.scheduler.currentRunId
             Task { @MainActor in
-                guard let self, self.playing else { return }
+                guard let self, self.playing,
+                      audio.scheduler.currentRunId == interruptedRun else { return }
                 self.audio.stop()
                 self.playing = false
                 self.activeBeat = -1

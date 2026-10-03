@@ -5,7 +5,7 @@ protocol StoreAdapter: AnyObject {
     func productPrice() async -> String?
     func purchase() async throws
     func restore() async throws
-    func setEntitlementObserver(_ observer: (@MainActor () async -> Void)?)
+    @MainActor func setEntitlementObserver(_ observer: (@MainActor () async -> Void)?)
 }
 
 struct EntitlementSnapshot: Equatable {

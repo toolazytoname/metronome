@@ -52,9 +52,14 @@ final class BeatScheduler {
     /// Schedule every beat whose audio time is strictly before `horizon`.
     /// Does not insert an extra beat when BPM changes.
     @discardableResult
-    func pull(until horizon: Double) -> [ScheduledBeat] {
+    func pull(until horizon: Double, now: Double? = nil) -> [ScheduledBeat] {
         var out: [ScheduledBeat] = []
-        guard playing else { return out }
+        guard playing, horizon.isFinite else { return out }
+        if let now, now.isFinite,
+           nextNoteTime < now - MetronomePolicy.intervalSeconds(bpm: bpm) {
+            // A blocked main queue must not enqueue seconds of expired audio.
+            nextNoteTime = now
+        }
         while nextNoteTime < horizon {
             out.append(ScheduledBeat(index: beatIndex, time: nextNoteTime))
             nextNoteTime += MetronomePolicy.intervalSeconds(bpm: bpm)
