@@ -12,7 +12,7 @@
  */
 import worker, { ThreadWorkerGlobalScope, MessageEvents } from '@ohos.worker';
 import audio from '@ohos.multimedia.audio';
-import { BeatScheduler, MetronomePolicy, PcmMixer, SampleVoice } from './Policy';
+import { BeatScheduler, MetronomePolicy, PcmMixer } from './Policy';
 import { Wav } from './Wav';
 
 const port: ThreadWorkerGlobalScope = worker.workerPort;
@@ -36,16 +36,32 @@ let mode: string = 'uniform';
 let lang: string = 'zh';
 let volume = 0.85;
 let running = false;
+let generation = 0;
+let runTask: Promise<void> = Promise.resolve();
 
 function ready(): boolean {
-  return samples.has('click-strong') && samples.has('click-weak') && samples.has('click-uniform');
+  const keys = ['click-strong', 'click-weak', 'click-uniform'];
+  for (const l of ['zh', 'en']) {
+    for (let i = 1; i <= 16; i++) {
+      keys.push(`voice/${l}/${i < 10 ? '0' + i : i}`);
+    }
+  }
+  return keys.every((key: string) => {
+    const pcm = samples.get(key);
+    return pcm !== undefined && pcm.length > 0;
+  });
+}
+
+function isLive(token: number): boolean {
+  return running && generation === token;
 }
 
 function post(msg: object): void {
   port.postMessage(msg);
 }
 
-async function runLoop(): Promise<void> {
+async function runLoop(token: number, requestId: number): Promise<void> {
+  if (!isLive(token)) return;
   const renderer = await audio.createAudioRenderer({
     streamInfo: {
       samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_44100,
@@ -59,14 +75,18 @@ async function runLoop(): Promise<void> {
       rendererFlags: 0
     }
   });
-  await renderer.start();
   const buf = new ArrayBuffer(CHUNK * 2);
   const view = new Int16Array(buf);
   const active: ActiveVoice[] = [];
   const pending: PendingBeat[] = [];
   let framesWritten = 0;
   try {
-    while (running) {
+    if (!isLive(token)) return;
+    await renderer.start();
+    if (!isLive(token)) return;
+    scheduler.start(0.0);
+    post({ t: 'started', id: requestId });
+    while (isLive(token)) {
       const chunkOrigin = framesWritten;
       const chunkEnd = framesWritten + CHUNK;
       const horizon = chunkEnd / SAMPLE_RATE + 0.05;
@@ -100,19 +120,25 @@ async function runLoop(): Promise<void> {
       for (let i = pending.length - 1; i >= 0; i--) {
         const b = pending[i];
         if (b.origin >= chunkOrigin && b.origin < chunkEnd) {
-          post({ t: 'beat', index: b.index });
+          post({ t: 'beat', index: b.index, id: requestId });
           pending.splice(i, 1);
         }
       }
-      await renderer.write(buf);
-      framesWritten += CHUNK;
+      let offset = 0;
+      while (offset < buf.byteLength && isLive(token)) {
+        const remaining = buf.byteLength - offset;
+        const wrote = await renderer.write(offset === 0 ? buf : buf.slice(offset));
+        if (!isLive(token)) return;
+        if (!Number.isInteger(wrote) || wrote <= 0 || wrote > remaining || wrote % 2 !== 0) {
+          throw new Error('AudioRenderer write failed');
+        }
+        offset += wrote;
+        framesWritten += wrote / 2;
+      }
     }
   } finally {
-    try {
-      await renderer.stop();
-      await renderer.release();
-    } catch (_) {
-    }
+    try { await renderer.stop(); } catch (_) {}
+    try { await renderer.release(); } catch (_) {}
   }
 }
 
@@ -125,12 +151,11 @@ port.onmessage = (e: MessageEvents) => {
     const pcm = Wav.parseInto(new Uint8Array(data));
     if (pcm !== null && pcm.length > 0) {
       samples.set(name, pcm);
-      if (!ready()) {
-        post({ t: 'ready', ok: false });
-      } else {
-        post({ t: 'ready', ok: true });
-      }
     }
+    return;
+  }
+  if (t === 'samplesDone') {
+    post({ t: 'ready', ok: ready(), id: m['id'] });
     return;
   }
   if (t === 'config') {
@@ -151,21 +176,27 @@ port.onmessage = (e: MessageEvents) => {
     return;
   }
   if (t === 'start') {
-    if (running || !ready()) {
-      return; // 可重入：连点不开两个钟；未就绪不假响
+    if (running) return;
+    const requestId = m['id'] as number;
+    if (!ready()) {
+      post({ t: 'died', reason: 'samples', id: requestId });
+      return;
     }
     running = true;
-    scheduler.start(0.0);
-    runLoop().catch((err: Error) => {
+    const token = ++generation;
+    // Serialize renderer ownership: a new run waits for the previous finally
+    // block, but never inherits its scheduler progress or failure callbacks.
+    runTask = runTask.then(() => runLoop(token, requestId)).catch((err: Error) => {
+      if (!isLive(token)) return;
       running = false;
       scheduler.stop();
-      post({ t: 'died', reason: err.message ?? 'audio' });
+      post({ t: 'died', reason: err.message, id: requestId });
     });
     return;
   }
   if (t === 'stop') {
+    generation += 1;
     running = false;
     scheduler.stop();
-    return;
   }
 };

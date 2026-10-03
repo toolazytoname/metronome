@@ -52,6 +52,7 @@ struct Index {
   @State haptic: boolean = false;
   @State keepAwake: boolean = true;
   @State playing: boolean = false;
+  @State starting: boolean = false;
   @State activeBeat: number = -1;
   @State samplesReady: boolean = false;
   @State loadFailed: boolean = false;
@@ -65,16 +66,25 @@ struct Index {
   private totalSamples = 0;
   private prefsStore: dataPreferences.Preferences | null = null;
   private bgTaskOn = false;
+  private lifecycle = 0;
+  private loadGeneration = 0;
+  private playGeneration = 0;
+  private wantedBackground = false;
+  private backgroundQueue: Promise<void> = Promise.resolve();
+  private screenQueue: Promise<void> = Promise.resolve();
+  private saveQueue: Promise<void> = Promise.resolve();
 
   t(key: string): string {
     return Copy.t(this.lang, key);
   }
 
   aboutToAppear(): void {
-    this.init();
+    this.init(++this.lifecycle);
   }
 
   aboutToDisappear(): void {
+    this.lifecycle += 1;
+    this.loadGeneration += 1;
     this.stopClock();
     if (this.clock !== null) {
       this.clock.terminate();
@@ -82,11 +92,12 @@ struct Index {
     }
   }
 
-  private async init(): Promise<void> {
+  private async init(lifecycle: number): Promise<void> {
     const ui = this.getUIContext();
     const context = ui.getHostContext()!;
     try {
       this.prefsStore = await dataPreferences.getPreferences(context, 'metronome_store');
+      if (lifecycle !== this.lifecycle) return;
       const raw = this.prefsStore.getSync('metronome', '') as string;
       const prefs = MetronomePrefs.fromRecord(raw === '' ? {} : JSON.parse(raw) as Record<string, Object>);
       if (raw === '') {
@@ -94,7 +105,10 @@ struct Index {
       }
       this.applyPrefs(prefs);
     } catch (_) {
-      this.applyPrefs(new MetronomePrefs());
+      if (lifecycle !== this.lifecycle) return;
+      const defaults = new MetronomePrefs();
+      defaults.lang = i18n.System.getSystemLanguage().startsWith('zh') ? 'zh' : 'en';
+      this.applyPrefs(defaults);
     }
     try {
       const info = await bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_BASE_INFO);
@@ -102,6 +116,7 @@ struct Index {
     } catch (_) {
       this.versionName = '';
     }
+    if (lifecycle !== this.lifecycle) return;
     this.startWorkerAndLoad();
     this.pushConfig();
   }
@@ -134,46 +149,58 @@ struct Index {
     if (this.prefsStore === null) {
       return;
     }
-    this.prefsStore.put('metronome', JSON.stringify(this.prefsObject().toRecord()));
+    const store = this.prefsStore;
+    const snapshot = JSON.stringify(this.prefsObject().toRecord());
+    this.saveQueue = this.saveQueue.then(async () => {
+      await store.put('metronome', snapshot);
+      await store.flush();
+    }).catch(() => {});
   }
 
   private startWorkerAndLoad(): void {
     if (this.clock === null) {
       this.clock = new worker.ThreadWorker('entry/ets/engine/ClockWorker.ets');
+      const owner = this.clock;
       this.clock.onmessage = (e) => {
+        if (this.clock !== owner) return;
         const m = e.data as Record<string, Object>;
         const t = m['t'] as string;
+        const id = m['id'] as number;
         if (t === 'ready') {
-          const ok = m['ok'] as boolean;
-          if (ok) {
-            this.samplesReady = true;
-            this.loadFailed = false;
-            this.loading = false;
-          } else if (this.sentSamples >= this.totalSamples) {
-            this.loading = false;
-            this.loadFailed = true;
-          }
-        } else if (t === 'beat') {
-          this.activeBeat = m['index'] as number;
-          if (this.haptic) {
-            this.pulse(m['index'] as number === 0);
-          }
-        } else if (t === 'died') {
-          this.playing = false;
-          this.activeBeat = -1;
+          if (id !== this.loadGeneration) return;
+          this.samplesReady = m['ok'] as boolean;
+          this.loadFailed = !this.samplesReady;
           this.loading = false;
-          this.message = this.t('play_error');
-          this.setKeepScreen(false);
-          this.stopBgTask();
+          this.message = this.samplesReady ? '' : this.t('play_error');
+        } else if (id === this.playGeneration) {
+          if (t === 'started' && this.starting) {
+            this.starting = false;
+            this.playing = true;
+            this.message = '';
+            this.startBgTask();
+            this.setKeepScreen(this.keepAwake);
+          } else if (t === 'beat' && this.playing) {
+            this.activeBeat = m['index'] as number;
+            if (this.haptic) this.pulse(m['index'] as number === 0);
+          } else if (t === 'died') {
+            this.stopClock();
+            this.message = this.t('play_error');
+          }
         }
       };
       this.clock.onerror = () => {
-        this.playing = false;
-        this.activeBeat = -1;
+        if (this.clock !== owner) return;
+        this.stopClock();
+        owner.terminate();
+        this.clock = null;
+        this.samplesReady = false;
+        this.loadFailed = true;
+        this.loading = false;
         this.message = this.t('play_error');
-        this.stopBgTask();
       };
     }
+    const loadId = ++this.loadGeneration;
+    this.samplesReady = false;
     this.loading = true;
     this.loadFailed = false;
     this.sentSamples = 0;
@@ -188,23 +215,20 @@ struct Index {
     const context = ui.getHostContext()!;
     for (const n of names) {
       context.resourceManager.getRawFileContent(`sounds/${n}.wav`).then((bytes: Uint8Array) => {
-        if (this.clock === null) {
-          return;
-        }
+        if (this.clock === null || loadId !== this.loadGeneration) return;
         const copyBuf = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(copyBuf).set(bytes);
         const msg: Record<string, Object> = { t: 'sample', name: n, data: copyBuf };
         this.clock.postMessage(msg, [copyBuf]);
         this.sentSamples += 1;
-        if (this.sentSamples >= this.totalSamples && !this.samplesReady) {
-          this.loading = false;
-          this.loadFailed = true;
+        if (this.sentSamples >= this.totalSamples) {
+          this.clock?.postMessage({ t: 'samplesDone', id: loadId } as Record<string, Object>);
         }
       }).catch(() => {
+        if (this.clock === null || loadId !== this.loadGeneration) return;
         this.sentSamples += 1;
-        if (this.sentSamples >= this.totalSamples && !this.samplesReady) {
-          this.loading = false;
-          this.loadFailed = true;
+        if (this.sentSamples >= this.totalSamples) {
+          this.clock?.postMessage({ t: 'samplesDone', id: loadId } as Record<string, Object>);
         }
       });
     }
@@ -222,33 +246,32 @@ struct Index {
   }
 
   private toggle(): void {
-    if (this.playing) {
+    if (this.playing || this.starting) {
       this.stopClock();
-      return;
-    }
-    if (this.loadFailed || !this.samplesReady) {
-      this.message = this.t('play_error');
-      if (this.loadFailed) {
-        this.startWorkerAndLoad();
-      }
       return;
     }
     if (this.loading) {
       this.message = this.t('samples_loading');
       return;
     }
+    if (this.loadFailed || !this.samplesReady) {
+      this.message = this.t('play_error');
+      this.startWorkerAndLoad();
+      return;
+    }
     this.pushConfig();
-    this.clock?.postMessage({ t: 'start' } as Record<string, Object>);
-    this.playing = true;
-    this.message = '';
-    this.startBgTask();
-    this.setKeepScreen(this.keepAwake);
+    this.starting = true;
+    this.message = this.t('samples_loading');
+    this.clock?.postMessage({ t: 'start', id: ++this.playGeneration } as Record<string, Object>);
   }
 
   private stopClock(): void {
+    this.playGeneration += 1;
     this.clock?.postMessage({ t: 'stop' } as Record<string, Object>);
+    this.starting = false;
     this.playing = false;
     this.activeBeat = -1;
+    this.message = '';
     this.setKeepScreen(false);
     this.stopBgTask();
   }
@@ -265,39 +288,30 @@ struct Index {
   }
 
   private setKeepScreen(on: boolean): void {
-    const ui = this.getUIContext();
-    const context = ui.getHostContext()!;
-    window.getLastWindow(context).then((w) => {
-      w.setWindowKeepScreenOn(on);
-    }).catch((_e: BusinessError) => {
-    });
+    const context = this.getUIContext().getHostContext()!;
+    this.screenQueue = this.screenQueue.then(async () => {
+      const w = await window.getLastWindow(context);
+      await w.setWindowKeepScreenOn(on);
+    }).catch(() => {});
   }
 
-  private startBgTask(): void {
-    const ui = this.getUIContext();
-    const context = ui.getHostContext()!;
-    try {
-      const r = backgroundTaskManager.startBackgroundRunning(context,
-        backgroundTaskManager.BackgroundMode.AUDIO_PLAYBACK);
-      r.then(() => {
+  private startBgTask(): void { this.updateBgTask(true); }
+  private stopBgTask(): void { this.updateBgTask(false); }
+
+  private updateBgTask(on: boolean): void {
+    this.wantedBackground = on;
+    const context = this.getUIContext().getHostContext()!;
+    this.backgroundQueue = this.backgroundQueue.then(async () => {
+      if (this.wantedBackground === this.bgTaskOn) return;
+      if (this.wantedBackground) {
+        await backgroundTaskManager.startBackgroundRunning(context,
+          backgroundTaskManager.BackgroundMode.AUDIO_PLAYBACK);
         this.bgTaskOn = true;
-      }).catch((_e: BusinessError) => {
-      });
-    } catch (_) {
-    }
-  }
-
-  private stopBgTask(): void {
-    if (!this.bgTaskOn) {
-      return;
-    }
-    const ui = this.getUIContext();
-    const context = ui.getHostContext()!;
-    try {
-      backgroundTaskManager.stopBackgroundRunning(context);
-    } catch (_) {
-    }
-    this.bgTaskOn = false;
+      } else {
+        await backgroundTaskManager.stopBackgroundRunning(context);
+        this.bgTaskOn = false;
+      }
+    }).catch(() => {});
   }
 
   private openUrl(path: string): void {
@@ -504,7 +518,7 @@ struct Index {
         .padding({ left: 16, right: 16, top: 26 })
 
         // 播放
-        Text(this.playing ? '⏸' : '▶')
+        Text(this.starting ? '…' : (this.playing ? '⏸' : '▶'))
           .fontSize(34)
           .fontColor('#FFFFFF')
           .textAlign(TextAlign.Center)

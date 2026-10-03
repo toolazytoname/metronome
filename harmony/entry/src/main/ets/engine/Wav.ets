@@ -1,49 +1,51 @@
-/**
- * 极简 WAV 解析：只接受 PCM(1) / mono / 我们同步脚本产出的 44.1k s16le。
- * 同步脚本（harmony/sync-sounds.sh）保证格式，这里只做健壮的 chunk 遍历。
- */
+/** Accept only complete RIFF PCM / mono / 44.1 kHz / signed 16-bit samples. */
 export class Wav {
   static parseInto(bytes: Uint8Array): Int16Array | null {
     if (bytes.length < 44) {
       return null;
     }
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     const tag = (off: number): string => String.fromCharCode(bytes[off], bytes[off + 1], bytes[off + 2], bytes[off + 3]);
     if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') {
       return null;
     }
+    const end = view.getUint32(4, true) + 8;
+    if (end > bytes.length || end < 44) {
+      return null;
+    }
     let off = 12;
+    let hasFormat = false;
     let dataOff = -1;
     let dataLen = 0;
-    let audioFormat = 1;
-    let channels = 1;
-    let rate = 44100;
-    while (off + 8 <= bytes.length) {
+    while (off + 8 <= end) {
       const id = tag(off);
-      const size = bytes[off + 4] | (bytes[off + 5] << 8) | (bytes[off + 6] << 16) | (bytes[off + 7] << 24);
+      // RIFF sizes are unsigned; signed bitwise parsing can move off backwards
+      // and hang the worker on a malformed chunk.
+      const size = view.getUint32(off + 4, true);
       const body = off + 8;
-      if (id === 'fmt ' && size >= 16) {
-        audioFormat = bytes[body] | (bytes[body + 1] << 8);
-        channels = bytes[body + 2] | (bytes[body + 3] << 8);
-        rate = bytes[body + 4] | (bytes[body + 5] << 8) | (bytes[body + 6] << 16) | (bytes[body + 7] << 24);
+      if (size > end - body || body + size + (size % 2) > end) {
+        return null;
+      }
+      if (id === 'fmt ') {
+        if (size < 16 || view.getUint16(body, true) !== 1 ||
+          view.getUint16(body + 2, true) !== 1 || view.getUint32(body + 4, true) !== 44100 ||
+          view.getUint32(body + 8, true) !== 88200 || view.getUint16(body + 12, true) !== 2 ||
+          view.getUint16(body + 14, true) !== 16) {
+          return null;
+        }
+        hasFormat = true;
       } else if (id === 'data') {
         dataOff = body;
-        dataLen = Math.min(size, bytes.length - body);
+        dataLen = size;
       }
       off = body + size + (size % 2);
     }
-    if (dataOff < 0 || audioFormat !== 1 || channels !== 1 || rate !== 44100 || dataLen < 2) {
+    if (off !== end || !hasFormat || dataOff < 0 || dataLen < 2 || dataLen % 2 !== 0) {
       return null;
     }
-    const frames = Math.floor(dataLen / 2);
-    const out = new Int16Array(frames);
-    for (let i = 0; i < frames; i++) {
-      const lo = bytes[dataOff + i * 2];
-      const hi = bytes[dataOff + i * 2 + 1];
-      let v = (hi << 8) | (lo & 0xff);
-      if (v >= 0x8000) {
-        v -= 0x10000;
-      }
-      out[i] = v;
+    const out = new Int16Array(dataLen / 2);
+    for (let i = 0; i < out.length; i++) {
+      out[i] = view.getInt16(dataOff + i * 2, true);
     }
     return out;
   }
