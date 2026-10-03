@@ -47,15 +47,17 @@ Web 现实现（`js/engine.js`）：
 - `LOOKAHEAD_MS = 25`
 - `SCHEDULE_AHEAD = 0.1`
 - `src.start(time)` 用 `AudioContext.currentTime`
-- 采样 fetch 有截止时间（默认 8s）；超时当失败，合成 click 回退。`stop()` 取消已预约音源
+- 采样 fetch 与 AudioContext resume 均有截止时间（默认 8s）；采样超时回退合成 click，resume 失败提示重试。`stop()` 取消已预约音源；重载使用代次隔离，旧解码不得覆盖当前缓冲区。
 
 小程序现实现：`_nextAt` 绝对时刻 + `setTimeout`。切后台必须 `stop`（平台限制）。播放中改 BPM 只改**下一拍**间隔，不重启、不插拍。若回调时已经落后超过一个间隔：只打当前这一拍，然后将 `_nextAt` 设为 `now + interval`，**丢弃过期拍，禁止 delay=0 循环补发**。BPM 输入必须是完整有限整数；非法值忽略。
 
-Web 现实现另加：若 `nextNoteTime` 已落后 `currentTime` 超过一个间隔，把 `nextNoteTime` 拨到 `currentTime` 再按 `SCHEDULE_AHEAD` 预约，**不把积压的过期拍一次排完**。改 BPM 仍只影响下一拍间隔。iOS / Android 仍走音频时间线预约，不在此改语义。
+Web 现实现另加：若 `nextNoteTime` 已落后 `currentTime` 超过一个间隔，把 `nextNoteTime` 拨到 `currentTime` 再按 `SCHEDULE_AHEAD` 预约，**不把积压的过期拍一次排完**。改 BPM 仍只影响下一拍间隔。iOS / Android 仍走音频时间线预约。iOS 主队列阻塞超过一个拍间隔后，同样丢弃过期拍并从当前 player time 恢复；不把积压音频一次补发，正常改 BPM 不插拍。
 
 iOS：`AVAudioEngine` + `scheduleBuffer`；`AVAudioSession.category = .playback`。禁止录音类别，不要申请麦克风。
 
 Android：音频线程填 `AudioTrack` / AAudio；UI 进程用前台 Service 保活。禁止 `Handler.postDelayed` 当拍钟。
+
+Android / 鸿蒙必须等齐 35 个免费采样（3 个 click + 中英各 16 个数拍）。加载失败可重试。每次播放使用独立运行代次 / 线程状态，旧任务不能在暂停后复活或污染新一轮；音频创建、启动、写入失败须停止并清理资源。短写只推进已写入帧；零/负写入视为失败，禁止忙循环。鸿蒙 UI 等 worker 的当前代次 `started` 确认后才显示正在播放，采样通过 `samplesDone` 后的 `ready` 确认就绪，不把「发送到 worker」当作「解码完成」。
 
 ## 三种模式
 
@@ -116,3 +118,10 @@ isSoundPackUnlocked() -> bool
 - 播放中拖 BPM，没有「额外一拍」
 - `voice` 在 208 BPM 不互相重叠到听不清（上限就是为这个设的）
 - 采样缺失时 Web 仍能合成 click
+
+### Web 运行中故障与恢复（2026-10-02）
+
+- `onstatechange` 和 lookahead tick 监测音频状态；运行中非 running、音频时间超过 3 秒无进展、调度异常统一停止、取消 sources / visuals，并通知 UI 释放亮屏及显示错误。此检测不是另起拍钟，也不自动恢复出声。
+- 重试 / 诊断重置销毁旧 context，清空采样并作废加载与播放代次；重试由用户手势重新启动，诊断重置保持暂停。旧 resume、解码和 tick 不得修改新一轮。
+- `js/diagnostics.js` 先于 prefs / engine 加载。固定事件码 + 字段白名单，最多 80 条 / 24h，本机存储不可用时退回内存。版本、系统类别、浏览器大版本随主动导出返回；不采集完整 URL、异常原文/堆栈或用户标识，不发送诊断请求。可查看、复制、清除；剪贴板失败时手动复制。
+- 调度测试覆盖异常 / interruption / stalled clock / closed context / reset 中迟到 resume；页面测试覆盖同步初始化异常与重试 UI。自动测试不能证明具体用户的历史故障根因或设备真的发声。
