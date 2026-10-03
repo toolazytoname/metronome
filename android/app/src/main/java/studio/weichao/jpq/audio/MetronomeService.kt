@@ -11,6 +11,9 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import studio.weichao.jpq.LocalDiagnostics
+import studio.weichao.jpq.policy.DiagnosticCode
+import studio.weichao.jpq.policy.DiagnosticState
 import studio.weichao.jpq.MainActivity
 import studio.weichao.jpq.MetronomeApp
 import studio.weichao.jpq.R
@@ -40,6 +43,7 @@ class MetronomeService : Service() {
     private var focusRequest: AudioFocusRequest? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            diagnostic(DiagnosticCode.audioInterrupted)
             stopPlayback()
             notifyStopped()
         }
@@ -49,6 +53,7 @@ class MetronomeService : Service() {
         super.onCreate()
         clock = AudioTrackClock(assets)
         clock.onError = {
+            diagnostic(DiagnosticCode.playFailed)
             playbackFailed = true
             stopPlayback()
             notifyStopped()
@@ -86,13 +91,22 @@ class MetronomeService : Service() {
         if (!stopped) postNotification()
     }
 
+    private fun diagnostic(code: DiagnosticCode) {
+        LocalDiagnostics.record(this, code, DiagnosticState(
+            clock.scheduler.bpm, clock.scheduler.beatsPerBar, clock.mode, isPlaying(), clock.ready
+        ))
+    }
+
     fun samplesReady(): Boolean = clock.ready
 
     fun prepareSamples() {
         if (clock.ready || !loading.compareAndSet(false, true)) return
         thread(name = "metro-sample-loader", isDaemon = true) {
             try { clock.load() } catch (_: Exception) { /* Play exposes the failure and retries. */ }
-            finally { loading.set(false) }
+            finally {
+                LocalDiagnostics.record(this, if (clock.ready) DiagnosticCode.samplesReady else DiagnosticCode.samplesFailed)
+                loading.set(false)
+            }
         }
     }
 
@@ -131,8 +145,10 @@ class MetronomeService : Service() {
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "jpq:metro")
                 .also { it.acquire() }
             clock.start()
+            diagnostic(DiagnosticCode.playReady)
             true
         } catch (_: Exception) {
+            diagnostic(DiagnosticCode.playFailed)
             playbackFailed = true
             stopPlayback()
             false
@@ -140,8 +156,10 @@ class MetronomeService : Service() {
     }
 
     fun stopPlayback() {
+        val wasActive = !stopped
         stopped = true
         clock.stop()
+        if (wasActive) diagnostic(DiagnosticCode.paused)
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         releaseFocus()

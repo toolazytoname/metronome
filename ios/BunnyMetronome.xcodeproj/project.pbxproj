@@ -18,6 +18,10 @@
 		S05 /* MetronomePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomePolicy.swift; sourceTree = "<group>"; };
 		S06 /* BeatScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatScheduler.swift; sourceTree = "<group>"; };
 		S07 /* MetronomeAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetronomeAudioEngine.swift; sourceTree = "<group>"; };
+		S16 /* LocalDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDiagnostics.swift; sourceTree = "<group>"; };
+		S17 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+		B16 /* LocalDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = S16; };
+		B17 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S17; };
 		S15 /* SampleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleStore.swift; sourceTree = "<group>"; };
 		S12 /* BufferGain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BufferGain.swift; sourceTree = "<group>"; };
 		S08 /* StoreAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreAdapter.swift; sourceTree = "<group>"; };
@@ -84,6 +88,7 @@
 				S01 /* BunnyMetronomeApp.swift */,
 				S13 /* AppAnalytics.swift */,
 				S02 /* ContentView.swift */,
+                S17 /* DiagnosticsView.swift */,
 				S03 /* MetronomeModel.swift */,
 				S04 /* Haptics.swift */,
 				GENG /* Engine */,
@@ -108,6 +113,7 @@
 				S07 /* MetronomeAudioEngine.swift */,
 				S12 /* BufferGain.swift */,
 				S15 /* SampleStore.swift */,
+                S16 /* LocalDiagnostics.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -141,7 +147,7 @@
 			sourceTree = "<group>";
 		};
 
-		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B15,); runOnlyForDeploymentPostprocessing = 0; };
+		PAPP /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B01, B13, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B15, B16, B17,); runOnlyForDeploymentPostprocessing = 0; };
 		PTST /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10, B14,); runOnlyForDeploymentPostprocessing = 0; };
 		RAPP /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BA1, BSD, BJ1, BJ2, BPV, BIP, BGS,); runOnlyForDeploymentPostprocessing = 0; };
 		RTST /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };

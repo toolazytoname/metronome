@@ -15,6 +15,7 @@ let package = Package(
                 "BunnyMetronomeApp.swift",
                 "AppAnalytics.swift",
                 "ContentView.swift",
+                "DiagnosticsView.swift",
                 "MetronomeModel.swift",
                 "Haptics.swift",
                 "Engine/MetronomeAudioEngine.swift",

@@ -74,5 +74,19 @@
   "app_version": "Version %s",
   "samples_degraded": "Some samples missing; using default sounds",
   "haptics_unsupported": "No haptic hardware on this device; haptic options have no effect here.",
-  "samples_loading": "Loading sounds…"
+  "samples_loading": "Loading sounds…",
+  "diagnostics": "Diagnostics & feedback",
+  "diagnostic_help": "Logs stay on this device: up to 80 events for 24 hours, never auto-uploaded. Send to lazywc@gmail.com. Sharing apps may omit the recipient; please check it. Opening mail/share does not confirm delivery. Do not include passwords or sensitive personal information.",
+  "diagnostic_note": "What happened? (optional, up to 1200 characters)",
+  "diagnostic_send": "Send diagnostics",
+  "diagnostic_copy": "Copy diagnostics",
+  "diagnostic_clear": "Clear diagnostics",
+  "diagnostic_copied": "Diagnostics copied",
+  "diagnostic_cleared": "Local logs and note cleared",
+  "diagnostic_handoff": "Mail or sharing requested. Check the recipient and confirm sending; delivery is not confirmed.",
+  "diagnostic_cancelled": "Sending cancelled",
+  "diagnostic_failed": "Diagnostic action could not complete. Try again, or copy the report to contact support.",
+  "diagnostic_preview": "Diagnostic report",
+  "diagnostic_close": "Close",
+  "diagnostic_refresh": "Refresh logs"
 }

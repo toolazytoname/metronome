@@ -37,6 +37,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -113,7 +114,8 @@ data class MacaronCallbacks(
     val onSupport: () -> Unit,
     val onPrivacy: () -> Unit,
     val onOpenSettings: () -> Unit,
-    val onCloseSettings: () -> Unit
+    val onCloseSettings: () -> Unit,
+    val onDiagnostics: () -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -515,7 +517,10 @@ private fun SettingsSheet(
                     Text(cb.t("privacy"), color = Palette.coral, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                 }
             }
-            val versionLabel = AppCopy.versionLine(cb.t, BuildConfig.VERSION_NAME)
+            TextButton(onClick = cb.onDiagnostics, modifier = Modifier.fillMaxWidth()) {
+                Text(cb.t("diagnostics"))
+            }
+            val versionLabel = AppCopy.versionLine(cb.t, "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             Text(
                 versionLabel,
                 color = Palette.muted,

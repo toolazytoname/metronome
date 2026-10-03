@@ -139,3 +139,12 @@ isSoundPackUnlocked() -> bool
 - 白名单快照新增 `scheduledBeat` / `renderedBeat`（-1 表示无活动拍，其他为 0-based）、`visualUpdates`（本轮最多计 65535）、`visualAgeMs`（距上次回调成功，最多 60000）、`visualNodes` 和 `uiPlaying`；不增加每拍落盘。这些字段反映逻辑与 DOM 更新，不证明浏览器屏幕合成正常。
 - `play_ready` 在清除加载态后记录，`paused` 在停止引擎后记录，避免旧版日志中 ready 却 loading、paused 却 playing 的歧义。
 - 验证记录见 [[web-visual-2026-10-03]]（`docs/audits/web-visual-2026-10-03.md`）。
+
+### 原生本机诊断（2026-10-03）
+
+- iOS 与 Android（Play / CN）设置提供「诊断与反馈」、动态版本与构建号，支持预览、刷新、可选描述、复制、清除与主动发送。
+- Typed event/state 白名单只含播放和生命周期技术状态；保存最近 80 条、24 小时。iOS Caches、Android noBackupFilesDir；串行后台队列与原子写。读取/报告时删除过期或未来事件；安装版本/构建变化（Android 同时包含渠道）后不恢复旧版本历史。
+- iOS 预览/清除通过异步 continuation 排到日志队列；Android 在 IO dispatcher 等待串行 worker（最多 2 秒）。记录失败不得阻断播放、暂停和 Service 清理；清除持久化失败不显示成功。
+- 用户描述只在页面内存保留，最多 1200 字，不写事件文件。发送冻结已预览文本，不截断 JSON；不录音、不读账号/IAP/设备标识、不新建网络上报接口。
+- iOS 优先 MFMailComposeViewController 指定邮箱，无配置账户则 UIActivityViewController；Android ACTION_SEND + EXTRA_EMAIL 并在正文保留邮箱。分享应用可能忽略邮件字段，提示用户确认收件人。调用成功不等于收到邮件；取消不提示送达。
+- 没有新增后台保活策略或故障自动重播。iOS / Android 商店版本号此次未变更，尚未上传新的商店包。完整验证与限制见 [[native-diagnostics-2026-10-03]]。

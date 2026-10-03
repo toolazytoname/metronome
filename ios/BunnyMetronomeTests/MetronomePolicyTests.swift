@@ -687,3 +687,74 @@ private func XCTAssertEqual(_ a: [Double], _ b: [Double], accuracy: Double, file
         XCTAssertEqual(x, y, accuracy: accuracy, file: file, line: line)
     }
 }
+
+final class DiagnosticHistoryTests: XCTestCase {
+    private let state = DiagnosticState(bpm: 120, beats: 4, mode: .uniform, playing: false, ready: true)
+    private func report(_ store: LocalDiagnostics) async -> [String: Any] {
+        let text = await store.report(version: "2.1.test", build: "99", osMajor: 26, state: state)
+        return (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any] ?? [:]
+    }
+    func testCapacityRetentionAndFutureEvents() {
+        var history = DiagnosticHistory()
+        let now = Date(timeIntervalSince1970: 200_000)
+        for i in 0..<100 { history.record(.playReady, state: state, now: now.addingTimeInterval(Double(i))) }
+        XCTAssertEqual(history.events.count, 80)
+        XCTAssertEqual(history.events.first?.at, now.addingTimeInterval(20))
+        history.restore([
+            DiagnosticEvent(at: now.addingTimeInterval(-86400), code: .paused, state: state),
+            DiagnosticEvent(at: now.addingTimeInterval(-86399), code: .playReady, state: state),
+            DiagnosticEvent(at: now.addingTimeInterval(1), code: .playFailed, state: state)
+        ], now: now)
+        XCTAssertEqual(history.events.map(\.code), [.playReady])
+    }
+    func testDecodingNormalizesStateAndDropsUnknownFields() throws {
+        let raw = #"{"bpm":999,"beats":-1,"mode":"uniform","playing":true,"ready":false,"url":"SECRET"}"#
+        let decoded = try JSONDecoder().decode(DiagnosticState.self, from: Data(raw.utf8))
+        var history = DiagnosticHistory()
+        history.record(.playReady, state: decoded, now: Date())
+        XCTAssertEqual(history.events.first?.state?.bpm, 208)
+        XCTAssertEqual(history.events.first?.state?.beats, 1)
+        let text = String(data: try JSONEncoder().encode(history.events), encoding: .utf8)!
+        XCTAssertFalse(text.contains("SECRET"))
+        XCTAssertThrowsError(try JSONDecoder().decode(DiagnosticCode.self, from: Data(#""raw_exception""#.utf8)))
+    }
+    func testMemoryFallbackFIFOAndClear() async {
+        let store = LocalDiagnostics(directory: nil)
+        for _ in 0..<100 { store.record(.playReady, state: state) }
+        let before = await report(store)
+        XCTAssertEqual((before["events"] as? [Any])?.count, 80)
+        XCTAssertEqual(before["version"] as? String, "2.1.test")
+        await store.clear()
+        let after = await report(store)
+        XCTAssertEqual((after["events"] as? [Any])?.count, 0)
+    }
+    func testDiskRoundTripCorruptionAndBuildIsolation() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let first = LocalDiagnostics(directory: dir, release: "1")
+        first.record(.appOpen, state: state)
+        _ = await report(first) // FIFO barrier
+        let second = LocalDiagnostics(directory: dir, release: "1")
+        let restored = await report(second)
+        XCTAssertEqual((restored["events"] as? [Any])?.count, 1)
+        let upgraded = LocalDiagnostics(directory: dir, release: "2")
+        let empty = await report(upgraded)
+        XCTAssertEqual((empty["events"] as? [Any])?.count, 0)
+        try Data("broken SECRET".utf8).write(to: dir.appendingPathComponent("metronome-diagnostics-v1.json"))
+        let corrupted = LocalDiagnostics(directory: dir, release: "2")
+        corrupted.record(.paused)
+        let recovered = await report(corrupted)
+        XCTAssertEqual((recovered["events"] as? [Any])?.count, 1)
+        XCTAssertFalse(String(describing: recovered).contains("SECRET"))
+    }
+    func testUnavailableDirectoryNeverBlocksMemoryReport() async {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("absent")
+        let store = LocalDiagnostics(directory: dir)
+        store.record(.samplesFailed)
+        let result = await report(store)
+        XCTAssertEqual((result["events"] as? [Any])?.count, 1)
+        let cleared = await store.clear()
+        XCTAssertFalse(cleared, "must not claim disk cleanup succeeded when writes fail")
+    }
+}

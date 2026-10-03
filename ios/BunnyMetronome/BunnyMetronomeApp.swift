@@ -19,7 +19,8 @@ struct BunnyMetronomeApp: App {
                     if args.contains("-AutoPlay") { model.togglePlay() }
                 }
                 .onChange(of: scenePhase) { phase in
-                    if phase == .active { model.refreshOnForeground() }
+                    if phase == .active { model.recordDiagnostic(.foreground); model.refreshOnForeground() }
+                    if phase == .background { model.recordDiagnostic(.background) }
                 }
         }
     }

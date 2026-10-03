@@ -1,6 +1,8 @@
 package studio.weichao.jpq
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -36,6 +38,9 @@ import studio.weichao.jpq.policy.MetronomePolicy
 import studio.weichao.jpq.policy.MetronomePrefs
 import studio.weichao.jpq.policy.PlaybackBind
 import studio.weichao.jpq.policy.StoreRestoreResult
+import studio.weichao.jpq.policy.DiagnosticCode
+import studio.weichao.jpq.policy.DiagnosticState
+import studio.weichao.jpq.ui.DiagnosticsDialog
 import studio.weichao.jpq.ui.MacaronApp
 import studio.weichao.jpq.ui.MacaronCallbacks
 
@@ -53,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private var storeBusy by mutableStateOf(false)
     private var storeAvailable by mutableStateOf(false)
     private var listenerGen = 0
+    private var diagnosticsOpen by mutableStateOf(false)
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -97,6 +103,7 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = AndroidColor.TRANSPARENT
         prefs = loadPrefs()
         copy = AppCopy.load(assets, prefs.lang)
+        LocalDiagnostics.record(this, DiagnosticCode.appOpen, diagnosticState())
         store = createMarketStore(
             this,
             MarketHooks(
@@ -178,11 +185,52 @@ class MainActivity : ComponentActivity() {
                     onSupport = { openUrl("/support", "/en/support") },
                     onPrivacy = { openUrl("/privacy", "/en/privacy") },
                     onOpenSettings = { settings = true },
-                    onCloseSettings = { settings = false }
+                    onCloseSettings = { settings = false },
+                    onDiagnostics = { diagnosticsOpen = true }
                 )
             )
+            if (diagnosticsOpen) {
+                DiagnosticsDialog(
+                    t = { t(it) },
+                    report = {
+                        val snapshot = diagnosticState()
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            LocalDiagnostics.get(this@MainActivity).report(snapshot)
+                        }
+                    },
+                    clear = {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            LocalDiagnostics.get(this@MainActivity).clear()
+                        }
+                    },
+                    copy = { text ->
+                        try {
+                            (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
+                                .setPrimaryClip(ClipData.newPlainText(t("diagnostics"), text))
+                            true
+                        } catch (_: Exception) { false }
+                    },
+                    send = { text -> sendDiagnostics(text) },
+                    close = { diagnosticsOpen = false }
+                )
+            }
         }
     }
+
+    private fun diagnosticState() = DiagnosticState(
+        prefs.bpm, prefs.bc, prefs.mode, service?.isPlaying() == true, service?.samplesReady() == true
+    )
+
+    private fun sendDiagnostics(text: String): Boolean = try {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf("lazywc@gmail.com"))
+            putExtra(Intent.EXTRA_SUBJECT, "Bunny Metronome Android · ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(intent, t("diagnostic_send")))
+        true // Handoff only; recipient and delivery are controlled by the selected app.
+    } catch (_: Exception) { false }
 
     private fun share() {
         val base = if (prefs.lang == "en") "https://jpq.weichao.studio/en/" else "https://jpq.weichao.studio/"
@@ -196,8 +244,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        LocalDiagnostics.record(this, DiagnosticCode.foreground, diagnosticState())
         refreshEntitlement()
         if (service != null) syncFromService()
+    }
+
+    override fun onStop() {
+        LocalDiagnostics.record(this, DiagnosticCode.background, diagnosticState())
+        super.onStop()
     }
 
     override fun onDestroy() {
@@ -298,7 +352,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun toggle() {
-        val svc = service ?: return
+        val svc = service
+        if (svc?.isPlaying() != true) LocalDiagnostics.record(this, DiagnosticCode.playRequested, diagnosticState())
+        if (svc == null) {
+            storeMessage = t("play_error")
+            LocalDiagnostics.record(this, DiagnosticCode.playFailed, diagnosticState())
+            return
+        }
         applyToService()
         when (PlaybackBind.toggleAction(svc.isPlaying())) {
             PlaybackBind.Toggle.Stop -> {
@@ -309,6 +369,7 @@ class MainActivity : ComponentActivity() {
                 if (!svc.samplesReady()) {
                     svc.prepareSamples()
                     storeMessage = t("play_error")
+                    LocalDiagnostics.record(this, DiagnosticCode.playFailed, diagnosticState())
                     return
                 }
                 val started = try {
@@ -319,6 +380,7 @@ class MainActivity : ComponentActivity() {
                     false
                 }
                 if (!started) {
+                    LocalDiagnostics.record(this, DiagnosticCode.playFailed, diagnosticState())
                     storeMessage = t("play_error")
                     applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
                     return

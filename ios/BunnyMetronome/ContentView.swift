@@ -909,6 +909,12 @@ private struct SettingsPanel: View {
                 }
             }
 
+            DiagnosticsView()
+                .font(.system(size: pad ? 15 : 13))
+            Text(model.t("app_version").replacingOccurrences(of: "%s", with: model.appVersion))
+                .font(.footnote).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+
             HStack(spacing: 20) {
                 Spacer()
                 Link(model.t("support"), destination: model.supportURL())

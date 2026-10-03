@@ -74,5 +74,19 @@
   "app_version": "版本 %s",
   "samples_degraded": "部分采样缺失，已回退默认音色",
   "haptics_unsupported": "此设备没有震动马达，震动选项在此设备上无效",
-  "samples_loading": "正在加载音色…"
+  "samples_loading": "正在加载音色…",
+  "diagnostics": "诊断与反馈",
+  "diagnostic_help": "诊断仅保存在本机，最多 80 条、24 小时，不自动上传。发送到 lazywc@gmail.com；分享应用可能不填写收件人，请核对地址。邮件/分享需你确认，打开不代表送达。请勿在描述中填写密码或个人敏感信息。",
+  "diagnostic_note": "故障描述（可选，最多 1200 字）",
+  "diagnostic_send": "发送诊断",
+  "diagnostic_copy": "复制诊断",
+  "diagnostic_clear": "清除诊断",
+  "diagnostic_copied": "已复制诊断",
+  "diagnostic_cleared": "本机诊断和描述已清除",
+  "diagnostic_handoff": "已请求打开邮件或分享，请核对收件人并确认发送；这不代表已送达。",
+  "diagnostic_cancelled": "已取消发送",
+  "diagnostic_failed": "诊断操作未完成，请重试；发送不可用时可复制后联系支持",
+  "diagnostic_preview": "诊断内容",
+  "diagnostic_close": "关闭",
+  "diagnostic_refresh": "刷新记录"
 }

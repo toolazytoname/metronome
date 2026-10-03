@@ -41,6 +41,7 @@ final class MetronomeModel: ObservableObject {
             await self?.refreshEntitlement()
         }
         applyAudioSettings()
+        recordDiagnostic(.appOpen)
         audio.setOnBeat { [weak self, weak audio = self.audio] beat in
             guard let audio else { return }
             let run = audio.scheduler.currentRunId
@@ -58,6 +59,7 @@ final class MetronomeModel: ObservableObject {
             Task { @MainActor in
                 guard let self, self.playing,
                       audio.scheduler.currentRunId == interruptedRun else { return }
+                self.recordDiagnostic(.audioInterrupted)
                 self.audio.stop()
                 self.playing = false
                 self.activeBeat = -1
@@ -66,18 +68,36 @@ final class MetronomeModel: ObservableObject {
         }
         audio.onSamplesDegraded = { [weak self] in
             Task { @MainActor in
+                self?.recordDiagnostic(.samplesDegraded)
                 self?.storeMessage = self?.t("samples_degraded") ?? ""
             }
         }
         // Launch preload shares the single load task with the first Play tap.
         // A silent failure here is fine: Play retries the load and surfaces
         // the error where the user is looking for feedback.
-        audio.prepareSamples { _ in }
+        audio.prepareSamples { [weak self] result in
+            if case .success = result { self?.recordDiagnostic(.samplesReady) }
+            else { self?.recordDiagnostic(.samplesFailed) }
+        }
         haptics.prepare()
         Task {
             await refreshEntitlement()
             await refreshPrice()
         }
+    }
+
+    var appVersion: String {
+        "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"))"
+    }
+    private var diagnosticState: DiagnosticState {
+        DiagnosticState(bpm: prefs.bpm, beats: prefs.bc, mode: prefs.mode, playing: playing, ready: audio.samplesReady)
+    }
+    func recordDiagnostic(_ code: DiagnosticCode) { LocalDiagnostics.shared.record(code, state: diagnosticState) }
+    func diagnosticReport() async -> String {
+        await LocalDiagnostics.shared.report(
+            version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
+            build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?",
+            osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion, state: diagnosticState)
     }
 
     var strings: [String: String] {
@@ -184,10 +204,12 @@ final class MetronomeModel: ObservableObject {
     }
 
     func togglePlay() {
+        if !playing && !pendingPlay { recordDiagnostic(.playRequested) }
         if playing {
             audio.stop()
             playing = false
             activeBeat = -1
+            recordDiagnostic(.paused)
             AppAnalytics.event("play", playParams(action: "pause"))
             persist()
         } else if audio.samplesReady {
@@ -197,6 +219,7 @@ final class MetronomeModel: ObservableObject {
             // shared load keeps running and lands silently, never producing
             // late sound; a third tap re-arms the start.
             pendingPlay.toggle()
+            if !pendingPlay { recordDiagnostic(.paused) }
             storeMessage = pendingPlay ? t("samples_loading") : ""
         } else {
             // Cold start: wait on the same background load the launch preload
@@ -210,9 +233,11 @@ final class MetronomeModel: ObservableObject {
                 let wantsPlay = self.pendingPlay
                 self.pendingPlay = false
                 guard case .success = result else {
+                    self.recordDiagnostic(.samplesFailed)
                     if wantsPlay { self.storeMessage = self.t("play_error") }
                     return
                 }
+                self.recordDiagnostic(.samplesReady)
                 if wantsPlay {
                     self.startPlayback()
                 } else {
@@ -227,9 +252,11 @@ final class MetronomeModel: ObservableObject {
         do {
             try audio.start()
             playing = true
+            recordDiagnostic(.playReady)
             storeMessage = ""
             AppAnalytics.event("play", playParams(action: "play"))
         } catch {
+            recordDiagnostic(.playFailed)
             storeMessage = t("play_error")
         }
         persist()
