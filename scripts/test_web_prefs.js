@@ -32,6 +32,12 @@ function check(name, fn) {
 }
 
 console.log('Web preference clamp');
+check('BPM query accepts only complete decimal integers', () => {
+  for (const raw of ['120.5', '1e2', '0x78', ' 120 ', '120x', 'Infinity', 'NaN', '+120', '-120', true, [], {}]) {
+    assert.equal(P.parseBpmQuery(raw), null, String(raw));
+  }
+  assert.equal(P.parseBpmQuery('120'), 120);
+});
 check('illegal JSON storage falls back to defaults', () => {
   const s = P.resolveState(qs({}), '{not json');
   sameState(s, { bpm: 120, bc: 4, bu: 4, sm: 'uniform', vol: 85 });
@@ -122,7 +128,7 @@ function stubEl() {
 
 function runPageInit(rel) {
   const html = fs.readFileSync(path.join(root, rel), 'utf8');
-  assert(html.includes('src="/js/prefs.js"'), rel + ' must load prefs.js');
+  assert(html.includes('src="/js/prefs.js?v='), rel + ' must load prefs.js');
   assert(!html.includes('speechSynthesis'), rel + ' no speechSynthesis');
   assert(!/\blocalStorage\b/.test(html), rel + ' must not mention localStorage (including as a safeGet argument)');
   assert(html.includes('MetronomePrefs.getLocalStorage()'), rel + ' must take storage inside getLocalStorage');

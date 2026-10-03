@@ -102,7 +102,7 @@ async function main() {
     ['https://jpq.weichao.studio/p/piano-practice.html', zhTail]
   ]);
   const { ctx, listeners } = loadWorker(store);
-  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v8');
+  assert.strictEqual(vm.runInContext('CACHE', ctx), 'xiaotutou-v11');
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/about/')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/privacy')", ctx), true);
   assert.strictEqual(vm.runInContext("isHtml('https://jpq.weichao.studio/support')", ctx), true);
@@ -216,6 +216,14 @@ async function main() {
   const assetSecond = await dispatchFetch(assetListeners, assetUrl);
   assert.ok((await assetSecond.text()).indexOf('JS_V1') !== -1, 'asset still served from cache');
   assert.strictEqual(assetNetCalls, 1, 'second asset fetch hit the cache, not the network');
+
+  // A site-wide SW update may only remove its own old caches.
+  const deleted = []; let activation;
+  ctx.caches.keys = () => Promise.resolve(['other-app-cache', 'xiaotutou-v1', 'xiaotutou-v11']);
+  ctx.caches.delete = name => { deleted.push(name); return Promise.resolve(true); };
+  listeners.activate[0]({ waitUntil(p) { activation = p; } });
+  await activation;
+  assert.deepStrictEqual(deleted, ['xiaotutou-v1']);
 
   console.log('test_sw_fetch: ok');
 }

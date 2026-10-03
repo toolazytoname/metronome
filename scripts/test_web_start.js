@@ -33,7 +33,7 @@ function loadPage(rel) {
     _wake: null, _wakeGen: 0, _wakePending: null, _playGen: 0,
     engine: {
       setBpm() {}, setBeats() {}, setMode() {}, setVolume() {}, stop() {},
-      reloadSamples() { reloads++; },
+      reset() { reloads++; }, playing: true, buffers: {},
       start() { const p = deferred(); starts.push(p); return p.promise; }
     },
     document: {
@@ -42,7 +42,7 @@ function loadPage(rel) {
       createTextNode(text) { return { textContent: text }; }
     },
     navigator: { wakeLock: { request() { const p = deferred(); locks.push(p); return p.promise; } } },
-    MetronomePrefs: prefs, refreshNowPlaying() {}, log() {}
+    MetronomePrefs: prefs, refreshNowPlaying() {}, log() {}, diagnostic() {}
   };
   vm.createContext(box);
   vm.runInContext(html.slice(a, b), box);
@@ -54,7 +54,12 @@ function lock() {
 }
 async function runPage(rel) {
   let p = loadPage(rel), b = p.box;
-  b.start(); b.stop(); p.starts[0].resolve(); await flush();
+  b.start();
+  assert.equal(b.s.loading, true);
+  assert.equal(p.els["play-btn"].attrs["aria-busy"], "true");
+  b.stop(); p.starts[0].resolve(); await flush();
+  assert.equal(b.s.loading, false);
+  assert.equal(p.els["play-btn"].attrs["aria-busy"], "false");
   assert.equal(b.s.r, false); assert.equal(p.locks.length, 0);
 
   for (const fail of [true, false]) {
@@ -93,6 +98,12 @@ async function runPage(rel) {
   assert.equal(p.reloads(), 1); assert.equal(p.starts.length, 2);
   assert.equal(p.els['play-btn'].attrs['aria-label'], rel === 'index.html' ? '暂停' : 'Pause');
   b.stop(); assert.equal(p.els['play-btn'].attrs['aria-label'], rel === 'index.html' ? '播放' : 'Play');
+  p = loadPage(rel); b = p.box;
+  b.engine.setVolume = () => { throw new Error('closed context'); };
+  b.start(); await flush();
+  assert.equal(b.s.r, false, 'synchronous setup failure must reset UI');
+  assert.equal(p.els['audio-error'].classList.contains('show'), true);
+  assert.equal(p.locks.length, 0);
   console.log('  ok  ' + rel + ': stale success/error, late/duplicate locks, release ownership, visible retry, labels');
 }
 function runControls(rel) {
@@ -122,6 +133,17 @@ function runControls(rel) {
   slider.oninput({ target: { value: '150' } });
   slider.onchange({ target: { value: '150' } });
   assert.equal(events.at(-1).data.from, 141);
+  box.setBpm(40); assert.equal(els["bpm-minus"].disabled, true);
+  box.setBpm(208); assert.equal(els["bpm-plus"].disabled, true);
+  box.setBpm(144); assert.equal(els["bpm-plus"].disabled, false);
+  for (const invalid of ['', '1e2', '0x80', '120.5', '130x', NaN, true, null]) {
+    box.setBpm(invalid);
+    assert.equal(box.s.bpm, 144, 'invalid draft must leave BPM unchanged');
+  }
+  for (const invalid of ['3x/4', '/4', '3/', '3/4/5', '1.5/4']) {
+    box.setTS(invalid);
+    assert.equal(box.s.bc, 4); assert.equal(box.s.bu, 4);
+  }
   box.setTS('3/4');
   assert.equal(els['custom-beats'].value, 3);
   assert.equal(els['custom-unit'].value, 4);
@@ -130,10 +152,25 @@ function runControls(rel) {
   assert.equal(els['custom-beats'].value, 16); assert.equal(els['custom-unit'].value, 16);
   console.log('  ok  ' + rel + ': BPM preview/commit analytics and normalized meter inputs');
 }
+async function runVisibility(rel) {
+  const html = fs.readFileSync(path.join(root, rel), 'utf8');
+  const from = html.indexOf('document.addEventListener("visibilitychange"');
+  const to = html.indexOf('\nupdateBeats();', from);
+  let handler, errors = 0;
+  const box = { s: { r: false },
+    document: { visibilityState: 'visible', addEventListener(_, cb) { handler = cb; } },
+    engine: { ctx: { state: 'suspended' }, _fail(code) { assert.equal(code, 'audio_interrupted'); errors++; box.s.r = false; } },
+    requestWakeLock() {} };
+  vm.runInNewContext(html.slice(from, to), box);
+  handler(); assert.equal(errors, 0, 'paused pages must not reopen the audio session');
+  box.s.r = true; handler(); assert.equal(errors, 1); assert.equal(box.s.r, false);
+  console.log('  ok  ' + rel + ': foreground interruption stops playback without auto-resume');
+}
 (async () => {
   console.log('Web start / wake lock');
   const l = lock(); assert.equal(prefs.adoptScreenLock(l, false), null); assert.equal(l.releases, 1);
   await runPage('index.html'); await runPage('en/index.html');
   runControls('index.html'); runControls('en/index.html');
+  await runVisibility('index.html'); await runVisibility('en/index.html');
   console.log('All web start checks passed');
 })().catch(e => { console.error(e); process.exitCode = 1; });

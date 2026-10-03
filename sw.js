@@ -3,7 +3,7 @@
  * /download/* is never intercepted: fixed-name files (the APK) change content
  * under the same URL, so a cache-first hit would keep serving the old package.
  */
-var CACHE = 'xiaotutou-v8';
+var CACHE = 'xiaotutou-v11';
 
 var PRECACHE = [
   '/',
@@ -12,8 +12,9 @@ var PRECACHE = [
   '/en/index.html',
   '/manifest.json',
   '/en/manifest.json',
-  '/js/engine.js',
-  '/js/prefs.js',
+  '/js/engine.js?v=acab7ad4c7b2',
+  '/js/diagnostics.js?v=a134b8049a50',
+  '/js/prefs.js?v=193df9a6c2c0',
   '/images/bunny.png',
   '/images/bunny-192.png',
   '/images/bunny-512.png',
@@ -35,7 +36,9 @@ var PRECACHE = [
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
-      return cache.addAll(PRECACHE);
+      return cache.addAll(PRECACHE.map(function (url) {
+        return new Request(url, { cache: 'reload' });
+      }));
     }).then(function () {
       return self.skipWaiting();
     })
@@ -46,7 +49,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.filter(function (k) {
-        return k !== CACHE;
+        return k.indexOf('xiaotutou-') === 0 && k !== CACHE;
       }).map(function (k) {
         return caches.delete(k);
       }));

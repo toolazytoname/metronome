@@ -9,6 +9,7 @@
   var SCHEDULE_AHEAD = 0.1;
   var MAX_VOICE = 16;
   var SAMPLE_TIMEOUT_MS = 8000;
+  var RESUME_TIMEOUT_MS = 8000;
 
   function withTimeout(promise, ms, onTimeout) {
     return new Promise(function (resolve, reject) {
@@ -44,6 +45,8 @@
     this.lang = opts.lang === 'en' ? 'en' : 'zh';
     this.base = opts.base || '/assets/sounds';
     this.onBeat = opts.onBeat || function () {};
+    this.onError = opts.onError || function () {};
+    this.onDiagnostic = opts.onDiagnostic || function () {};
     this.bpm = 120;
     this.bc = 4;
     this.sm = 'uniform';
@@ -58,6 +61,7 @@
     this.visualTimers = [];
     this._liveSources = [];
     this._loadPromise = null;
+    this._loadId = 0;
     this._starting = false;
     this._startPromise = null;
     this._runId = 0;
@@ -66,6 +70,7 @@
 
   MetronomeEngine.prototype.init = function () {
     var self = this;
+    if (this.ctx && this.ctx.state === 'closed') this.reset();
     if (!this.ctx) {
       var AC = global.AudioContext || global.webkitAudioContext;
       if (!AC) return Promise.reject(new Error('No AudioContext'));
@@ -73,9 +78,20 @@
       this.master = this.ctx.createGain();
       this.master.gain.value = this.vol;
       this.master.connect(this.ctx.destination);
+      var context = this.ctx;
+      context.onstatechange = function () {
+        if (self.ctx !== context) return;
+        self._diagnostic('context_state');
+        if (self.playing && !self._starting && context.state !== 'running') self._fail('audio_interrupted');
+      };
     }
-    var resume = this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
-    return resume.then(function () { return self._ensureSamples(); });
+    var context = this.ctx;
+    var resume = this.ctx.state !== 'running' ? this.ctx.resume() : Promise.resolve();
+    return withTimeout(resume, MetronomeEngine.RESUME_TIMEOUT_MS).then(function () {
+      if (self.ctx !== context) throw new Error('audio_cancelled');
+      if (context.state !== 'running') throw new Error('AudioContext not running');
+      return self._ensureSamples();
+    });
   };
 
   MetronomeEngine.prototype._url = function (rel) {
@@ -85,6 +101,7 @@
   MetronomeEngine.prototype._ensureSamples = function () {
     if (this._loadPromise) return this._loadPromise;
     var self = this;
+    var loadId = this._loadId;
     var jobs = [
       this._fetchBuffer('strong', 'click-strong.mp3'),
       this._fetchBuffer('weak', 'click-weak.mp3'),
@@ -95,14 +112,15 @@
       jobs.push(this._fetchBuffer('v' + i, 'voice/' + this.lang + '/' + id + '.mp3'));
     }
     this._loadPromise = Promise.all(jobs).then(function () {
-      self.ready = true;
+      if (self._loadId === loadId) self.ready = true;
     }).catch(function () {
-      self.ready = true; // synth fallback still works
+      if (self._loadId === loadId) self.ready = true; // synth fallback still works
     });
     return this._loadPromise;
   };
 
   MetronomeEngine.prototype.reloadSamples = function () {
+    this._loadId += 1;
     this._loadPromise = null;
     this.ready = false;
     this.buffers = {};
@@ -110,6 +128,9 @@
 
   MetronomeEngine.prototype._fetchBuffer = function (key, rel) {
     var self = this;
+    var loadId = this._loadId;
+    var context = this.ctx;
+    var expired = false;
     var ac = typeof AbortController === 'function' ? new AbortController() : null;
     var fetchOpts = ac ? { signal: ac.signal } : {};
     var work = fetch(this._url(rel), fetchOpts).then(function (res) {
@@ -121,7 +142,7 @@
         function ok(buf) {
           if (done || !buf) return;
           done = true;
-          self.buffers[key] = buf;
+          if (!expired && self._loadId === loadId) self.buffers[key] = buf;
           resolve(buf);
         }
         function fail() {
@@ -130,7 +151,7 @@
           resolve(null);
         }
         try {
-          var ret = self.ctx.decodeAudioData(ab, ok, fail);
+          var ret = context.decodeAudioData(ab, ok, fail);
           if (ret && typeof ret.then === 'function') ret.then(ok, fail);
         } catch (e) {
           fail();
@@ -138,6 +159,7 @@
       });
     });
     return withTimeout(work, MetronomeEngine.SAMPLE_TIMEOUT_MS || SAMPLE_TIMEOUT_MS, function () {
+      expired = true;
       if (ac) {
         try { ac.abort(); } catch (e) { /* ignore */ }
       }
@@ -147,7 +169,11 @@
   };
 
   MetronomeEngine.prototype.setBpm = function (bpm) {
-    this.bpm = clamp(bpm, 40, 208);
+    if (typeof bpm !== 'number' && typeof bpm !== 'string') return;
+    if (typeof bpm === 'string' && !/^[0-9]+$/.test(bpm)) return;
+    var value = Number(bpm);
+    if (!isFinite(value) || Math.floor(value) !== value) return;
+    this.bpm = clamp(value, 40, 208);
   };
 
   MetronomeEngine.prototype.setBeats = function (bc) {
@@ -172,6 +198,7 @@
 
   MetronomeEngine.prototype.start = function () {
     var self = this;
+    if (this.ctx && this.ctx.state === 'closed') this.reset();
     if (this.playing || this._starting) {
       return this._startPromise || Promise.resolve();
     }
@@ -187,12 +214,12 @@
       self._starting = false;
       self.cb = 0;
       self.nextNoteTime = self.ctx.currentTime + 0.02;
+      self._lastAudioTime = self.ctx.currentTime;
+      self._lastProgressAt = Date.now();
       self._scheduler();
     }).catch(function (err) {
       if (self._runId === runId) {
-        self.playing = false;
-        self._starting = false;
-        self._startPromise = null;
+        self.stop();
       }
       throw err;
     });
@@ -210,6 +237,29 @@
     }
     this._stopLiveSources();
     this._clearVisuals();
+  };
+
+  MetronomeEngine.prototype._diagnostic = function (code) {
+    try { this.onDiagnostic(code); } catch (_) { /* diagnostics never break audio */ }
+  };
+
+  MetronomeEngine.prototype._fail = function (code) {
+    this.stop();
+    this._diagnostic(code);
+    try { this.onError(code); } catch (_) { /* already stopped */ }
+  };
+
+  MetronomeEngine.prototype.reset = function () {
+    this.stop();
+    var context = this.ctx;
+    this.ctx = null;
+    this.master = null;
+    this.reloadSamples();
+    if (context) {
+      context.onstatechange = null;
+      try { Promise.resolve(context.close()).catch(function () {}); } catch (_) {}
+    }
+    this._diagnostic('audio_reset');
   };
 
   MetronomeEngine.prototype._trackSource = function (src) {
@@ -240,21 +290,31 @@
 
   MetronomeEngine.prototype._scheduler = function () {
     if (!this.playing || !this.ctx) return;
-    var now = this.ctx.currentTime;
-    var interval = 60 / this.bpm;
-    var ahead = now + SCHEDULE_AHEAD;
-    // More than one interval behind: drop expired beats and resume from now.
-    // Do not burst-schedule the backlog. Changing BPM still only changes `interval`.
-    if (this.nextNoteTime < now - interval) {
-      this.nextNoteTime = now;
-    }
-    while (this.nextNoteTime < ahead) {
-      this._scheduleBeat(this.cb, this.nextNoteTime);
-      this.nextNoteTime += interval;
-      this.cb = (this.cb + 1) % this.bc;
-    }
-    var self = this;
-    this.timer = setTimeout(function () { self._scheduler(); }, LOOKAHEAD_MS);
+    try {
+      if (this.ctx.state && this.ctx.state !== 'running') { this._fail('audio_interrupted'); return; }
+      var now = this.ctx.currentTime;
+      if (now !== this._lastAudioTime) {
+        this._lastAudioTime = now;
+        this._lastProgressAt = Date.now();
+      } else if (Date.now() - this._lastProgressAt > 3000) {
+        this._fail('audio_stalled'); return;
+      }
+      var interval = 60 / this.bpm;
+      var ahead = now + SCHEDULE_AHEAD;
+      // More than one interval behind: drop expired beats and resume from now.
+      // Do not burst-schedule the backlog. Changing BPM still only changes `interval`.
+      if (this.nextNoteTime < now - interval) {
+        this.nextNoteTime = now;
+      }
+      while (this.nextNoteTime < ahead) {
+        this._scheduleBeat(this.cb, this.nextNoteTime);
+        this.nextNoteTime += interval;
+        this.cb = (this.cb + 1) % this.bc;
+      }
+      var self = this;
+      var run = this._runId;
+      this.timer = setTimeout(function () { if (run === self._runId) self._scheduler(); }, LOOKAHEAD_MS);
+    } catch (_) { this._fail('scheduler_failed'); }
   };
 
   MetronomeEngine.prototype._scheduleBeat = function (beat, time) {
@@ -331,6 +391,7 @@
   };
 
   MetronomeEngine.SAMPLE_TIMEOUT_MS = SAMPLE_TIMEOUT_MS;
+  MetronomeEngine.RESUME_TIMEOUT_MS = RESUME_TIMEOUT_MS;
   MetronomeEngine.SCHEDULE_AHEAD = SCHEDULE_AHEAD;
   MetronomeEngine.LOOKAHEAD_MS = LOOKAHEAD_MS;
 

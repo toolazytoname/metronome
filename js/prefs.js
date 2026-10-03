@@ -4,11 +4,16 @@
 
   var MODES = ['traditional', 'uniform', 'voice'];
 
+  function parseInteger(raw) {
+    if (typeof raw !== 'number' && typeof raw !== 'string') return null;
+    if (typeof raw === 'string' && !/^[0-9]+$/.test(raw)) return null;
+    var value = Number(raw);
+    return isFinite(value) && Math.floor(value) === value ? value : null;
+  }
+
   function toInt(n, fallback) {
-    if (n === null || n === undefined || n === '') return fallback;
-    var x = typeof n === 'number' ? n : Number(String(n).trim());
-    if (!isFinite(x)) return fallback;
-    return Math.round(x);
+    var value = parseInteger(n);
+    return value === null ? fallback : value;
   }
 
   function clampBpm(n) {
@@ -42,12 +47,8 @@
   }
 
   function parseBpmQuery(raw) {
-    if (raw == null || raw === '') return null;
-    var x = Number(raw);
-    if (!isFinite(x)) return null;
-    x = Math.round(x);
-    if (x < 40 || x > 208) return null;
-    return x;
+    var x = parseInteger(raw);
+    return x !== null && x >= 40 && x <= 208 ? x : null;
   }
 
   function readStoredObject(raw) {
@@ -155,6 +156,7 @@
   }
 
   var api = {
+    parseInteger: parseInteger,
     clampBpm: clampBpm,
     clampBeats: clampBeats,
     clampBeatUnit: clampBeatUnit,

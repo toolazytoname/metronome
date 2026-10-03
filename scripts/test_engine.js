@@ -193,6 +193,90 @@ async function main() {
     eng.stop();
   });
 
+  await check('invalid engine BPM inputs never poison the clock', () => {
+    const eng = new (loadEngine().MetronomeEngine)();
+    for (const value of [NaN, Infinity, null, undefined, '', ' ', '120x', '1e2', '0x78', 120.5, true, [], {}]) {
+      eng.setBpm(value);
+      assert.equal(eng.bpm, 120, String(value));
+    }
+    eng.setBpm('208'); assert.equal(eng.bpm, 208);
+    eng.setBpm(999); assert.equal(eng.bpm, 208);
+  });
+
+  await check('reload ignores old sample decode and readiness completions', async () => {
+    const callbacks = [];
+    const box = loadEngine({ fetch() { return Promise.resolve({ ok: true, arrayBuffer() { return Promise.resolve(new ArrayBuffer(0)); } }); } });
+    const eng = new box.MetronomeEngine();
+    eng.ctx = fakeCtx(0);
+    eng.ctx.decodeAudioData = (_, ok) => { callbacks.push(ok); };
+    const old = eng._ensureSamples();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    assert.equal(callbacks.length, 19);
+    eng.reloadSamples();
+    const current = eng._ensureSamples();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    callbacks.slice(0, 19).forEach(ok => ok({ generation: 'old' }));
+    await old;
+    assert.equal(eng.ready, false, 'old load must not publish ready');
+    assert.equal(Object.keys(eng.buffers).length, 0, 'old decode must not install');
+    callbacks.slice(19).forEach(ok => ok({ generation: 'current' }));
+    await current;
+    assert.equal(eng.ready, true);
+    assert.equal(eng.buffers.uniform.generation, 'current');
+  });
+
+  await check('a hanging AudioContext resume times out and remains retryable', async () => {
+    const ctx = fakeCtx(0); ctx.state = 'suspended';
+    ctx.resume = () => new Promise(() => {});
+    const box = loadEngine({ AudioContext: function () { return ctx; } });
+    box.MetronomeEngine.RESUME_TIMEOUT_MS = 20;
+    const eng = new box.MetronomeEngine();
+    await assert.rejects(eng.start(), /timeout/);
+    assert.equal(eng.playing, false);
+    ctx.resume = () => { ctx.state = 'running'; return Promise.resolve(); };
+    await eng.start();
+    assert.equal(eng.playing, true);
+    eng.stop();
+  });
+
+
+  await check('scheduler failure stops all sources and reports a fixed error', async () => {
+    const errors = [];
+    const eng = new (loadEngine().MetronomeEngine)({ onError: code => errors.push(code) });
+    await eng.start();
+    eng._scheduleBeat = () => { throw new Error('device gone'); };
+    clearTimeout(eng.timer); eng.nextNoteTime = eng.ctx.currentTime;
+    eng._scheduler();
+    assert.equal(eng.playing, false); assert.equal(eng.timer, null);
+    assert.equal(eng._liveSources.length, 0); assert.deepEqual(errors, ['scheduler_failed']);
+  });
+  await check('state interruption and stalled audio cannot falsely remain playing', async () => {
+    const errors = [];
+    const eng = new (loadEngine().MetronomeEngine)({ onError: code => errors.push(code) });
+    await eng.start(); eng.ctx.state = 'suspended'; eng.ctx.onstatechange();
+    assert.equal(eng.playing, false); assert.deepEqual(errors, ['audio_interrupted']);
+    eng.ctx.state = 'running'; await eng.start(); clearTimeout(eng.timer);
+    eng._lastProgressAt = Date.now() - 4000; eng._scheduler();
+    assert.equal(eng.playing, false); assert.equal(errors[1], 'audio_stalled');
+  });
+  await check('reset and closed-context retry create a fresh single playback', async () => {
+    const eng = new (loadEngine().MetronomeEngine)();
+    await eng.start(); const old = eng.ctx; old.state = 'closed';
+    await eng.start(); assert.notEqual(eng.ctx, old); assert.equal(eng.playing, true);
+    const current = eng.ctx; eng.reset();
+    assert.equal(eng.ctx, null); assert.equal(eng.playing, false); assert.equal(eng.ready, false);
+    await eng.start(); assert.notEqual(eng.ctx, current); eng.stop();
+  });
+  await check('reset invalidates a pending resume even when a newer run starts', async () => {
+    let resume;
+    const old = fakeCtx(0); old.state = 'suspended';
+    old.resume = () => new Promise(resolve => { resume = resolve; });
+    let n = 0;
+    const eng = new (loadEngine({ AudioContext: function () { return n++ ? fakeCtx(0) : old; } }).MetronomeEngine)();
+    const pending = eng.start(); const rejection = assert.rejects(pending, /audio_cancelled/);
+    eng.reset(); await eng.start(); old.state = 'running'; resume(); await rejection;
+    assert.equal(eng.playing, true); eng.stop();
+  });
   console.log('All engine checks passed');
 }
 

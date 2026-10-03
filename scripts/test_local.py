@@ -252,8 +252,8 @@ def test_web_app_hooks():
     log("-" * 40)
     for rel in ("index.html", "en/index.html"):
         src = (PROJECT_ROOT / rel).read_text()
-        check(f"  {rel} loads MetronomeEngine", "MetronomeEngine" in src and 'src="/js/engine.js"' in src)
-        check(f"  {rel} loads MetronomePrefs", "MetronomePrefs" in src and 'src="/js/prefs.js"' in src)
+        check(f"  {rel} loads MetronomeEngine", "MetronomeEngine" in src and 'src="/js/engine.js?v=' in src)
+        check(f"  {rel} loads MetronomePrefs", "MetronomePrefs" in src and 'src="/js/prefs.js?v=' in src)
         check(
             f"  {rel} does not raw-parse metronome storage",
             'JSON.parse(localStorage.getItem("metronome")' not in src,
