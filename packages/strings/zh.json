@@ -60,7 +60,7 @@
   "voice_zh_yunxi": "云希",
   "voice_zh_soft": "晓晓",
   "voice_en_deep": "英文低沉",
-  "play_error": "采样没加载好，先检查音量后再试",
+  "play_error": "播放失败，请检查音量或音频设备后重试。",
   "share": "分享",
   "share_text": "免下载、免注册，浏览器打开即用。",
   "donate": "投喂打赏",

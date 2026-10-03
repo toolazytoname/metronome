@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
                     runOnUiThread {
                         if (isDestroyed || gen != listenerGen) return@runOnUiThread
                         applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
+                        if (svc.playbackFailed) storeMessage = t("play_error")
                     }
                 },
                 onBeat = { beat ->
@@ -236,12 +237,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadPrefs(): MetronomePrefs {
-        val raw = getSharedPreferences("metro", MODE_PRIVATE).getString("metronome", null)
-            ?: return MetronomePrefs(lang = defaultLanguage())
-        val obj = JSONObject(raw)
-        val map = mutableMapOf<String, Any?>()
-        obj.keys().forEach { map[it] = obj.get(it) }
-        return MetronomePrefs.from(map)
+        return try {
+            val raw = getSharedPreferences("metro", MODE_PRIVATE).getString("metronome", null)
+                ?: return MetronomePrefs(lang = defaultLanguage())
+            val obj = JSONObject(raw)
+            val map = mutableMapOf<String, Any?>()
+            obj.keys().forEach { map[it] = obj.get(it) }
+            if (map["lang"] != "zh" && map["lang"] != "en") map["lang"] = defaultLanguage()
+            MetronomePrefs.from(map)
+        } catch (_: Exception) {
+            // Corrupt/restored preferences must never turn app launch into a crash loop.
+            MetronomePrefs(lang = defaultLanguage())
+        }
     }
 
     private fun defaultLanguage(): String =
@@ -300,11 +307,18 @@ class MainActivity : ComponentActivity() {
             }
             PlaybackBind.Toggle.Start -> {
                 if (!svc.samplesReady()) {
+                    svc.prepareSamples()
                     storeMessage = t("play_error")
                     return
                 }
-                startForegroundService(Intent(this, MetronomeService::class.java))
-                if (!svc.startPlayback()) {
+                val started = try {
+                    startForegroundService(Intent(this, MetronomeService::class.java))
+                    svc.startPlayback()
+                } catch (_: Exception) {
+                    svc.stopPlayback()
+                    false
+                }
+                if (!started) {
                     storeMessage = t("play_error")
                     applyPlaybackUi(PlaybackBind.uiFromService(false, prefs.keepAwake))
                     return

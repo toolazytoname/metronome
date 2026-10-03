@@ -35,8 +35,8 @@ object PcmMixer {
 
 object PcmResample {
     fun toMono44100(input: ShortArray, srcRate: Int, channels: Int): ShortArray {
-        if (input.isEmpty()) return shortArrayOf(0)
-        val ch = channels.coerceAtLeast(1)
+        if (input.isEmpty() || srcRate <= 0 || channels <= 0 || input.size < channels) return shortArrayOf()
+        val ch = channels
         val frames = input.size / ch
         val mono = ShortArray(frames)
         for (i in 0 until frames) {

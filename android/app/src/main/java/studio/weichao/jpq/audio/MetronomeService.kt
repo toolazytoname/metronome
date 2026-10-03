@@ -18,6 +18,7 @@ import studio.weichao.jpq.policy.PlaybackBind
 import studio.weichao.jpq.policy.PlaybackListenerGate
 import studio.weichao.jpq.policy.SoundMode
 import kotlin.concurrent.thread
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MetronomeService : Service() {
     inner class LocalBinder : Binder() {
@@ -33,6 +34,9 @@ class MetronomeService : Service() {
     private val uiGate = PlaybackListenerGate()
     private var wakeLock: PowerManager.WakeLock? = null
     private var stopped = true
+    private val loading = AtomicBoolean(false)
+    var playbackFailed = false
+        private set
     private var focusRequest: AudioFocusRequest? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
@@ -44,7 +48,12 @@ class MetronomeService : Service() {
     override fun onCreate() {
         super.onCreate()
         clock = AudioTrackClock(assets)
-        thread(name = "metro-sample-loader", isDaemon = true) { clock.load() }
+        clock.onError = {
+            playbackFailed = true
+            stopPlayback()
+            notifyStopped()
+        }
+        prepareSamples()
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
@@ -62,7 +71,8 @@ class MetronomeService : Service() {
                 startPlayback()
             }
         }
-        return START_STICKY
+        if (stopped) stopSelf(startId)
+        return START_NOT_STICKY
     }
 
     fun configure(bpm: Int, beats: Int, mode: SoundMode, lang: String, vol: Int, click: String, voice: String) {
@@ -77,6 +87,14 @@ class MetronomeService : Service() {
     }
 
     fun samplesReady(): Boolean = clock.ready
+
+    fun prepareSamples() {
+        if (clock.ready || !loading.compareAndSet(false, true)) return
+        thread(name = "metro-sample-loader", isDaemon = true) {
+            try { clock.load() } catch (_: Exception) { /* Play exposes the failure and retries. */ }
+            finally { loading.set(false) }
+        }
+    }
 
     fun isPlaying(): Boolean {
         val sched = this::clock.isInitialized && clock.scheduler.playing
@@ -98,26 +116,30 @@ class MetronomeService : Service() {
     }
 
     fun startPlayback(): Boolean {
-        if (!clock.ready) return false
-        stopped = false
-        requestFocus()
-        postNotification()
-        if (keepAwake) {
-            if (wakeLock == null) {
-                wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "jpq:metro")
-            }
-            if (wakeLock?.isHeld != true) wakeLock?.acquire()
+        if (isPlaying()) return true
+        if (!clock.ready) {
+            prepareSamples()
+            return false
         }
-        clock.start()
-        return true
+        playbackFailed = false
+        return try {
+            stopped = false
+            // Target 35+ requires a foreground app/service before requesting focus.
+            postNotification()
+            check(requestFocus()) { "Audio focus denied" }
+            wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "jpq:metro")
+                .also { it.acquire() }
+            clock.start()
+            true
+        } catch (_: Exception) {
+            playbackFailed = true
+            stopPlayback()
+            false
+        }
     }
 
     fun stopPlayback() {
-        if (stopped && !clock.scheduler.playing) {
-            releaseFocus()
-            return
-        }
         stopped = true
         clock.stop()
         wakeLock?.let { if (it.isHeld) it.release() }
@@ -159,22 +181,22 @@ class MetronomeService : Service() {
         startForeground(42, n)
     }
 
-    private fun requestFocus() {
-        val am = getSystemService(AudioManager::class.java) ?: return
+    private fun requestFocus(): Boolean {
+        val am = getSystemService(AudioManager::class.java) ?: return false
         val attrs = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
-        if (Build.VERSION.SDK_INT >= 26) {
+        return if (Build.VERSION.SDK_INT >= 26) {
             val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                 .setAudioAttributes(attrs)
                 .setOnAudioFocusChangeListener(focusListener)
                 .build()
             focusRequest = req
-            am.requestAudioFocus(req)
+            am.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         } else {
             @Suppress("DEPRECATION")
-            am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         }
     }
 

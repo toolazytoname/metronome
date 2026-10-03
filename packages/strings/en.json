@@ -60,7 +60,7 @@
   "voice_zh_yunxi": "Yunxi",
   "voice_zh_soft": "Xiaoxiao",
   "voice_en_deep": "Deep English",
-  "play_error": "Samples failed to load. Check volume and try again.",
+  "play_error": "Could not play audio. Check volume or audio output, then try again.",
   "share": "Share",
   "share_text": "No download. Open in any browser.",
   "donate": "Support us",

@@ -106,7 +106,7 @@ object MetronomePolicy {
         SoundMode.UNIFORM -> listOf(SampleVoice(clickKey(clickBank, "click-uniform"), 1.0))
         SoundMode.VOICE -> {
             val n = (beat + 1).coerceIn(1, MAX_BEATS)
-            val id = "%02d".format(n)
+            val id = SampleCatalog.id(n)
             listOf(
                 SampleVoice(voiceKey(voiceBank, lang, id), 1.0),
                 SampleVoice(clickKey(clickBank, "click-weak"), 0.28)
@@ -228,38 +228,38 @@ data class MetronomePrefs(
 data class ScheduledBeat(val index: Int, val time: Double)
 
 class BeatScheduler(bpm: Int = 120, beatsPerBar: Int = 4) {
-    var bpm: Int = MetronomePolicy.clampBpm(bpm)
+    @Volatile var bpm: Int = MetronomePolicy.clampBpm(bpm)
         private set
-    var beatsPerBar: Int = MetronomePolicy.clampBeats(beatsPerBar)
+    @Volatile var beatsPerBar: Int = MetronomePolicy.clampBeats(beatsPerBar)
         private set
-    var beatIndex: Int = 0
+    @Volatile var beatIndex: Int = 0
         private set
-    var nextNoteTime: Double = 0.0
+    @Volatile var nextNoteTime: Double = 0.0
         private set
-    var playing: Boolean = false
+    @Volatile var playing: Boolean = false
         private set
 
-    fun start(now: Double) {
+    @Synchronized fun start(now: Double) {
         playing = true
         beatIndex = 0
         nextNoteTime = now + 0.02
     }
 
-    fun stop() {
+    @Synchronized fun stop() {
         playing = false
     }
 
-    fun setBpm(value: Int) {
+    @Synchronized fun setBpm(value: Int) {
         bpm = MetronomePolicy.clampBpm(value)
     }
 
-    fun setBeats(value: Int) {
+    @Synchronized fun setBeats(value: Int) {
         beatsPerBar = MetronomePolicy.clampBeats(value)
         if (beatIndex >= beatsPerBar) beatIndex = 0
     }
 
-    fun pull(untilHorizon: Double): List<ScheduledBeat> {
-        if (!playing) return emptyList()
+    @Synchronized fun pull(untilHorizon: Double): List<ScheduledBeat> {
+        if (!playing || !untilHorizon.isFinite()) return emptyList()
         val out = ArrayList<ScheduledBeat>()
         while (nextNoteTime < untilHorizon) {
             out.add(ScheduledBeat(beatIndex, nextNoteTime))

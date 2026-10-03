@@ -60,7 +60,7 @@
   "voice_zh_yunxi": "云希",
   "voice_zh_soft": "晓晓",
   "voice_en_deep": "英文低沉",
-  "play_error": "采样没加载好，先检查音量后再试",
+  "play_error": "播放失败，请检查音量或音频设备后重试。",
   "share": "分享",
   "share_text": "免下载、免注册，浏览器打开即用。",
   "donate": "投喂打赏",
@@ -71,6 +71,7 @@
   "support": "支持我们",
   "privacy": "隐私政策",
   "default_bank": "默认",
+  "app_version": "版本 %s",
   "samples_degraded": "部分采样缺失，已回退默认音色",
   "haptics_unsupported": "此设备没有震动马达，震动选项在此设备上无效",
   "samples_loading": "正在加载音色…"

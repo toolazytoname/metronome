@@ -66,6 +66,9 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
     "playImplementation"("com.android.billingclient:billing:8.0.0")
+    // Billing's basement dependency otherwise resolves Fragment 1.1.0, which
+    // is incompatible with the ActivityResult permission contract (lint error).
+    "playImplementation"("androidx.fragment:fragment:1.6.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
