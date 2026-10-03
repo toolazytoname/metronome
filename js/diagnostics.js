@@ -1,25 +1,30 @@
 /* Local, bounded diagnostics. Outbound reporting is explicit user action via share/mail. */
 (function (global) {
   'use strict';
-  var VERSION = '2026.10.03.2';
+  var VERSION = '2026.10.03.3';
   var KEY = 'metronome_diagnostics_v1';
   var MAX = 80, TTL = 86400000;
   var events = [], hooks = {};
   var codes = ['page_open', 'play_requested', 'play_ready', 'play_failed', 'paused',
     'context_state', 'audio_interrupted', 'audio_stalled', 'scheduler_failed',
-    'audio_reset', 'page_hidden', 'page_visible', 'page_exit', 'page_restored',
+    'visual_failed', 'audio_reset', 'page_hidden', 'page_visible', 'page_exit', 'page_restored',
     'script_error', 'promise_error', 'boot_failed', 'samples_fallback'];
   function clean(value) {
     var out = {};
     ['bpm', 'bc', 'bu', 'vol', 'buffers'].forEach(function (key) {
       if (value && Number.isFinite(value[key]) && value[key] >= 0 && value[key] <= 208) out[key] = value[key];
     });
-    ['playing', 'loading', 'ready'].forEach(function (key) {
+    ['playing', 'loading', 'ready', 'uiPlaying'].forEach(function (key) {
       if (value && typeof value[key] === 'boolean') out[key] = value[key];
     });
     var enums = { mode: ['traditional', 'uniform', 'voice'], audio: ['none', 'running', 'suspended', 'interrupted', 'closed'], visibility: ['visible', 'hidden'] };
     Object.keys(enums).forEach(function (key) {
       if (value && enums[key].indexOf(value[key]) !== -1) out[key] = value[key];
+    });
+    var visualBounds = { scheduledBeat: [-1, 15], renderedBeat: [-1, 15], visualUpdates: [0, 65535], visualAgeMs: [0, 60000], visualNodes: [0, 16] };
+    Object.keys(visualBounds).forEach(function (key) {
+      var n = value && value[key], range = visualBounds[key];
+      if (Number.isInteger(n) && n >= range[0] && n <= range[1]) out[key] = n;
     });
     return out;
   }

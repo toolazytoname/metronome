@@ -3,7 +3,7 @@
  * /download/* is never intercepted: fixed-name files (the APK) change content
  * under the same URL, so a cache-first hit would keep serving the old package.
  */
-var CACHE = 'xiaotutou-v14';
+var CACHE = 'xiaotutou-v15';
 
 var PRECACHE = [
   '/',
@@ -12,8 +12,8 @@ var PRECACHE = [
   '/en/index.html',
   '/manifest.json',
   '/en/manifest.json',
-  '/js/engine.js?v=acab7ad4c7b2',
-  '/js/diagnostics.js?v=3d076a7efafb',
+  '/js/engine.js?v=c75c8a35752c',
+  '/js/diagnostics.js?v=30cedc504901',
   '/js/prefs.js?v=193df9a6c2c0',
   '/images/bunny.png',
   '/images/bunny-192.png',

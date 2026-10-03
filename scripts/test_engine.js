@@ -277,6 +277,55 @@ async function main() {
     eng.reset(); await eng.start(); old.state = 'running'; resume(); await rejection;
     assert.equal(eng.playing, true); eng.stop();
   });
+  await check('visuals follow audio time, not independently delayed beat timers', () => {
+    let timers = 0;
+    const drawn = [];
+    const eng = new (loadEngine({ setTimeout() { timers++; return timers; }, clearTimeout() {} }).MetronomeEngine)({ onBeat: beat => drawn.push(beat) });
+    eng.ctx = fakeCtx(0); eng.playing = true; eng._playBuffer = () => {};
+    eng._scheduleBeat(0, 0.02); eng._scheduleBeat(1, 0.62);
+    assert.equal(timers, 0, 'scheduling audio must not spawn per-beat visual timers');
+    eng._renderVisuals(0.01); assert.deepEqual(drawn, []);
+    eng._renderVisuals(0.02); assert.deepEqual(drawn, [0]);
+    eng._renderVisuals(0.4); assert.deepEqual(drawn, [0]);
+    eng._renderVisuals(0.62); assert.deepEqual(drawn, [0, 1]);
+    assert.equal(eng.renderedBeat, 1); assert.equal(eng.visualUpdates, 2);
+    eng.stop(); eng._renderVisuals(1); assert.equal(eng._visualQueue.length, 0);
+    assert.equal(eng.renderedBeat, -1);
+  });
+  await check('delayed visuals draw only latest due beat, preserve future beat and clear on stop', () => {
+    const drawn = [];
+    const eng = new (loadEngine().MetronomeEngine)({ onBeat: beat => drawn.push(beat) });
+    eng.ctx = fakeCtx(0); eng.playing = true; eng._playBuffer = () => {};
+    [0, 1, 2, 3].forEach(i => eng._scheduleBeat(i, i * 0.6));
+    eng._renderVisuals(1.4); assert.deepEqual(drawn, [2]); assert.equal(eng._visualQueue.length, 1);
+    eng.stop(); eng.playing = true; eng._renderVisuals(2);
+    assert.deepEqual(drawn, [2], 'previous playback must not light a stale beat');
+    for (let i = 0; i < 100; i++) eng._scheduleBeat(i % 4, i);
+    assert.ok(eng._visualQueue.length <= 32); eng.stop();
+  });
+  await check('normal scheduler advances visible beats at 40 / 100 / 208 BPM', () => {
+    for (const bpm of [40, 100, 208]) {
+      const drawn = [];
+      const eng = new (loadEngine({ setTimeout() { return 1; }, clearTimeout() {} }).MetronomeEngine)({ onBeat: beat => drawn.push(beat) });
+      eng.ctx = fakeCtx(0); eng.playing = true; eng.bpm = bpm; eng.nextNoteTime = 0.02;
+      eng._lastAudioTime = 0; eng._lastProgressAt = Date.now(); eng._playBuffer = () => {};
+      for (let i = 0; i <= 240; i++) { eng.ctx.currentTime = i * 0.025; eng._scheduler(); }
+      assert.ok(drawn.length >= Math.floor(6 * bpm / 60));
+      drawn.forEach((beat, i) => assert.equal(beat, i % 4)); eng.stop();
+    }
+  });
+  await check('failed visual callback cannot leave sound silently running', () => {
+    for (const onBeat of [() => { throw Error('private detail'); }, () => false]) {
+      const errors = [], events = [];
+      const eng = new (loadEngine().MetronomeEngine)({ onBeat, onError: code => errors.push(code), onDiagnostic: code => events.push(code) });
+      eng.ctx = fakeCtx(1); eng.master = eng.ctx.createGain(); eng.playing = true;
+      eng._scheduleBeat(0, 1); assert.ok(eng._liveSources.length);
+      assert.equal(eng._renderVisuals(1), false);
+      assert.equal(eng.playing, false); assert.equal(eng._liveSources.length, 0);
+      assert.equal(eng._visualQueue.length, 0);
+      assert.deepEqual(errors, ['visual_failed']); assert.deepEqual(events, ['visual_failed']);
+    }
+  });
   console.log('All engine checks passed');
 }
 

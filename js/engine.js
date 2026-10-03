@@ -58,7 +58,11 @@
     this.buffers = {};
     this.timer = null;
     this.nextNoteTime = 0;
-    this.visualTimers = [];
+    this._visualQueue = [];
+    this.scheduledBeat = -1;
+    this.renderedBeat = -1;
+    this.visualUpdates = 0;
+    this._lastVisualAt = 0;
     this._liveSources = [];
     this._loadPromise = null;
     this._loadId = 0;
@@ -213,6 +217,8 @@
       if (!self.playing || self._runId !== runId) return;
       self._starting = false;
       self.cb = 0;
+      self.visualUpdates = 0;
+      self._lastVisualAt = 0;
       self.nextNoteTime = self.ctx.currentTime + 0.02;
       self._lastAudioTime = self.ctx.currentTime;
       self._lastProgressAt = Date.now();
@@ -284,8 +290,30 @@
   };
 
   MetronomeEngine.prototype._clearVisuals = function () {
-    for (var i = 0; i < this.visualTimers.length; i++) clearTimeout(this.visualTimers[i]);
-    this.visualTimers = [];
+    this._visualQueue = [];
+    this.scheduledBeat = -1;
+    this.renderedBeat = -1;
+  };
+
+  MetronomeEngine.prototype._renderVisuals = function (now) {
+    if (!this.playing) return false;
+    var latest = null;
+    while (this._visualQueue.length && this._visualQueue[0].time <= now) {
+      latest = this._visualQueue.shift();
+    }
+    if (!latest) return true;
+    // The audio clock is authoritative. Never replay missed visual beats.
+    var beat = latest.beat % this.bc;
+    try {
+      if (this.onBeat(beat) === false) throw new Error('visual_failed');
+      this.renderedBeat = beat;
+      this.visualUpdates = Math.min(65535, this.visualUpdates + 1);
+      this._lastVisualAt = Date.now();
+      return true;
+    } catch (_) {
+      this._fail('visual_failed');
+      return false;
+    }
   };
 
   MetronomeEngine.prototype._scheduler = function () {
@@ -311,6 +339,7 @@
         this.nextNoteTime += interval;
         this.cb = (this.cb + 1) % this.bc;
       }
+      if (!this._renderVisuals(now)) return;
       var self = this;
       var run = this._runId;
       this.timer = setTimeout(function () { if (run === self._runId) self._scheduler(); }, LOOKAHEAD_MS);
@@ -328,13 +357,10 @@
       this._playBuffer('weak', time, 0.28);
     }
 
-    var delay = Math.max(0, (time - this.ctx.currentTime) * 1000);
-    var self = this;
-    var id = setTimeout(function () { self.onBeat(beat); }, delay);
-    this.visualTimers.push(id);
-    if (this.visualTimers.length > 24) {
-      clearTimeout(this.visualTimers.shift());
-    }
+    this.scheduledBeat = beat;
+    this._visualQueue.push({ beat: beat, time: time });
+    // Defensive bound even when a caller schedules farther ahead than normal.
+    if (this._visualQueue.length > 32) this._visualQueue.shift();
   };
 
   MetronomeEngine.prototype._playBuffer = function (key, time, gain) {

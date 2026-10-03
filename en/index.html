@@ -1054,7 +1054,7 @@ window.addEventListener('load', function(){
 .web-health textarea{box-sizing:border-box;width:100%;height:150px;font:11px/1.5 monospace;background:#fffaf5;color:#51443f;border:1px solid #b9aaa2;border-radius:8px;padding:8px}.web-health #diagnostic-note{height:54px;margin:4px 0 6px}.web-health label{display:block;margin-top:4px}
 </style>
 <section class="web-health" aria-label="Diagnostics & recovery">
-<span id="web-version">Web 2026.10.03.2</span>
+<span id="web-version">Web 2026.10.03.3</span>
 <details id="diagnostics"><summary>Diagnostics & recovery</summary>
 <p>No sound or stuck? Send diagnostics to lazywc@gmail.com with one tap, or copy them first. Sending opens your system share sheet or an email draft and requires your confirmation. Logs stay on this device for up to 24 hours (80 events); nothing is silently uploaded. If the entire page is frozen, reload in your browser.</p>
 <label for="diagnostic-note">What happened? (optional)</label><textarea id="diagnostic-note" aria-label="What happened? (optional)" maxlength="1200" placeholder="For example: after switching tabs, Play stopped responding."></textarea><button type="button" id="diagnostic-send">Send diagnostics</button><button type="button" id="diagnostic-copy">Copy diagnostics</button>
@@ -1064,18 +1064,26 @@ window.addEventListener('load', function(){
 <p id="diagnostic-status" role="status" aria-live="polite"></p>
 <textarea id="diagnostic-text" readonly aria-label="Local diagnostic report"></textarea>
 </details></section>
-<script src="/js/diagnostics.js?v=3d076a7efafb"></script>
+<script src="/js/diagnostics.js?v=30cedc504901"></script>
 <script src="/js/prefs.js?v=193df9a6c2c0"></script>
-<script src="/js/engine.js?v=acab7ad4c7b2"></script>
+<script src="/js/engine.js?v=c75c8a35752c"></script>
 <script>
 var log=function(){var m=Array.prototype.join.call(arguments," ");console.log(m);var d=document.getElementById("debug-log");if(d){d.textContent+=m+"\n";d.scrollTop=d.scrollHeight;}};
 var SM_LABEL={traditional:"Traditional",uniform:"Steady",voice:"Voice"};
 var engine=new MetronomeEngine({
   lang:"en",
   onBeat:function(beat){
-    document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});
-    var el=document.querySelector("[data-beat='"+beat+"']");
-    if(el)el.classList.add("pop");
+    var container=document.getElementById("beats-container");
+    var selector=".beat[data-beat='"+beat+"']";
+    var el=container.querySelector(selector);
+    if(!el||container.querySelectorAll(".beat").length!==s.bc){
+      updateBeats();
+      el=container.querySelector(selector);
+    }
+    if(!el)return false;
+    container.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});
+    el.classList.add("pop");
+    return el.classList.contains("pop");
   }
 });
 var s={bpm:120,bc:4,bu:4,r:false,sm:"uniform",vol:85};
@@ -1233,9 +1241,9 @@ function start(){
   pending.then(function(){
     if(run!==_playGen||!s.r)return;
     if(!engine.playing){stop();return;}
+    s.loading=false;
     diagnostic("play_ready");
     if(Object.keys(engine.buffers).length<19)diagnostic("samples_fallback");
-    s.loading=false;
     btn.innerHTML="⏸";btn.setAttribute("aria-busy","false");
     refreshNowPlaying();
     requestWakeLock();
@@ -1253,11 +1261,11 @@ function start(){
   });
 }
 function stop(){
-  diagnostic("paused");
   _playGen+=1;
   s.r=false;
   s.loading=false;
   engine.stop();
+  diagnostic("paused");
   var btn=document.getElementById("play-btn");
   btn.innerHTML="▶";btn.setAttribute("aria-busy","false");btn.classList.remove("running");btn.setAttribute("aria-label","Play");
   document.querySelectorAll(".beat").forEach(function(e){e.classList.remove("pop");});
@@ -1280,10 +1288,11 @@ function diagnostic(code){if(window.MetronomeDiagnostics)window.MetronomeDiagnos
 engine.onDiagnostic=diagnostic;
 engine.onError=function(code){
   stop();
+  if(code==="visual_failed"){showAudioError("Beat display failed. Playback stopped. Retry, or send diagnostics if it happens again.");return;}
   showAudioError("Audio was interrupted. Retry, or copy diagnostics below.");
 };
 if(window.MetronomeDiagnostics)window.MetronomeDiagnostics.attach({
-  snapshot:function(){return {bpm:s.bpm,bc:s.bc,bu:s.bu,vol:s.vol,mode:s.sm,playing:engine.playing,loading:s.loading===true,ready:engine.ready,buffers:Object.keys(engine.buffers).length,audio:engine.ctx?engine.ctx.state:"none"};},
+  snapshot:function(){return {bpm:s.bpm,bc:s.bc,bu:s.bu,vol:s.vol,mode:s.sm,playing:engine.playing,loading:s.loading===true,ready:engine.ready,buffers:Object.keys(engine.buffers).length,audio:engine.ctx?engine.ctx.state:"none",scheduledBeat:engine.scheduledBeat,renderedBeat:engine.renderedBeat,visualUpdates:engine.visualUpdates,visualAgeMs:engine._lastVisualAt?Math.min(60000,Math.max(0,Date.now()-engine._lastVisualAt)):undefined,visualNodes:document.querySelectorAll("#beats-container .beat").length,uiPlaying:s.r};},
   reset:function(){stop();engine.reset();hideAudioError();}
 });
 

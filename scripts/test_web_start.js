@@ -152,6 +152,32 @@ function runControls(rel) {
   assert.equal(els['custom-beats'].value, 16); assert.equal(els['custom-unit'].value, 16);
   console.log('  ok  ' + rel + ': BPM preview/commit analytics and normalized meter inputs');
 }
+function runVisuals(rel) {
+  const html = fs.readFileSync(path.join(root, rel), 'utf8');
+  let options, nodes = [], rebuilds = 0;
+  function node(beat) {
+    const classes = new Set();
+    return { beat, classList: { add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c) } };
+  }
+  const container = {
+    querySelector(selector) { const beat = Number(selector.match(/data-beat='(\d+)'/)[1]); return nodes.find(n => n.beat === beat); },
+    querySelectorAll() { return nodes; }
+  };
+  const box = { s: { bc: 4 }, document: { getElementById() { return container; } },
+    updateBeats() { rebuilds++; nodes = [0, 1, 2, 3].map(node); },
+    MetronomeEngine: function (opts) { options = opts; } };
+  const from = html.indexOf('var engine=new MetronomeEngine(');
+  vm.runInNewContext(html.slice(from, html.indexOf('var s=', from)), box);
+  assert.equal(options.onBeat(2), true); assert.equal(rebuilds, 1);
+  assert.equal(nodes.filter(n => n.classList.contains('pop')).length, 1);
+  assert.equal(nodes[2].classList.contains('pop'), true);
+  assert.equal(options.onBeat(3), true); assert.equal(rebuilds, 1);
+  assert.equal(nodes[2].classList.contains('pop'), false);
+  nodes.pop(); options.onBeat(0); assert.equal(rebuilds, 2, 'wrong node count must rebuild');
+  nodes = []; box.updateBeats = () => {};
+  assert.equal(options.onBeat(0), false, 'unrecoverable missing beat must be explicit');
+  console.log('  ok  ' + rel + ': missing visual nodes repaired, one active beat, unrecoverable failure reported');
+}
 async function runVisibility(rel) {
   const html = fs.readFileSync(path.join(root, rel), 'utf8');
   const from = html.indexOf('document.addEventListener("visibilitychange"');
@@ -171,6 +197,7 @@ async function runVisibility(rel) {
   const l = lock(); assert.equal(prefs.adoptScreenLock(l, false), null); assert.equal(l.releases, 1);
   await runPage('index.html'); await runPage('en/index.html');
   runControls('index.html'); runControls('en/index.html');
+  runVisuals('index.html'); runVisuals('en/index.html');
   await runVisibility('index.html'); await runVisibility('en/index.html');
   console.log('All web start checks passed');
 })().catch(e => { console.error(e); process.exitCode = 1; });
