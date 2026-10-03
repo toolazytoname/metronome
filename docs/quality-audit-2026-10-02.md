@@ -109,3 +109,9 @@ xcodebuild -project ios/BunnyMetronome.xcodeproj -scheme BunnyMetronome \
 - 最终本地回归 `./scripts/check-quality.sh` 通过（`/tmp/metronome-quality-release-final.log`）；引擎 13 项、Web 页面中英启动/同步异常与可见错误测试、诊断/缓存/资源一致性测试通过；小程序与 Harmony mock 133 项、Swift 39 项、Android policy 59 项通过。Harmony 仍非 SDK 编译/真机验证。
 
 - 发布复核补充：旧客户端可能仍持有以前 `max-age=300` 的 HTML；只改新服务端响应头不能清除该旧 HTTP 缓存。SW v12 对 HTML 显式 `cache: no-cache` 重新验证，并将缓存写入失败降为非阻断；新增执行型回归通过。
+
+### 推送后的验证更新（2026-10-03 UTC）
+
+- `a4e08eb` 已推送 `origin/develop`，并经授权快进发布至 `origin/main`；Vercel Production `dpl_3F9iHjBvYcERv8GM4r4GkKdngg2p` Ready。Web 发布号 `2026.10.02.2` 为界面标识，不是原生版本号。
+- CI `37097237563` 全绿；Harmony SDK CI `37097237558` 全绿（同提交，unsigned HAP）。这补充了前文检查结束时“只有 mock、未 SDK 编译”的证据缺口；仍不代表真机或商店验收。
+- 后续 `a9c1446` 仅补 SW v12 的旧 HTTP 缓存重新验证与非阻断缓存写入，不变更音频或原生代码。中英预览站 HTTP 200、版本号、三份 JS SHA-256 内容前缀与 no-cache HTML 头已核验。
